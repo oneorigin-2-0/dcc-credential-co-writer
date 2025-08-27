@@ -526,8 +526,6 @@ class Composer:
         shape_height = bounds["bottom"] - bounds["top"]
         
         # Calculate dynamic positions based on hexagon bounds
-        # User wants: Logo Y~110, Title Y~240, Subtitle Y~290
-        # With hexagon Y range 83.5 to 516.5, height = 433
         hexagon_height = bounds["bottom"] - bounds["top"]
         hexagon_center_y = bounds["top"] + hexagon_height * 0.5  # Center of hexagon
         
@@ -692,43 +690,43 @@ def reset_to_default():
     """Reset to default configuration"""
     return json.dumps(default_bagde_config, indent=2)
 
-def generate_badge(title_text, subtitle_text, skill_text, shape, size):
-    """Generate a badge with custom text inputs, shape, and size (legacy function)"""
-    config = default_bagde_config.copy()
+# def generate_badge(title_text, subtitle_text, skill_text, shape, size):
+#     """Generate a badge with custom text inputs, shape, and size (legacy function)"""
+#     config = default_bagde_config.copy()
     
-    # Update the text content
-    for layer in config["layers"]:
-        if "Spark Challenge" in layer.get("text", ""):
-            layer["text"] = title_text
-        elif "Soft Skill Credential" in layer.get("text", ""):
-            layer["text"] = subtitle_text
-        elif "Teamwork" in layer.get("text", ""):
-            layer["text"] = skill_text
+#     # Update the text content
+#     for layer in config["layers"]:
+#         if "Spark Challenge" in layer.get("text", ""):
+#             layer["text"] = title_text
+#         elif "Soft Skill Credential" in layer.get("text", ""):
+#             layer["text"] = subtitle_text
+#         elif "Teamwork" in layer.get("text", ""):
+#             layer["text"] = skill_text
     
-    # Update the shape and size for the first shape layer
-    for layer in config["layers"]:
-        if layer.get("type") == "ShapeLayer":
-            layer["shape"] = shape
-            # Set appropriate parameters based on shape and size
-            if shape == "hexagon":
-                layer["params"] = {"radius": int(size)}
-            elif shape == "circle":
-                # For circle, size controls the radius (600-size)/2 gives margin
-                margin = max(10, (600 - size * 2) // 2)
-                layer["params"] = {"margin": margin}
-            elif shape == "shield":
-                # For shield, size controls margin (smaller margin = larger shield)
-                margin = max(20, 300 - size)
-                layer["params"] = {"margin": margin, "corner_radius": margin, "tip_height": 110}
-            elif shape == "rounded_rect":
-                # For rounded_rect, size controls the dimensions
-                padding = max(25, (600 - size * 2) // 2)
-                layer["params"] = {"rect": [padding, padding, 600-padding, 600-padding], "radius": 20}
-            break  # Only modify the first shape layer
+#     # Update the shape and size for the first shape layer
+#     for layer in config["layers"]:
+#         if layer.get("type") == "ShapeLayer":
+#             layer["shape"] = shape
+#             # Set appropriate parameters based on shape and size
+#             if shape == "hexagon":
+#                 layer["params"] = {"radius": int(size)}
+#             elif shape == "circle":
+#                 # For circle, size controls the radius (600-size)/2 gives margin
+#                 margin = max(10, (600 - size * 2) // 2)
+#                 layer["params"] = {"margin": margin}
+#             elif shape == "shield":
+#                 # For shield, size controls margin (smaller margin = larger shield)
+#                 margin = max(20, 300 - size)
+#                 layer["params"] = {"margin": margin, "corner_radius": margin, "tip_height": 110}
+#             elif shape == "rounded_rect":
+#                 # For rounded_rect, size controls the dimensions
+#                 padding = max(25, (600 - size * 2) // 2)
+#                 layer["params"] = {"rect": [padding, padding, 600-padding, 600-padding], "radius": 20}
+#             break  # Only modify the first shape layer
     
-    # Generate the image
-    image = render_from_spec(config)
-    return image
+#     # Generate the image
+#     image = render_from_spec(config)
+#     return image
 
 def create_json_interface():
     """Create JSON editor interface"""
