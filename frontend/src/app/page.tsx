@@ -22,7 +22,7 @@ export default function LandingPage() {
       </header>
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl">
-          <Card className="text-center shadow-lg">
+          <Card className="text-center shadow-lg border-0">
             <CardHeader>
               <CardTitle className="text-3xl">Create a New Badge</CardTitle>
               <CardDescription>
