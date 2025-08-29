@@ -18,9 +18,6 @@ export default function LandingPage() {
             <Award className="w-10 h-10 text-accent" />
             DCC Gen AI Authoring Tool
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Your one-stop solution for creating and issuing digital credentials and badges.
-          </p>
         </div>
       </header>
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
