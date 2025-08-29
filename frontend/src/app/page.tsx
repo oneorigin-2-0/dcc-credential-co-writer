@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Award, WandSparkles, Pencil, ArrowRight } from 'lucide-react';
+import { Award, WandSparkles, Pencil } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -36,7 +36,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold mb-2 text-primary">Generate with AI</h3>
                     <p className="text-muted-foreground mb-6 text-sm">Let our AI assist you by generating a badge from your content, like a course outline or project summary.</p>
                     <Button asChild>
-                        <Link href="/genai">Generate with AI <ArrowRight className="ml-2"/></Link>
+                        <Link href="/genai">Generate with AI <WandSparkles className="ml-2"/></Link>
                     </Button>
                 </div>
                  <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
@@ -44,7 +44,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold mb-2 text-primary">Create Manually</h3>
                     <p className="text-muted-foreground mb-6 text-sm">Have all the details ready? Fill out the form yourself to create a custom badge from scratch.</p>
                     <Button asChild>
-                        <Link href="/manual">Create Manually <ArrowRight className="ml-2"/></Link>
+                        <Link href="/manual">Create Manually</Link>
                     </Button>
                 </div>
               </div>
