@@ -18,9 +18,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)', ...fontFamily.sans],
-        body: ['Roboto', 'sans-serif'],
-        headline: ['Roboto', 'sans-serif'],
+        sans: ['neue-haas-grotesk-text', 'sans-serif', ...fontFamily.sans],
+        body: ['neue-haas-grotesk-text', 'sans-serif'],
+        headline: ['neue-haas-grotesk-text', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
