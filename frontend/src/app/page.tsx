@@ -1,21 +1,4 @@
-'use client';
-
-import { useState } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import Image from 'next/image';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,310 +6,53 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
-import { Award, WandSparkles, Download, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Award, WandSparkles, Pencil, ArrowRight } from 'lucide-react';
 
-import { generateSuggestions } from './actions';
-
-const badgeFormSchema = z.object({
-  content: z
-    .string()
-    .min(50, { message: 'Please provide at least 50 characters for analysis.' }),
-  title: z.string(),
-  description: z.string(),
-  criteria: z.string(),
-  image: z.string().optional(),
-});
-type BadgeFormValues = z.infer<typeof badgeFormSchema>;
-
-function BadgePreview({
-  title,
-  description,
-  imageUrl,
-}: {
-  title: string;
-  description: string;
-  imageUrl?: string;
-}) {
-  return (
-    <Card className="sticky top-8 shadow-lg">
-      <CardHeader>
-        <CardTitle>Badge Preview</CardTitle>
-        <CardDescription>This is a live preview of your badge.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-secondary/30 rounded-lg p-8 flex flex-col items-center text-center transition-all duration-300">
-          <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center shadow-lg mb-6 ring-4 ring-primary/20 relative">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={title || 'Badge Image'}
-                fill
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <Award className="w-16 h-16 text-accent" />
-            )}
-          </div>
-          <h3 className="text-2xl font-bold font-headline text-primary">
-            {title || 'Badge Title'}
-          </h3>
-          <p className="text-muted-foreground mt-2 max-w-sm h-16 overflow-hidden">
-            {description || 'Badge description will appear here...'}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function Home() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
-
-  const form = useForm<BadgeFormValues>({
-    resolver: zodResolver(badgeFormSchema),
-    defaultValues: {
-      content: '',
-      title: '',
-      description: '',
-      criteria: '',
-      image: '',
-    },
-    mode: 'onChange',
-  });
-
-  const watchedTitle = form.watch('title');
-  const watchedDescription = form.watch('description');
-  const watchedImage = form.watch('image');
-
-  const handleGenerate = async () => {
-    const content = form.getValues('content');
-    const contentValidation = badgeFormSchema.shape.content.safeParse(content);
-
-    if (!contentValidation.success) {
-      form.setError('content', {
-        type: 'manual',
-        message: contentValidation.error.issues[0].message,
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    const result = await generateSuggestions(content);
-    setIsGenerating(false);
-
-    if (result.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Generation Failed',
-        description: result.error,
-      });
-      return;
-    }
-
-    form.setValue('title', result.title || '', { shouldValidate: true });
-    form.setValue('description', result.description || '', {
-      shouldValidate: true,
-    });
-    form.setValue('criteria', result.criteria || '', { shouldValidate: true });
-    form.setValue('image', result.image || '', { shouldValidate: true });
-
-    toast({
-      title: 'Suggestions Generated!',
-      description: 'Your badge details have been populated.',
-    });
-  };
-
-  const handleExport = () => {
-    const values = form.getValues();
-    const badgeClass = {
-      '@context': 'https://w3id.org/openbadges/v3/context.json',
-      type: 'BadgeClass',
-      name: values.title,
-      description: values.description,
-      image: {
-        id: values.image,
-        type: 'Image'
-      },
-      criteria: {
-        type: 'Criteria',
-        narrative: values.criteria,
-      },
-      issuer: {
-        type: 'Profile',
-        id: 'https://badgesmith.example.com/issuer', // Placeholder
-        name: 'BadgeSmith Issuer',
-      },
-      id: `https://badgesmith.example.com/badges/${values.title
-        .toLowerCase()
-        .replace(/\s/g, '-')}`, // Placeholder
-    };
-
-    const dataStr =
-      'data:text/json;charset=utf-8,' +
-      encodeURIComponent(JSON.stringify(badgeClass, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute(
-      'download',
-      `${
-        values.title.toLowerCase().replace(/\s/g, '-') || 'badge'
-      }.json`
-    );
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-
-    toast({
-      title: 'Badge Exported!',
-      description: 'Your OpenBadge 3.0 JSON file has been downloaded.',
-    });
-  };
-
+export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="p-8 border-b bg-card">
         <div className="container mx-auto">
           <h1 className="text-4xl font-bold font-headline text-primary flex items-center gap-3">
             <Award className="w-10 h-10 text-accent" />
-            BadgeSmith
+            DCC Gen AI Authoring Tool
           </h1>
           <p className="text-muted-foreground mt-2">
-            AI-powered OpenBadge creator. Turn any content into a verifiable
-            achievement.
+            Your one-stop solution for creating and issuing digital credentials and badges.
           </p>
         </div>
       </header>
-      <main className="flex-1 container mx-auto p-4 md:p-8">
-        <div className="grid lg:grid-cols-2 gap-12">
-          <FormProvider {...form}>
-            <form
-              onSubmit={e => e.preventDefault()}
-              className="space-y-8"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>1. Provide Content</CardTitle>
-                  <CardDescription>
-                    Paste any text, like a course outline, project summary, or
-                    job description. Our AI will analyze it to suggest badge
-                    details.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Textarea
-                            placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
-                            className="min-h-[150px] text-base"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleGenerate} disabled={isGenerating}>
-                    {isGenerating ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <WandSparkles />
-                    )}
-                    <span>
-                      {isGenerating ? 'Generating...' : 'Generate Suggestions'}
-                    </span>
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>2. Refine Details</CardTitle>
-                  <CardDescription>
-                    Edit the AI-suggested details for your badge. The preview
-                    on the right will update as you type.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Badge Title</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Quantum Computing Fundamentals"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Badge Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="e.g., Awarded for demonstrating foundational knowledge of quantum computing principles."
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="criteria"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Earning Criteria</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            className="min-h-[120px]"
-                            placeholder="e.g., Successfully complete all modules and pass the final assessment with a score of 80% or higher."
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    onClick={handleExport}
-                    disabled={!watchedTitle}
-                  >
-                    <Download />
-                    <span>Export OpenBadge 3.0</span>
-                  </Button>
-                </CardFooter>
-              </Card>
-            </form>
-          </FormProvider>
-
-          <div>
-            <BadgePreview
-              title={watchedTitle}
-              description={watchedDescription}
-              imageUrl={watchedImage}
-            />
-          </div>
+      <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+        <div className="w-full max-w-4xl">
+          <Card className="text-center shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-3xl">Create a New Badge</CardTitle>
+              <CardDescription>
+                Choose your preferred method to start creating a new badge.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-8 mt-4">
+                <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
+                    <WandSparkles className="w-12 h-12 text-accent mb-4"/>
+                    <h3 className="text-xl font-semibold mb-2 text-primary">Generate with AI</h3>
+                    <p className="text-muted-foreground mb-6 text-sm">Let our AI assist you by generating a badge from your content, like a course outline or project summary.</p>
+                    <Button asChild>
+                        <Link href="/genai">Generate with AI <ArrowRight className="ml-2"/></Link>
+                    </Button>
+                </div>
+                 <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
+                    <Pencil className="w-12 h-12 text-accent mb-4"/>
+                    <h3 className="text-xl font-semibold mb-2 text-primary">Create Manually</h3>
+                    <p className="text-muted-foreground mb-6 text-sm">Have all the details ready? Fill out the form yourself to create a custom badge from scratch.</p>
+                    <Button asChild>
+                        <Link href="/manual">Create Manually <ArrowRight className="ml-2"/></Link>
+                    </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
