@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 import {
   Form,
   FormControl,
@@ -36,15 +37,18 @@ const badgeFormSchema = z.object({
   title: z.string(),
   description: z.string(),
   criteria: z.string(),
+  image: z.string().optional(),
 });
 type BadgeFormValues = z.infer<typeof badgeFormSchema>;
 
 function BadgePreview({
   title,
   description,
+  imageUrl,
 }: {
   title: string;
   description: string;
+  imageUrl?: string;
 }) {
   return (
     <Card className="sticky top-8 shadow-lg">
@@ -54,8 +58,17 @@ function BadgePreview({
       </CardHeader>
       <CardContent>
         <div className="bg-secondary/30 rounded-lg p-8 flex flex-col items-center text-center transition-all duration-300">
-          <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center shadow-lg mb-6 ring-4 ring-primary/20">
-            <Award className="w-16 h-16 text-accent" />
+          <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center shadow-lg mb-6 ring-4 ring-primary/20 relative">
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={title || 'Badge Image'}
+                fill
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <Award className="w-16 h-16 text-accent" />
+            )}
           </div>
           <h3 className="text-2xl font-bold font-headline text-primary">
             {title || 'Badge Title'}
@@ -80,12 +93,14 @@ export default function Home() {
       title: '',
       description: '',
       criteria: '',
+      image: '',
     },
     mode: 'onChange',
   });
 
   const watchedTitle = form.watch('title');
   const watchedDescription = form.watch('description');
+  const watchedImage = form.watch('image');
 
   const handleGenerate = async () => {
     const content = form.getValues('content');
@@ -117,6 +132,7 @@ export default function Home() {
       shouldValidate: true,
     });
     form.setValue('criteria', result.criteria || '', { shouldValidate: true });
+    form.setValue('image', result.image || '', { shouldValidate: true });
 
     toast({
       title: 'Suggestions Generated!',
@@ -131,6 +147,10 @@ export default function Home() {
       type: 'BadgeClass',
       name: values.title,
       description: values.description,
+      image: {
+        id: values.image,
+        type: 'Image'
+      },
       criteria: {
         type: 'Criteria',
         narrative: values.criteria,
@@ -304,6 +324,7 @@ export default function Home() {
             <BadgePreview
               title={watchedTitle}
               description={watchedDescription}
+              imageUrl={watchedImage}
             />
           </div>
         </div>
