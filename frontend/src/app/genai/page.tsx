@@ -187,7 +187,7 @@ export default function GenAIPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       <header className="p-8 border-b bg-card">
+       <header className="p-4 border-b bg-card">
         <div className="container mx-auto">
           <h1 className="text-4xl font-bold font-headline text-primary flex items-center gap-3">
             <WandSparkles className="w-10 h-10 text-accent" />
