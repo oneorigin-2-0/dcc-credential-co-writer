@@ -23,9 +23,9 @@ export default function LandingPage() {
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl text-center">
           <div>
-            <h2 className="text-3xl font-bold">Create a New Badge</h2>
+            <h2 className="text-3xl font-bold">Effortless Badge Creation</h2>
             <p className="text-muted-foreground mt-2">
-              Choose your preferred method to start creating a new badge.
+              Whether you're harnessing the speed of AI or prefer a hands-on approach, creating your perfect badge is just a few clicks away.
             </p>
           </div>
           <div>
