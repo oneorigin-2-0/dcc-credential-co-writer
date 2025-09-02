@@ -5,6 +5,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   Form,
   FormControl,
@@ -22,7 +23,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Award, WandSparkles, Download, Loader2, UploadCloud, FileText, Type } from 'lucide-react';
+import { Award, WandSparkles, Download, Loader2, UploadCloud, FileText, Type, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
@@ -44,6 +45,7 @@ type BadgeFormValues = z.infer<typeof badgeFormSchema>;
 export default function GenAIPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<BadgeFormValues>({
     resolver: zodResolver(badgeFormSchema),
@@ -145,6 +147,15 @@ export default function GenAIPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-1 container mx-auto p-4 md:p-8">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 mb-4"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="sr-only">Back</span>
+        </Button>
         <div className="flex justify-center">
           <div className="w-full max-w-2xl">
             <FormProvider {...form}>
