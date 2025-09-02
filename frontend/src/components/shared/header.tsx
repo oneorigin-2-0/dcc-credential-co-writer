@@ -17,14 +17,8 @@ export function Header({ subtitle, description, icon: Icon, iconClassName, subti
                 <h1 className="text-3xl font-bold font-headline text-primary">
                     <Link href="/">DCC Gen AI Authoring Tool</Link>
                 </h1>
-                <div className="flex items-center gap-3 mt-2">
-                    {Icon && <Icon className={cn("w-8 h-8 text-accent", iconClassName)} />}
-                    <h2 className={cn("text-2xl font-semibold text-muted-foreground", subtitleClassName)}>
-                        {subtitle}
-                    </h2>
-                </div>
                 {description && (
-                    <p className="text-muted-foreground mt-2 ml-11">
+                    <p className="text-muted-foreground mt-2">
                         {description}
                     </p>
                 )}
