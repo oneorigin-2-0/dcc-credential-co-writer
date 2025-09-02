@@ -1,24 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Award, WandSparkles, Pencil } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { WandSparkles, Pencil } from 'lucide-react';
+import { Header } from '@/components/shared/header';
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="p-4 border-b bg-card">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-bold font-headline text-primary flex items-center gap-3">
-            DCC Gen AI Authoring Tool
-          </h1>
-        </div>
-      </header>
+      <Header title="DCC Gen AI Authoring Tool" titleClassName="text-3xl" />
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl text-center">
           <div>

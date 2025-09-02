@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 
 import { generateSuggestions } from '../actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Header } from '@/components/shared/header';
 
 const badgeFormSchema = z.object({
   content: z
@@ -187,17 +188,11 @@ export default function GenAIPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       <header className="p-4 border-b bg-card">
-        <div className="container mx-auto">
-          <h1 className="text-4xl font-bold font-headline text-primary flex items-center gap-3">
-            <WandSparkles className="w-10 h-10 text-accent" />
-            Generate with AI
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Let AI help you create the perfect badge. Provide some content and watch the magic happen.
-          </p>
-        </div>
-      </header>
+      <Header 
+        title="Generate with AI"
+        description="Let AI help you create the perfect badge. Provide some content and watch the magic happen."
+        icon={WandSparkles}
+      />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="grid lg:grid-cols-2 gap-12">
           <FormProvider {...form}>
