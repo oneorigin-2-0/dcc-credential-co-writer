@@ -1,0 +1,33 @@
+.layer-editor {
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.layer-header {
+  background-color: #f0f0f0;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.layer-header h4 {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+}
+
+.layer-controls {
+  padding: 1rem;
+  background-color: white;
+}
+
+.layer-controls .form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.layer-controls .form-group:last-child {
+  margin-bottom: 0;
+}
