@@ -18,7 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${openSans.variable} font-sans antialiased`}>
+      <body className={`${openSans.variable} font-sans antialiased`} style={{
+          background: 'radial-gradient(circle at center top, rgb(30, 58, 138) 0%, rgb(28, 52, 116) 25%, rgb(0, 0, 0) 70%)',
+        }}>
         {children}
         <Toaster />
       </body>
