@@ -198,7 +198,7 @@ export default function GenAIPage() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>1. Provide Content</CardTitle>
+                  <CardTitle>Add Content</CardTitle>
                   <CardDescription>
                     Provide content for analysis. You can paste text, or upload a file.
                   </CardDescription>
@@ -268,53 +268,6 @@ export default function GenAIPage() {
                 </CardFooter>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>2. Refine Details</CardTitle>
-                  <CardDescription>
-                    Edit the AI-suggested details for your badge. The preview
-                    on the right will update as you type.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="criteria"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    onClick={handleExport}
-                    disabled={!watchedTitle}
-                  >
-                    <Download />
-                    <span>Export OpenBadge 3.0</span>
-                  </Button>
-                </CardFooter>
-              </Card>
             </form>
           </FormProvider>
 
