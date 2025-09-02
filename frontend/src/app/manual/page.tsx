@@ -5,7 +5,7 @@ export default function ManualPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header 
-        title="Create Badge Manually"
+        subtitle="Create Badge Manually"
         description="Fill in the details below to create your new badge."
         icon={Pencil}
       />

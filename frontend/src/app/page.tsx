@@ -7,7 +7,7 @@ import { Header } from '@/components/shared/header';
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header title="DCC Gen AI Authoring Tool" titleClassName="text-3xl" />
+      <Header subtitle="Welcome" />
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl text-center">
           <div>
@@ -18,7 +18,7 @@ export default function LandingPage() {
           </div>
           <div>
             <div className="grid md:grid-cols-2 gap-8 mt-8">
-              <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
+              <Card className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
                 <WandSparkles className="w-12 h-12 text-accent mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-primary">
                   Generate with AI
@@ -32,8 +32,8 @@ export default function LandingPage() {
                     Generate with AI <WandSparkles className="ml-2" />
                   </Link>
                 </Button>
-              </div>
-              <div className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
+              </Card>
+              <Card className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
                 <Pencil className="w-12 h-12 text-accent mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-primary">
                   Create Manually
@@ -45,7 +45,7 @@ export default function LandingPage() {
                 <Button asChild>
                   <Link href="/manual">Create Manually</Link>
                 </Button>
-              </div>
+              </Card>
             </div>
           </div>
         </div>
