@@ -41,47 +41,6 @@ const badgeFormSchema = z.object({
 });
 type BadgeFormValues = z.infer<typeof badgeFormSchema>;
 
-function BadgePreview({
-  title,
-  description,
-  imageUrl,
-}: {
-  title: string;
-  description: string;
-  imageUrl?: string;
-}) {
-  return (
-    <Card className="sticky top-8 shadow-lg">
-      <CardHeader>
-        <CardTitle>Badge Preview</CardTitle>
-        <CardDescription>This is a live preview of your badge.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-secondary/30 rounded-lg p-8 flex flex-col items-center text-center transition-all duration-300">
-          <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center shadow-lg mb-6 ring-4 ring-primary/20 relative">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={title || 'Badge Image'}
-                fill
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <Award className="w-16 h-16 text-accent" />
-            )}
-          </div>
-          <h3 className="text-2xl font-bold font-headline text-primary">
-            {title || 'Badge Title'}
-          </h3>
-          <p className="text-muted-foreground mt-2 max-w-sm h-16 overflow-hidden">
-            {description || 'Badge description will appear here...'}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function GenAIPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -97,10 +56,6 @@ export default function GenAIPage() {
     },
     mode: 'onChange',
   });
-
-  const watchedTitle = form.watch('title');
-  const watchedDescription = form.watch('description');
-  const watchedImage = form.watch('image');
 
   const handleGenerate = async () => {
     const content = form.getValues('content');
@@ -190,93 +145,86 @@ export default function GenAIPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-1 container mx-auto p-4 md:p-8">
-        <div className="grid lg:grid-cols-2 gap-12">
-          <FormProvider {...form}>
-            <form
-              onSubmit={e => e.preventDefault()}
-              className="space-y-8"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add Content</CardTitle>
-                  <CardDescription>
-                    Provide content for analysis. You can paste text, or upload a file.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="text">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="text"><Type className="mr-2"/>Text</TabsTrigger>
-                      <TabsTrigger value="file"><FileText className="mr-2"/>File</TabsTrigger>
-                      <TabsTrigger value="image"><UploadCloud className="mr-2"/>Image</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="text" className="pt-4">
-                       <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
-                                className="min-h-[150px] text-base"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-                    <TabsContent value="file" className="pt-4">
-                      <div className="flex items-center justify-center w-full">
-                          <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                  <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                  <p className="text-xs text-muted-foreground">PDF, TXT, DOCX (MAX. 5MB)</p>
-                              </div>
-                              <Input id="dropzone-file" type="file" className="hidden" />
-                          </label>
-                      </div>
-                    </TabsContent>
-                     <TabsContent value="image" className="pt-4">
-                       <div className="flex items-center justify-center w-full">
-                          <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                  <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF (MAX. 2MB)</p>
-                              </div>
-                              <Input id="image-upload" type="file" className="hidden" accept="image/*" />
-                          </label>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleGenerate} disabled={isGenerating}>
-                    {isGenerating ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <WandSparkles />
-                    )}
-                    <span>
-                      {isGenerating ? 'Generating...' : 'Generate Suggestions'}
-                    </span>
-                  </Button>
-                </CardFooter>
-              </Card>
-
-            </form>
-          </FormProvider>
-
-          <div>
-            <BadgePreview
-              title={watchedTitle}
-              description={watchedDescription}
-              imageUrl={watchedImage}
-            />
+        <div className="flex justify-center">
+          <div className="w-full max-w-2xl">
+            <FormProvider {...form}>
+              <form
+                onSubmit={e => e.preventDefault()}
+                className="space-y-8"
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Add Content</CardTitle>
+                    <CardDescription>
+                      Provide content for analysis. You can paste text, or upload a file.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="text">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="text"><Type className="mr-2"/>Text</TabsTrigger>
+                        <TabsTrigger value="file"><FileText className="mr-2"/>File</TabsTrigger>
+                        <TabsTrigger value="image"><UploadCloud className="mr-2"/>Image</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="text" className="pt-4">
+                         <FormField
+                          control={form.control}
+                          name="content"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
+                                  className="min-h-[150px] text-base"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value="file" className="pt-4">
+                        <div className="flex items-center justify-center w-full">
+                            <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p className="text-xs text-muted-foreground">PDF, TXT, DOCX (MAX. 5MB)</p>
+                                </div>
+                                <Input id="dropzone-file" type="file" className="hidden" />
+                            </label>
+                        </div>
+                      </TabsContent>
+                       <TabsContent value="image" className="pt-4">
+                         <div className="flex items-center justify-center w-full">
+                            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF (MAX. 2MB)</p>
+                                </div>
+                                <Input id="image-upload" type="file" className="hidden" accept="image/*" />
+                            </label>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={handleGenerate} disabled={isGenerating}>
+                      {isGenerating ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <WandSparkles />
+                      )}
+                      <span>
+                        {isGenerating ? 'Generating...' : 'Generate Suggestions'}
+                      </span>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </form>
+            </FormProvider>
           </div>
         </div>
       </main>
