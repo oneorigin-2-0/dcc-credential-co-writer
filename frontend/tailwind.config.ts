@@ -18,9 +18,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['neue-haas-grotesk-text', 'sans-serif', ...fontFamily.sans],
-        body: ['neue-haas-grotesk-text', 'sans-serif'],
-        headline: ['neue-haas-grotesk-text', 'sans-serif'],
+        sans: ['var(--font-sans)', ...fontFamily.sans],
+        body: ['Open Sans', 'sans-serif'],
+        headline: ['Open Sans', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

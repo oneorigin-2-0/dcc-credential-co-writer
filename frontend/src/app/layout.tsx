@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { Open_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+
+const openSans = Open_Sans({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'BadgeSmith - AI-Powered Badge Creator',
@@ -15,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className={`${openSans.variable} font-sans antialiased`}>
         {children}
         <Toaster />
       </body>

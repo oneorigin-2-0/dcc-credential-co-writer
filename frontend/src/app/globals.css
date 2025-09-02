@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: 'neue-haas-grotesk-text', sans-serif;
+  font-family: 'Open Sans', sans-serif;
 }
 
 @layer base {
