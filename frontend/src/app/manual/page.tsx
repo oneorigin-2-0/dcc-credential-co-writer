@@ -6,7 +6,6 @@ export default function ManualPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header 
         subtitle="Create Badge Manually"
-        description="Fill in the details below to create your new badge."
         icon={Pencil}
       />
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">

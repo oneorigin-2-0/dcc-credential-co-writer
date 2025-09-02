@@ -190,7 +190,6 @@ export default function GenAIPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header 
         subtitle="Generate with AI"
-        description="Let AI help you create the perfect badge. Provide some content and watch the magic happen."
         icon={WandSparkles}
       />
       <main className="flex-1 container mx-auto p-4 md:p-8">
