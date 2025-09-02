@@ -160,55 +160,34 @@ export default function GenAIPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Tabs defaultValue="text">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="text"><Type className="mr-2"/>Text</TabsTrigger>
-                        <TabsTrigger value="file"><FileText className="mr-2"/>File</TabsTrigger>
-                        <TabsTrigger value="image"><UploadCloud className="mr-2"/>Image</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="text" className="pt-4">
-                         <FormField
-                          control={form.control}
-                          name="content"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
-                                  className="min-h-[150px] text-base"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TabsContent>
-                      <TabsContent value="file" className="pt-4">
-                        <div className="flex items-center justify-center w-full">
-                            <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                    <p className="text-xs text-muted-foreground">PDF, TXT, DOCX (MAX. 5MB)</p>
-                                </div>
-                                <Input id="dropzone-file" type="file" className="hidden" />
-                            </label>
-                        </div>
-                      </TabsContent>
-                       <TabsContent value="image" className="pt-4">
-                         <div className="flex items-center justify-center w-full">
-                            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF (MAX. 2MB)</p>
-                                </div>
-                                <Input id="image-upload" type="file" className="hidden" accept="image/*" />
-                            </label>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea
+                                placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
+                                className="min-h-[150px] text-base"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex items-center gap-4">
+                        <Button variant="outline" className="w-full" onClick={() => document.getElementById('file-upload')?.click()}>
+                          <FileText className="mr-2"/> Upload File
+                        </Button>
+                        <Input id="file-upload" type="file" className="hidden" />
+                        <Button variant="outline" className="w-full" onClick={() => document.getElementById('image-upload')?.click()}>
+                          <UploadCloud className="mr-2"/> Upload Image
+                        </Button>
+                        <Input id="image-upload" type="file" className="hidden" accept="image/*" />
+                      </div>
+                    </div>
                   </CardContent>
                   <CardFooter>
                     <Button onClick={handleGenerate} disabled={isGenerating}>
