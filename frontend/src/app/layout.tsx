@@ -17,9 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="light">
       <body className={`${openSans.variable} font-sans antialiased`} style={{
-          background: 'radial-gradient(circle at center top, rgb(30, 58, 138) 0%, rgb(28, 52, 116) 25%, rgb(0, 0, 0) 70%)',
+          background: 'radial-gradient(circle at center top, rgb(138, 30, 30) 0%, rgb(116, 28, 28) 25%, rgb(255, 255, 255) 100%)',
         }}>
         {children}
         <Toaster />
