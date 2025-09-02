@@ -3,13 +3,11 @@ import type { LucideIcon } from "lucide-react";
 import Link from 'next/link';
 
 interface HeaderProps {
-    subtitle: string;
     icon?: LucideIcon;
     iconClassName?: string;
-    subtitleClassName?: string;
 }
 
-export function Header({ subtitle, icon: Icon, iconClassName, subtitleClassName }: HeaderProps) {
+export function Header({ icon: Icon, iconClassName }: HeaderProps) {
     return (
         <header className="p-4 border-b bg-card">
             <div className="container mx-auto">
@@ -18,9 +16,6 @@ export function Header({ subtitle, icon: Icon, iconClassName, subtitleClassName 
                 </h1>
                 <div className="flex items-center gap-3 mt-2">
                     {Icon && <Icon className={cn("w-10 h-10 text-accent", iconClassName)} />}
-                    <h2 className={cn("text-2xl font-semibold", subtitleClassName)}>
-                        {subtitle}
-                    </h2>
                 </div>
             </div>
         </header>
