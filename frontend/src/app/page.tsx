@@ -13,11 +13,11 @@ export default function LandingPage() {
           <div>
             <h2 className="text-3xl font-bold">Forge Your Recognition</h2>
             <p className="text-muted-foreground mt-2">
-              Instantly craft beautiful, verifiable digital badges with the power of AI or your own creative touch.
+              Instantly craft beautiful, verifiable digital badges with the power of AI.
             </p>
           </div>
-          <div>
-            <div className="grid md:grid-cols-2 gap-8 mt-8">
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 gap-8 mt-8">
               <Card className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
                 <WandSparkles className="w-12 h-12 text-accent mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-primary">
@@ -31,19 +31,6 @@ export default function LandingPage() {
                   <Link href="/genai">
                     Generate with AI <WandSparkles className="ml-2" />
                   </Link>
-                </Button>
-              </Card>
-              <Card className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow">
-                <Pencil className="w-12 h-12 text-accent mb-4" />
-                <h3 className="text-xl font-semibold mb-2 text-primary">
-                  Create Manually
-                </h3>
-                <p className="text-muted-foreground mb-6 text-sm">
-                  Have all the details ready? Fill out the form yourself to
-                  create a custom badge from scratch.
-                </p>
-                <Button asChild>
-                  <Link href="/manual">Create Manually</Link>
                 </Button>
               </Card>
             </div>
