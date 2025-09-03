@@ -3,3 +3,16 @@ __pycache__/
 *.pyc
 node_modules/
 CLAUDE.md
+
+.next/
+
+.env
+.venv/
+uv.lock
+
+build/
+develop-eggs/
+.eggs/
+eggs/
+*.egg
+*.egg-info/
