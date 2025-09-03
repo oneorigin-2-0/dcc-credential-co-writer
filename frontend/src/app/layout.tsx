@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <body className={`${openSans.variable} font-sans antialiased`} style={{
-          background: 'radial-gradient(circle at center bottom, rgb(138, 30, 30) 0%, rgb(116, 28, 28) 25%, rgb(255, 255, 255) 100%)',
+          background: 'radial-gradient(circle at center bottom, rgb(138, 30, 30) 0%, rgb(116, 28, 28) 16%, rgb(255, 255, 255) 74%)',
         }}>
         {children}
         <Toaster />
