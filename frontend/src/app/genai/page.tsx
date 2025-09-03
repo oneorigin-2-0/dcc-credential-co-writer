@@ -200,15 +200,22 @@ export default function GenAIPage() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button onClick={handleGenerate} disabled={isGenerating}>
-                      {isGenerating ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <WandSparkles />
-                      )}
-                      <span>
-                        {isGenerating ? 'Generating...' : 'Generate Suggestions'}
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                      className="relative font-semibold text-white rounded-lg bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 animate-gradient hover:shadow-[0_0_20px_rgba(255,0,0,0.6)] transition-all duration-300 ease-out overflow-hidden"
+                    >
+                      <span className="relative z-10 flex items-center">
+                        {isGenerating ? (
+                          <Loader2 className="animate-spin mr-2" />
+                        ) : (
+                          <WandSparkles className="mr-2" />
+                        )}
+                        <span>
+                          {isGenerating ? 'Generating...' : 'Generate Suggestions'}
+                        </span>
                       </span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-50 blur-xl animate-pulse"></span>
                     </Button>
                   </CardFooter>
                 </Card>
