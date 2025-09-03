@@ -23,7 +23,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Award, WandSparkles, Download, Loader2, UploadCloud, FileText, Type, ArrowLeft } from 'lucide-react';
+import { Award, WandSparkles, Download, Loader2, UploadCloud, FileText, Type, ArrowLeft, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
@@ -166,38 +166,39 @@ export default function GenAIPage() {
                   <CardHeader>
                     <CardTitle>Add Content</CardTitle>
                     <CardDescription>
-                      Provide content for analysis. You can paste text, or upload a file.
+                      Provide content for analysis. You can paste text or attach a file.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
-                                className="min-h-[150px] text-base"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-center gap-4">
-                        <Button variant="outline" className="w-full" onClick={() => document.getElementById('file-upload')?.click()}>
-                          <FileText className="mr-2"/> Upload File
-                        </Button>
-                        <Input id="file-upload" type="file" className="hidden" />
-                        <Button variant="outline" className="w-full" onClick={() => document.getElementById('image-upload')?.click()}>
-                          <UploadCloud className="mr-2"/> Upload Image
-                        </Button>
-                        <Input id="image-upload" type="file" className="hidden" accept="image/*" />
-                      </div>
-                    </div>
+                  <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="relative">
+                            <Textarea
+                              placeholder="e.g., This course covers the fundamentals of quantum computing, including qubits, superposition, and entanglement..."
+                              className="min-h-[150px] text-base pr-12"
+                              {...field}
+                            />
+                            <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                               <Button variant="ghost" size="icon" onClick={() => document.getElementById('file-upload')?.click()} aria-label="Attach file">
+                                <Paperclip className="h-5 w-5" />
+                               </Button>
+                            </div>
+                            <Input
+                              id="file-upload"
+                              type="file"
+                              className="hidden"
+                              accept="image/*,application/pdf,.txt,.md"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   </CardContent>
                   <CardFooter>
                   <div className="relative group">
