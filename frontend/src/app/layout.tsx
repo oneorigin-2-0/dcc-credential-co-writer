@@ -18,9 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light">
-      <body className={`${openSans.variable} font-sans antialiased`} style={{
-          background: 'linear-gradient(0deg, #F857A6 0%, #FF5858 15%, #FFF 50%)',
-        }}>
+      <body className={`${openSans.variable} font-sans antialiased`}>
         {children}
         <Toaster />
       </body>
