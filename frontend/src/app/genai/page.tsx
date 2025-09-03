@@ -206,7 +206,7 @@ export default function GenAIPage() {
                       disabled={isGenerating}
                       className="relative font-semibold text-primary-foreground rounded-lg transition-all duration-300 ease-out overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-gradient group-hover:shadow-[0_0_20px_rgba(255,0,0,0.6)]"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 group-hover:animate-gradient group-hover:shadow-[0_0_20px_rgba(255,0,0,0.6)]"></div>
                       <span className="relative z-10 flex items-center">
                         {isGenerating ? (
                           <Loader2 className="animate-spin mr-2" />
@@ -217,7 +217,7 @@ export default function GenAIPage() {
                           {isGenerating ? 'Generating...' : 'Generate Suggestions'}
                         </span>
                       </span>
-                      <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-50 blur-xl animate-pulse transition-opacity duration-300"></span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-50 blur-xl group-hover:animate-pulse transition-opacity duration-300"></span>
                     </Button>
                     </div>
                   </CardFooter>
