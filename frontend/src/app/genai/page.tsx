@@ -204,7 +204,7 @@ export default function GenAIPage() {
                     <Button
                       onClick={handleGenerate}
                       disabled={isGenerating}
-                      className="relative font-semibold text-primary-foreground rounded-lg transition-all duration-300 ease-out overflow-hidden"
+                      className="relative font-semibold text-primary-foreground rounded-lg transition-all duration-300 ease-out overflow-hidden shadow-lg"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 group-hover:animate-gradient group-hover:shadow-[0_0_20px_rgba(255,0,0,0.6)]"></div>
                       <span className="relative z-10 flex items-center">
