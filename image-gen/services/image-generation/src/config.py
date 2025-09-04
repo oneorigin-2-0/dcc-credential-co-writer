@@ -37,10 +37,10 @@ default_badge_config = {
      "color": "#000000", "align": {"x": "center", "y": "dynamic"},
      "wrap": {"dynamic": True, "line_gap": 6}, "z": 30},
 
-    {"type": "ShapeLayer", "shape": "rounded_rect",
-     "fill": {"mode": "solid", "color": "#a86b01"},
-     "border": {"color": None, "width": 0},
-     "params": {"rect": "dynamic", "radius": 12}, "z": 35},
+    # {"type": "ShapeLayer", "shape": "rounded_rect",
+    #  "fill": {"mode": "solid", "color": "#a86b01"},
+    #  "border": {"color": None, "width": 0},
+    #  "params": {"rect": "dynamic", "radius": 12}, "z": 35},
 
     {"type": "TextLayer", "text": "Teamwork",
      "font": {"path": "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "size": 36},

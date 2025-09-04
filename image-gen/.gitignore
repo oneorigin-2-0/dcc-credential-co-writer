@@ -4,5 +4,15 @@ __pycache__/
 node_modules/
 CLAUDE.md
 
-# next.js                                                          
-.next/                                                            
+.next/
+
+.env
+.venv/
+uv.lock
+
+build/
+develop-eggs/
+.eggs/
+eggs/
+*.egg
+*.egg-info/
