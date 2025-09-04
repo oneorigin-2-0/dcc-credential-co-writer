@@ -36,9 +36,20 @@ class ShapeLayer(Layer):
             d.polygon(tip, fill=255)
             return m
         if s == "rounded_rect":
-            rect = self.params.get("rect", [20,20,W-20,H-20])
-            rad  = int(self.params.get("radius", 20))
-            return rounded_rect_mask(size, rect, rad)
+            # Use width, height, radius instead of rect coordinates
+            width = int(self.params.get("width", 200))
+            height = int(self.params.get("height", 40))
+            radius = int(self.params.get("radius", 20))
+            
+            # Center the rectangle on canvas
+            cx, cy = W//2, H//2
+            x1 = cx - width//2
+            y1 = cy - height//2
+            x2 = cx + width//2
+            y2 = cy + height//2
+            
+            rect = [x1, y1, x2, y2]
+            return rounded_rect_mask(size, rect, radius)
         raise ValueError(f"Unknown shape: {s}")
     
     def render(self, canvas):
@@ -81,7 +92,18 @@ class ShapeLayer(Layer):
                 d.rounded_rectangle(rect, radius=r, outline=col, width=bw)
                 d.line(tip + [tip[0]], fill=col, width=bw, joint="curve")
             elif s == "rounded_rect":
-                rect = self.params.get("rect", [20,20,W-20,H-20])
-                rad  = int(self.params.get("radius", 20))
-                d.rounded_rectangle(rect, radius=rad, outline=col, width=bw)
+                # Use width, height, radius instead of rect coordinates
+                width = int(self.params.get("width", 200))
+                height = int(self.params.get("height", 40))
+                radius = int(self.params.get("radius", 20))
+                
+                # Center the rectangle on canvas
+                cx, cy = W//2, H//2
+                x1 = cx - width//2
+                y1 = cy - height//2
+                x2 = cx + width//2
+                y2 = cy + height//2
+                
+                rect = [x1, y1, x2, y2]
+                d.rounded_rectangle(rect, radius=radius, outline=col, width=bw)
             canvas.alpha_composite(bd)

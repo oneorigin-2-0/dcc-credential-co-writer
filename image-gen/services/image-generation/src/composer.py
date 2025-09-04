@@ -56,13 +56,13 @@ class Composer:
                 break
         
         # Position elements based on calculated percentages:
-        # Logo CENTER should be at 20% from top (more consistent across different logo sizes)
-        logo_center_y = bounds["top"] + hexagon_height * 0.2  # Logo center: 20% from top
+        # Logo CENTER should be at 25% from top (more consistent across different logo sizes)
+        logo_center_y = bounds["top"] + hexagon_height * 0.25  # Logo center: 25% from top
         logo_y = logo_center_y - (logo_height / 2)             # Adjust to top edge for rendering
-        text1_y = bounds["top"] + hexagon_height * 0.361       # Title: 36.1% from top (~240)
-        text2_y = bounds["top"] + hexagon_height * 0.477       # Subtitle: 47.7% from top (~290)
-        skill_rect_y = hexagon_center_y + hexagon_height * 0.15  # Skill badge: 15% below center
-        
+        text1_y = bounds["top"] + hexagon_height * 0.43      # Title: 45% from top 
+        text2_y = bounds["top"] + hexagon_height * 0.55       # Subtitle: 55% from top 
+        skill_rect_y = hexagon_center_y + hexagon_height * 0.25  # Skill badge: 25% below center
+
         # Calculate skill text position to be centered within the rectangle
         # Rectangle height is 40, so text should be at rectangle center
         skill_text_y = skill_rect_y  # This will be the center of the rectangle
@@ -70,22 +70,7 @@ class Composer:
         # First pass: Position rectangle and calculate its center for text
         skill_rectangle_center_y = None
         
-        # Update rectangle position first
-        for layer in self.layers:
-            if isinstance(layer, ShapeLayer) and layer.shape == "rounded_rect":
-                if layer.params.get("rect") == "dynamic":
-                    # Update the skill badge rectangle position
-                    rect_width = 200
-                    rect_height = 40
-                    cx = 300  # Canvas center X
-                    rect_x_left = cx - rect_width//2
-                    rect_x_right = cx + rect_width//2
-                    rect_y_top = int(skill_rect_y - rect_height//2)
-                    rect_y_bottom = int(skill_rect_y + rect_height//2)
-                    layer.params["rect"] = [rect_x_left, rect_y_top, rect_x_right, rect_y_bottom]
-                    
-                    # Calculate the actual center Y of the rectangle for text positioning
-                    skill_rectangle_center_y = (rect_y_top + rect_y_bottom) // 2
+        # No dynamic rectangle positioning needed - rectangles handle their own centering
         
         # Track which dynamic text layers we've encountered
         text_layer_count = 0
