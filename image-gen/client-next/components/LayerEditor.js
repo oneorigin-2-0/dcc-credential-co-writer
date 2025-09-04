@@ -91,18 +91,28 @@ const LayerEditor = ({ layer, index, onChange }) => {
               </div>
             )}
             
-            {layer.params && layer.params.radius && (
+            {layer.params && layer.params.radius !== undefined && (
               <div className="form-group">
                 <label>Radius</label>
                 <input
                   type="number"
-                  value={layer.params.radius}
+                  value={layer.params.radius || ''}
                   onChange={(e) => {
+                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
                     const updatedLayer = {
                       ...layer,
-                      params: { ...layer.params, radius: parseInt(e.target.value) }
+                      params: { ...layer.params, radius: value }
                     };
                     onChange(updatedLayer);
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '') {
+                      const updatedLayer = {
+                        ...layer,
+                        params: { ...layer.params, radius: 0 }
+                      };
+                      onChange(updatedLayer);
+                    }
                   }}
                 />
               </div>
@@ -114,13 +124,23 @@ const LayerEditor = ({ layer, index, onChange }) => {
                   <label>Border Width</label>
                   <input
                     type="number"
-                    value={layer.border.width || 0}
+                    value={layer.border.width || ''}
                     onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value);
                       const updatedLayer = {
                         ...layer,
-                        border: { ...layer.border, width: parseInt(e.target.value) }
+                        border: { ...layer.border, width: value }
                       };
                       onChange(updatedLayer);
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === '') {
+                        const updatedLayer = {
+                          ...layer,
+                          border: { ...layer.border, width: 0 }
+                        };
+                        onChange(updatedLayer);
+                      }
                     }}
                   />
                 </div>
@@ -162,13 +182,23 @@ const LayerEditor = ({ layer, index, onChange }) => {
                 <label>Font Size</label>
                 <input
                   type="number"
-                  value={layer.font.size}
+                  value={layer.font.size || ''}
                   onChange={(e) => {
+                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
                     const updatedLayer = {
                       ...layer,
-                      font: { ...layer.font, size: parseInt(e.target.value) }
+                      font: { ...layer.font, size: value }
                     };
                     onChange(updatedLayer);
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '') {
+                      const updatedLayer = {
+                        ...layer,
+                        font: { ...layer.font, size: 12 }
+                      };
+                      onChange(updatedLayer);
+                    }
                   }}
                 />
               </div>
@@ -306,8 +336,13 @@ const LayerEditor = ({ layer, index, onChange }) => {
           <label>Z-Index</label>
           <input
             type="number"
-            value={layer.z}
-            onChange={(e) => updateLayerField('z', parseInt(e.target.value))}
+            value={layer.z || ''}
+            onChange={(e) => updateLayerField('z', e.target.value === '' ? '' : parseInt(e.target.value))}
+            onBlur={(e) => {
+              if (e.target.value === '') {
+                updateLayerField('z', 0);
+              }
+            }}
           />
         </div>
       </div>
