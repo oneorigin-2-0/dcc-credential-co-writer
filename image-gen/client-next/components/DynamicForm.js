@@ -48,23 +48,6 @@ const DynamicForm = ({ config, onChange }) => {
             onChange={(e) => updateField('canvas.height', parseInt(e.target.value))}
           />
         </div>
-        <div className="form-group">
-          <label>Background</label>
-          <input
-            type="text"
-            value={config.canvas.bg}
-            onChange={(e) => updateField('canvas.bg', e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label>Scale Factor</label>
-          <input
-            type="number"
-            step="0.1"
-            value={config.canvas.scale_factor}
-            onChange={(e) => updateField('canvas.scale_factor', parseFloat(e.target.value))}
-          />
-        </div>
       </div>
 
       {/* Layers */}

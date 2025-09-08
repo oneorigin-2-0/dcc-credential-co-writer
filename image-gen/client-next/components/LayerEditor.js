@@ -30,8 +30,6 @@ const LayerEditor = ({ layer, index, onChange }) => {
               >
                 <option value="hexagon">Hexagon</option>
                 <option value="circle">Circle</option>
-                <option value="star">Star</option>
-                <option value="shield">Shield</option>
                 <option value="rounded_rect">Rounded Rectangle</option>
               </select>
             </div>
@@ -293,6 +291,34 @@ const LayerEditor = ({ layer, index, onChange }) => {
 
       case 'LogoLayer':
       case 'ImageLayer':
+        // Extract current size value
+        let currentSize = '';
+        if (typeof layer.size === 'number') {
+          currentSize = layer.size;
+        } else if (layer.size && typeof layer.size === 'object') {
+          // Check for various size properties
+          if (layer.size.width) {
+            currentSize = layer.size.width;
+          } else if (layer.size.max_width) {
+            currentSize = layer.size.max_width;
+          } else if (layer.size.dynamic === true) {
+            // For dynamic sizing, use a default value
+            currentSize = 280; // Default max_width for dynamic sizing
+          }
+        }
+        
+        // Extract current y position
+        let currentY = '';
+        if (typeof layer.y === 'number') {
+          currentY = layer.y;
+        } else if (layer.position && typeof layer.position === 'object') {
+          // Check if position.y is a number
+          if (typeof layer.position.y === 'number') {
+            currentY = layer.position.y;
+          }
+          // If position.y is "dynamic" or "center", leave empty
+        }
+        
         return (
           <>
             <div className="form-group">
@@ -304,6 +330,43 @@ const LayerEditor = ({ layer, index, onChange }) => {
                 disabled
               />
             </div>
+            
+            <div className="form-group">
+              <label>Size</label>
+              <input
+                type="number"
+                value={currentSize}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                  updateLayerField('size', value);
+                }}
+                onBlur={(e) => {
+                  if (e.target.value === '') {
+                    updateLayerField('size', 100);
+                  }
+                }}
+                placeholder="Size (maintains aspect ratio)"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Y Position</label>
+              <input
+                type="number"
+                value={currentY}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                  updateLayerField('y', value);
+                }}
+                onBlur={(e) => {
+                  if (e.target.value === '') {
+                    updateLayerField('y', 0);
+                  }
+                }}
+                placeholder="Y position (center if empty)"
+              />
+            </div>
+            
             {layer.opacity !== undefined && (
               <div className="form-group">
                 <label>Opacity</label>
@@ -332,19 +395,6 @@ const LayerEditor = ({ layer, index, onChange }) => {
       </div>
       <div className="layer-controls">
         {renderLayerControls()}
-        <div className="form-group">
-          <label>Z-Index</label>
-          <input
-            type="number"
-            value={layer.z || ''}
-            onChange={(e) => updateLayerField('z', e.target.value === '' ? '' : parseInt(e.target.value))}
-            onBlur={(e) => {
-              if (e.target.value === '') {
-                updateLayerField('z', 0);
-              }
-            }}
-          />
-        </div>
       </div>
     </div>
   );
