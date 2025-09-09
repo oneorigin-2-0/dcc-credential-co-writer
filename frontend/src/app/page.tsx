@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { WandSparkles, Pencil } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { WandSparkles } from 'lucide-react';
 import { Header } from '@/components/shared/header';
 
 export default function LandingPage() {
@@ -11,8 +10,8 @@ export default function LandingPage() {
       <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div className="w-full max-w-4xl text-center">
           <div>
-            <h2 className="text-3xl font-bold">Forge Your Recognition</h2>
-            <p className="text-muted-foreground mt-2">
+            <h2 className="text-3xl font-headline font-black">Forge Your Recognition</h2>
+            <p className="text-muted-foreground mt-2 font-body">
               Instantly craft beautiful, verifiable digital badges with the power of AI.
             </p>
           </div>
@@ -21,7 +20,7 @@ export default function LandingPage() {
               <Link href="/genai">
                 <Card className="flex flex-col items-center p-6 border rounded-lg hover:shadow-md transition-shadow cursor-pointer">
                   <WandSparkles className="w-12 h-12 text-accent mb-4" />
-                  <h3 className="text-xl font-semibold mb-2 text-primary">
+                  <h3 className="text-xl font-subhead font-light mb-2 text-primary">
                     Generate with AI
                   </h3>
                   <p className="text-muted-foreground mb-6 text-sm">

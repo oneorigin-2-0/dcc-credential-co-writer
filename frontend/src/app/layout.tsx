@@ -1,9 +1,33 @@
 import type { Metadata } from 'next';
-import { Open_Sans } from 'next/font/google';
+import { Roboto, Roboto_Serif, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
-const openSans = Open_Sans({ subsets: ['latin'], variable: '--font-sans' });
+// DCC Brand Fonts - Roboto family
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  variable: '--font-website'
+});
+
+const robotoSerif = Roboto_Serif({
+  subsets: ['latin'],
+  weight: ['400', '700', '900'],
+  variable: '--font-headline'
+});
+
+const robotoMono = Roboto_Mono({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-subhead'
+});
+
+// Set body font variable to Roboto Light
+const robotoBody = Roboto({
+  subsets: ['latin'],
+  weight: ['300'],
+  variable: '--font-body'
+});
 
 export const metadata: Metadata = {
   title: 'BadgeSmith - AI-Powered Badge Creator',
@@ -18,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light">
-      <body className={`${openSans.variable} font-sans antialiased`}>
+      <body className={`${roboto.variable} ${robotoSerif.variable} ${robotoMono.variable} ${robotoBody.variable} font-website antialiased`}>
         {children}
         <Toaster />
       </body>

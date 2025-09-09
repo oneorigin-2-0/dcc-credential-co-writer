@@ -2,96 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradientShift 3s ease infinite;
-}
-
+/* DCC Brand Typography - Default body font */
 body {
-  font-family: 'Open Sans', sans-serif;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300; /* Roboto Light as per DCC guidelines */
 }
 
 @layer base {
   :root {
+    /* DCC Brand Colors - Light Mode */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 210 13% 26%; /* Dark Grey #40464c */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 210 13% 26%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 351 68% 38%;
+    --popover-foreground: 210 13% 26%;
+    --primary: 210 46% 27%; /* Deep Blue #234467 */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 351 68% 38%;
-    --accent-foreground: 0 0% 98%;
+    --secondary: 188 44% 42%; /* Calm Teal #429EA6 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 54 35% 85%; /* Creamy Yellow #DDD78D */
+    --muted-foreground: 210 13% 26%;
+    --accent: 54 35% 85%; /* Creamy Yellow #DDD78D */
+    --accent-foreground: 210 13% 26%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 351 68% 38%;
-    --chart-1: 351 70% 50%;
-    --chart-2: 0 0% 45%;
-    --chart-3: 351 80% 70%;
-    --chart-4: 0 0% 65%;
-    --chart-5: 351 90% 80%;
+    --border: 210 13% 89%;
+    --input: 210 13% 89%;
+    --ring: 210 46% 27%; /* Deep Blue */
+    --chart-1: 210 46% 27%; /* Deep Blue */
+    --chart-2: 188 44% 42%; /* Calm Teal */
+    --chart-3: 54 35% 85%; /* Creamy Yellow */
+    --chart-4: 285 73% 15%; /* Regal Purple #320E3B */
+    --chart-5: 210 13% 40%; /* Light Grey */
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 96%;
-    --sidebar-foreground: 0 0% 13%;
-    --sidebar-primary: 351 68% 38%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 210 13% 26%;
+    --sidebar-primary: 210 46% 27%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 90%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 351 68% 38%;
+    --sidebar-accent: 54 35% 85%;
+    --sidebar-accent-foreground: 210 13% 26%;
+    --sidebar-border: 210 13% 89%;
+    --sidebar-ring: 210 46% 27%;
   }
+  
   .dark {
-    --background: 0 0% 3.9%;
+    /* DCC Brand Colors - Dark Mode */
+    --background: 285 73% 8%; /* Dark Regal Purple */
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 210 46% 15%; /* Darker Deep Blue */
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 210 46% 15%;
     --popover-foreground: 0 0% 98%;
-    --primary: 351 68% 42%;
+    --primary: 188 44% 42%; /* Calm Teal */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
+    --secondary: 210 46% 27%; /* Deep Blue */
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 351 68% 42%;
-    --accent-foreground: 0 0% 98%;
+    --muted: 210 13% 20%;
+    --muted-foreground: 210 13% 70%;
+    --accent: 54 35% 85%; /* Creamy Yellow */
+    --accent-foreground: 210 13% 26%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 351 68% 42%;
-    --chart-1: 351 70% 50%;
-    --chart-2: 0 0% 65%;
-    --chart-3: 351 80% 70%;
-    --chart-4: 0 0% 45%;
-    --chart-5: 351 90% 80%;
-    --sidebar-background: 0 0% 10%;
+    --border: 210 13% 25%;
+    --input: 210 13% 25%;
+    --ring: 188 44% 42%; /* Calm Teal */
+    --chart-1: 188 44% 42%; /* Calm Teal */
+    --chart-2: 210 46% 27%; /* Deep Blue */
+    --chart-3: 54 35% 85%; /* Creamy Yellow */
+    --chart-4: 285 73% 15%; /* Regal Purple */
+    --chart-5: 210 13% 60%; /* Light Grey */
+    --sidebar-background: 210 46% 12%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 351 68% 42%;
+    --sidebar-primary: 188 44% 42%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent: 210 13% 25%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 351 68% 42%;
+    --sidebar-border: 210 13% 25%;
+    --sidebar-ring: 188 44% 42%;
   }
 }
 
@@ -100,6 +88,37 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-website;
+  }
+}
+
+/* DCC Typography Utilities */
+@layer utilities {
+  /* Headlines - Roboto Serif */
+  .text-headline-lg {
+    font-family: var(--font-headline);
+    font-weight: 900; /* Black for >= 30pt */
+  }
+  
+  .text-headline-md {
+    font-family: var(--font-headline);
+    font-weight: 700; /* Bold for < 30pt */
+  }
+  
+  /* Subheads - Roboto Mono */
+  .text-subhead-lg {
+    font-family: var(--font-subhead);
+    font-weight: 700; /* Bold for >= 18pt */
+  }
+  
+  .text-subhead-sm {
+    font-family: var(--font-subhead);
+    font-weight: 300; /* Light for < 18pt */
+  }
+  
+  /* Body text - Roboto Light */
+  .text-body {
+    font-family: var(--font-body);
+    font-weight: 300;
   }
 }

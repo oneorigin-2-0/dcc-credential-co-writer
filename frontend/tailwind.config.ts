@@ -1,5 +1,6 @@
-import type {Config} from 'tailwindcss';
-import {fontFamily} from 'tailwindcss/defaultTheme';
+import type { Config } from 'tailwindcss';
+import { fontFamily } from 'tailwindcss/defaultTheme';
+import { DCC_THEME } from './src/lib/theme/dcc-theme';
 
 export default {
   darkMode: ['class'],
@@ -19,9 +20,11 @@ export default {
     extend: {
       fontFamily: {
         sans: ['var(--font-sans)', ...fontFamily.sans],
-        body: ['Open Sans', 'sans-serif'],
-        headline: ['Open Sans', 'sans-serif'],
-        code: ['monospace'],
+        headline: ['var(--font-headline)', 'Roboto Serif', 'serif'],
+        subhead: ['var(--font-subhead)', 'Roboto Mono', 'monospace'],
+        body: ['var(--font-body)', 'Roboto', 'sans-serif'],
+        website: ['var(--font-website)', 'Roboto', 'sans-serif'],
+        code: ['Roboto Mono', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
