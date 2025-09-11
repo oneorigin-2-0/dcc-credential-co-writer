@@ -3,8 +3,8 @@
 import LayerEditor from './LayerEditor';
 import './DynamicForm.css';
 
-const DynamicForm = ({ config, onChange }) => {
-  const updateField = (path, value) => {
+const DynamicForm = ({ config, onChange }: { config: any; onChange: (config: any) => void }) => {
+  const updateField = (path: string, value: any) => {
     const newConfig = JSON.parse(JSON.stringify(config)); // Deep clone
     const keys = path.split('.');
     let current = newConfig;
@@ -48,34 +48,17 @@ const DynamicForm = ({ config, onChange }) => {
             onChange={(e) => updateField('canvas.height', parseInt(e.target.value))}
           />
         </div>
-        <div className="form-group">
-          <label>Background</label>
-          <input
-            type="text"
-            value={config.canvas.bg}
-            onChange={(e) => updateField('canvas.bg', e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label>Scale Factor</label>
-          <input
-            type="number"
-            step="0.1"
-            value={config.canvas.scale_factor}
-            onChange={(e) => updateField('canvas.scale_factor', parseFloat(e.target.value))}
-          />
-        </div>
       </div>
 
       {/* Layers */}
       <div className="layers-section">
         <h3>Layers</h3>
-        {config.layers.map((layer, index) => (
+        {config.layers.map((layer: any, index: number) => (
           <LayerEditor
             key={index}
             layer={layer}
             index={index}
-            onChange={(updatedLayer) => {
+            onChange={(updatedLayer: any) => {
               const newLayers = [...config.layers];
               newLayers[index] = updatedLayer;
               const newConfig = { ...config, layers: newLayers };

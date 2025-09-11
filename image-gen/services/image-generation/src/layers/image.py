@@ -15,16 +15,43 @@ class ImageLayer(Layer):
         src_dir = os.path.dirname(script_dir)
         self.path = os.path.join(src_dir, spec.get("path"))
         
-        self.size = spec.get("size", {})
-        self.pos  = spec.get("position", {"x":"center","y":"center"})
+        # Support both old and new style configuration
+        # New style: single size value for proportional scaling
+        if isinstance(spec.get("size"), (int, float)):
+            self.size = {"scale": spec.get("size")}
+        elif "width" in spec or "height" in spec:
+            self.size = {
+                "width": spec.get("width"),
+                "height": spec.get("height")
+            }
+        else:
+            self.size = spec.get("size", {})
+        
+        # Support direct y positioning
+        if "y" in spec:
+            self.pos = {
+                "x": "center",  # Always center horizontally
+                "y": spec.get("y", "center")
+            }
+        else:
+            self.pos = spec.get("position", {"x":"center","y":"center"})
+        
         self.opacity = float(spec.get("opacity", 1.0))
     
     def render(self, canvas):
         if not (self.path and os.path.exists(self.path)): return
         img = Image.open(self.path).convert("RGBA")
         
+        # Handle scale-based sizing (maintains aspect ratio)
+        if "scale" in self.size:
+            scale_size = self.size["scale"]
+            ow, oh = img.size
+            # Use the scale value as the target width, maintain aspect ratio
+            new_width = int(scale_size)
+            new_height = int(oh * (new_width / ow))
+            img = img.resize((new_width, new_height), Resampling.LANCZOS)
         # Handle dynamic sizing with aspect ratio preservation
-        if self.size.get("dynamic", False):
+        elif self.size.get("dynamic", False):
             img = self._resize_dynamic(img, canvas)
         else:
             # Original static sizing logic
