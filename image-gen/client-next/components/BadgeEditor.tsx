@@ -8,10 +8,10 @@ import useDebounce from '@/lib/hooks/useDebounce';
 import './BadgeEditor.css';
 
 const BadgeEditor = () => {
-  const [config, setConfig] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [config, setConfig] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   // Get config from URL params on mount
@@ -25,16 +25,6 @@ const BadgeEditor = () => {
         console.error('Failed to parse config from URL:', err);
       }
     }
-
-    // Also listen for postMessage from parent window
-    const handleMessage = (event) => {
-      if (event.data && event.data.type === 'SET_CONFIG') {
-        setConfig(event.data.config);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
   }, [searchParams]);
 
   // Debounce config changes by 500ms
@@ -50,8 +40,8 @@ const BadgeEditor = () => {
       try {
         const response = await generateBadge(debouncedConfig);
         setPreviewImage(response.data.base64);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: any) {
+        setError(err.message || 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -60,16 +50,8 @@ const BadgeEditor = () => {
     fetchBadge();
   }, [debouncedConfig]);
 
-  const handleConfigChange = (newConfig) => {
+  const handleConfigChange = (newConfig: any) => {
     setConfig(newConfig);
-    
-    // Notify parent app of config changes
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'CONFIG_UPDATED',
-        config: newConfig
-      }, '*');
-    }
   };
 
   if (!config) {

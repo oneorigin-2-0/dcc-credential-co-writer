@@ -2,8 +2,8 @@
 
 import './LayerEditor.css';
 
-const LayerEditor = ({ layer, index, onChange }) => {
-  const updateLayerField = (field, value) => {
+const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; onChange: (layer: any) => void }) => {
+  const updateLayerField = (field: string, value: any) => {
     const updatedLayer = { ...layer };
     
     // Handle nested fields like 'fill.start_color'
@@ -25,7 +25,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
             <div className="form-group">
               <label>Shape</label>
               <select
-                value={layer.shape}
+                value={layer.shape || 'hexagon'}
                 onChange={(e) => updateLayerField('shape', e.target.value)}
               >
                 <option value="hexagon">Hexagon</option>
@@ -40,12 +40,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
                   <label>Start Color</label>
                   <input
                     type="color"
-                    value={layer.fill.start_color}
+                    value={layer.fill.start_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.start_color', e.target.value)}
                   />
                   <input
                     type="text"
-                    value={layer.fill.start_color}
+                    value={layer.fill.start_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.start_color', e.target.value)}
                   />
                 </div>
@@ -53,12 +53,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
                   <label>End Color</label>
                   <input
                     type="color"
-                    value={layer.fill.end_color}
+                    value={layer.fill.end_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.end_color', e.target.value)}
                   />
                   <input
                     type="text"
-                    value={layer.fill.end_color}
+                    value={layer.fill.end_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.end_color', e.target.value)}
                   />
                 </div>
@@ -78,42 +78,104 @@ const LayerEditor = ({ layer, index, onChange }) => {
                 <label>Fill Color</label>
                 <input
                   type="color"
-                  value={layer.fill.color}
+                  value={layer.fill.color || '#000000'}
                   onChange={(e) => updateLayerField('fill.color', e.target.value)}
                 />
                 <input
                   type="text"
-                  value={layer.fill.color}
+                  value={layer.fill.color || '#000000'}
                   onChange={(e) => updateLayerField('fill.color', e.target.value)}
                 />
               </div>
             )}
             
-            {layer.params && layer.params.radius !== undefined && (
+            {/* Show Radius for hexagon, Margin for circle */}
+            {layer.shape === 'hexagon' && layer.params && (
               <div className="form-group">
                 <label>Radius</label>
                 <input
                   type="number"
                   value={layer.params.radius || ''}
                   onChange={(e) => {
-                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                     const updatedLayer = {
                       ...layer,
                       params: { ...layer.params, radius: value }
                     };
                     onChange(updatedLayer);
                   }}
-                  onBlur={(e) => {
-                    if (e.target.value === '') {
-                      const updatedLayer = {
-                        ...layer,
-                        params: { ...layer.params, radius: 0 }
-                      };
-                      onChange(updatedLayer);
-                    }
-                  }}
                 />
               </div>
+            )}
+            
+            {layer.shape === 'circle' && (
+              <div className="form-group">
+                <label>Radius</label>
+                <input
+                  type="number"
+                  value={layer.params?.radius || 250}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 250 : parseInt(e.target.value);
+                    const updatedLayer = {
+                      ...layer,
+                      params: { ...layer.params, radius: value }
+                    };
+                    onChange(updatedLayer);
+                  }}
+                  min="0"
+                  placeholder="Circle radius (default: 250)"
+                />
+              </div>
+            )}
+            
+            {layer.shape === 'rounded_rect' && layer.params && (
+              <>
+                <div className="form-group">
+                  <label>Width</label>
+                  <input
+                    type="number"
+                    value={layer.params.width || 200}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 200 : parseInt(e.target.value);
+                      const updatedLayer = {
+                        ...layer,
+                        params: { ...layer.params, width: value }
+                      };
+                      onChange(updatedLayer);
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Height</label>
+                  <input
+                    type="number"
+                    value={layer.params.height || 40}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 40 : parseInt(e.target.value);
+                      const updatedLayer = {
+                        ...layer,
+                        params: { ...layer.params, height: value }
+                      };
+                      onChange(updatedLayer);
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Corner Radius</label>
+                  <input
+                    type="number"
+                    value={layer.params.radius || 20}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 20 : parseInt(e.target.value);
+                      const updatedLayer = {
+                        ...layer,
+                        params: { ...layer.params, radius: value }
+                      };
+                      onChange(updatedLayer);
+                    }}
+                  />
+                </div>
+              </>
             )}
 
             {layer.border && (
@@ -124,21 +186,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
                     type="number"
                     value={layer.border.width || ''}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                      const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                       const updatedLayer = {
                         ...layer,
                         border: { ...layer.border, width: value }
                       };
                       onChange(updatedLayer);
-                    }}
-                    onBlur={(e) => {
-                      if (e.target.value === '') {
-                        const updatedLayer = {
-                          ...layer,
-                          border: { ...layer.border, width: 0 }
-                        };
-                        onChange(updatedLayer);
-                      }
                     }}
                   />
                 </div>
@@ -147,7 +200,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
                     <label>Border Color</label>
                     <input
                       type="color"
-                      value={layer.border.color}
+                      value={layer.border.color || '#000000'}
                       onChange={(e) => {
                         const updatedLayer = {
                           ...layer,
@@ -170,7 +223,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Text</label>
               <input
                 type="text"
-                value={layer.text}
+                value={layer.text || ''}
                 onChange={(e) => updateLayerField('text', e.target.value)}
               />
             </div>
@@ -182,21 +235,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
                   type="number"
                   value={layer.font.size || ''}
                   onChange={(e) => {
-                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                    const value = e.target.value === '' ? 12 : parseInt(e.target.value);
                     const updatedLayer = {
                       ...layer,
                       font: { ...layer.font, size: value }
                     };
                     onChange(updatedLayer);
-                  }}
-                  onBlur={(e) => {
-                    if (e.target.value === '') {
-                      const updatedLayer = {
-                        ...layer,
-                        font: { ...layer.font, size: 12 }
-                      };
-                      onChange(updatedLayer);
-                    }
                   }}
                 />
               </div>
@@ -206,12 +250,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Text Color</label>
               <input
                 type="color"
-                value={layer.color}
+                value={layer.color || '#000000'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
               <input
                 type="text"
-                value={layer.color}
+                value={layer.color || '#000000'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
             </div>
@@ -221,7 +265,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
                 <div className="form-group">
                   <label>Horizontal Align</label>
                   <select
-                    value={layer.align.x}
+                    value={layer.align.x || 'center'}
                     onChange={(e) => {
                       const updatedLayer = {
                         ...layer,
@@ -239,7 +283,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
                 <div className="form-group">
                   <label>Vertical Align</label>
                   <select
-                    value={layer.align.y}
+                    value={layer.align.y || 'center'}
                     onChange={(e) => {
                       const updatedLayer = {
                         ...layer,
@@ -265,7 +309,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
             <div className="form-group">
               <label>Mode</label>
               <select
-                value={layer.mode}
+                value={layer.mode || 'solid'}
                 onChange={(e) => updateLayerField('mode', e.target.value)}
               >
                 <option value="solid">Solid</option>
@@ -277,12 +321,12 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Color</label>
               <input
                 type="color"
-                value={layer.color}
+                value={layer.color || '#FFFFFF'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
               <input
                 type="text"
-                value={layer.color}
+                value={layer.color || '#FFFFFF'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
             </div>
@@ -292,7 +336,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
       case 'LogoLayer':
       case 'ImageLayer':
         // Extract current size value
-        let currentSize = '';
+        let currentSize: string | number = '';
         if (typeof layer.size === 'number') {
           currentSize = layer.size;
         } else if (layer.size && typeof layer.size === 'object') {
@@ -308,7 +352,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
         }
         
         // Extract current y position
-        let currentY = '';
+        let currentY: string | number = '';
         if (typeof layer.y === 'number') {
           currentY = layer.y;
         } else if (layer.position && typeof layer.position === 'object') {
@@ -325,7 +369,7 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Path</label>
               <input
                 type="text"
-                value={layer.path}
+                value={layer.path || ''}
                 onChange={(e) => updateLayerField('path', e.target.value)}
                 disabled
               />
@@ -335,15 +379,10 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Size</label>
               <input
                 type="number"
-                value={currentSize}
+                value={currentSize === '' ? '' : currentSize}
                 onChange={(e) => {
-                  const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                  const value = e.target.value === '' ? 100 : parseInt(e.target.value);
                   updateLayerField('size', value);
-                }}
-                onBlur={(e) => {
-                  if (e.target.value === '') {
-                    updateLayerField('size', 100);
-                  }
                 }}
                 placeholder="Size (maintains aspect ratio)"
               />
@@ -353,15 +392,10 @@ const LayerEditor = ({ layer, index, onChange }) => {
               <label>Y Position</label>
               <input
                 type="number"
-                value={currentY}
+                value={currentY === '' ? '' : currentY}
                 onChange={(e) => {
-                  const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                  const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                   updateLayerField('y', value);
-                }}
-                onBlur={(e) => {
-                  if (e.target.value === '') {
-                    updateLayerField('y', 0);
-                  }
                 }}
                 placeholder="Y position (center if empty)"
               />
