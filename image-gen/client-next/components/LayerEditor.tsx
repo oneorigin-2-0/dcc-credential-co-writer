@@ -291,7 +291,7 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             
             {layer.align && (
               <>
-                <div className="form-group">
+                {/* <div className="form-group">
                   <label>Horizontal Align</label>
                   <select
                     value={layer.align.x || 'center'}
@@ -308,24 +308,23 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                     <option value="right">Right</option>
                     <option value="dynamic">Dynamic</option>
                   </select>
-                </div>
+                </div> */}
                 <div className="form-group">
-                  <label>Vertical Align</label>
-                  <select
-                    value={layer.align.y || 'center'}
+                  <label>Y Position: {typeof layer.align.y === 'number' ? layer.align.y : layer.align.y || 'center'}</label>
+                  <input
+                    type="range"
+                    min="50"
+                    max="550"
+                    value={typeof layer.align.y === 'number' ? layer.align.y : 300}
                     onChange={(e) => {
+                      const value = parseInt(e.target.value);
                       const updatedLayer = {
                         ...layer,
-                        align: { ...layer.align, y: e.target.value }
+                        align: { ...layer.align, y: value }
                       };
                       onChange(updatedLayer);
                     }}
-                  >
-                    <option value="top">Top</option>
-                    <option value="center">Center</option>
-                    <option value="bottom">Bottom</option>
-                    <option value="dynamic">Dynamic</option>
-                  </select>
+                  />
                 </div>
               </>
             )}
@@ -405,15 +404,16 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             </div>
             
             <div className="form-group">
-              <label>Size</label>
+              <label>Size: {currentSize || 280}</label>
               <input
-                type="number"
-                value={currentSize === '' ? '' : currentSize}
+                type="range"
+                min="100"
+                max="400"
+                value={currentSize || 280}
                 onChange={(e) => {
-                  const value = e.target.value === '' ? 100 : parseInt(e.target.value);
+                  const value = parseInt(e.target.value);
                   updateLayerField('size', value);
                 }}
-                placeholder="Size (maintains aspect ratio)"
               />
             </div>
             
