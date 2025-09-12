@@ -26,7 +26,36 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
               <label>Shape</label>
               <select
                 value={layer.shape || 'hexagon'}
-                onChange={(e) => updateLayerField('shape', e.target.value)}
+                onChange={(e) => {
+                  const newShape = e.target.value;
+                  const updatedLayer = { ...layer, shape: newShape };
+
+                  //set default params when swithing to rounded_rect
+                  if (newShape === 'rounded_rect') {
+                    updatedLayer.params = { 
+                      ...updatedLayer.params,
+                      width: 450,
+                      height: 450,
+                      radius: 50
+                    };
+                  }
+                  //set default params when switching to hexagon
+                  else if (newShape === 'hexagon') {
+                    updatedLayer.params = { 
+                      ...updatedLayer.params,
+                      radius: 250
+                    };
+                  }
+                  //set default params when switching to circle
+                  else if (newShape === 'circle') {
+                    updatedLayer.params = { 
+                      ...updatedLayer.params,
+                      radius: 250
+                    };
+                  }
+
+                  onChange(updatedLayer);
+                }}
               >
                 <option value="hexagon">Hexagon</option>
                 <option value="circle">Circle</option>
