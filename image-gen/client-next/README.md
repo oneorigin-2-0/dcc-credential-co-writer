@@ -1,6 +1,6 @@
 # Badge Generator Client (Next.js)
 
-A real-time badge editor built with Next.js 14 and TypeScript that provides an interactive interface for creating custom badges with various shapes, colors, text, and images.
+A real-time badge editor built with Next.js 14, TypeScript, and Tailwind CSS that provides an interactive interface for creating custom badges with various shapes, colors, text, and images.
 
 ## Features
 
@@ -11,6 +11,7 @@ A real-time badge editor built with Next.js 14 and TypeScript that provides an i
 - 🖼️ **Image Layers** - Add logos and icons to your badges
 - 🔄 **Debounced Updates** - Optimized API calls with 500ms debounce
 - 🎭 **TypeScript Support** - Type-safe development experience
+- 🎨 **Tailwind CSS** - Utility-first CSS framework for responsive design
 
 ## Architecture
 
@@ -19,7 +20,7 @@ client-next/
 ├── app/                   # Next.js app directory
 │   ├── layout.tsx        # Root layout
 │   ├── page.tsx          # Home page
-│   └── globals.css       # Global styles
+│   └── globals.css       # Global styles with Tailwind directives
 ├── components/           # React components
 │   ├── BadgeEditor.tsx   # Main editor component
 │   ├── DynamicForm.tsx   # Form for canvas settings
@@ -28,7 +29,9 @@ client-next/
 │   ├── api.ts           # API client
 │   └── hooks/           # Custom React hooks
 │       └── useDebounce.ts
-└── types/               # TypeScript definitions
+├── types/               # TypeScript definitions
+├── tailwind.config.js   # Tailwind CSS configuration
+└── postcss.config.js    # PostCSS configuration for Tailwind
 ```
 
 ## Getting Started
@@ -160,9 +163,10 @@ npm run type-check
 
 ### Styling
 
-- Component-specific CSS files (e.g., `BadgeEditor.css`)
-- Global styles in `app/globals.css`
-- Responsive split-panel layout
+- **Tailwind CSS** - Utility-first CSS framework (v3.4.17)
+- Global styles in `app/globals.css` with Tailwind directives
+- Responsive utility classes for layout and design
+- No custom CSS files - all styling done with Tailwind utilities
 
 ### Performance Optimizations
 
@@ -196,12 +200,18 @@ export const generateBadge = async (config: any) => {
    - Restart VS Code or reload the window
    - Run "TypeScript: Restart TS Server" in VS Code
 
-2. **API Connection Failed**
+2. **Tailwind CSS classes not applying**
+   - Ensure you have the correct Tailwind CSS version (v3.4.17)
+   - Clear Next.js cache: `rm -rf .next`
+   - Restart the development server
+   - Check that `postcss.config.js` has the correct configuration
+
+3. **API Connection Failed**
    - Ensure Node.js backend is running on port 3001
    - Check that Python Gradio service is running on port 7870
    - Verify CORS settings if running from different domain
 
-3. **Controlled Component Warnings**
+4. **Controlled Component Warnings**
    - All inputs have default values to prevent React warnings
    - Empty strings are handled properly for number inputs
 
@@ -212,9 +222,10 @@ export const generateBadge = async (config: any) => {
 - [ ] Export options (PNG, SVG, WebP)
 - [ ] Undo/redo functionality
 - [ ] WebSocket for real-time collaboration
-- [ ] Dark mode support
-- [ ] Mobile responsive design
+- [ ] Dark mode support with Tailwind CSS
+- [ ] Mobile responsive design improvements
 - [ ] Keyboard shortcuts
+- [ ] Custom Tailwind component utilities
 
 ## Contributing
 
