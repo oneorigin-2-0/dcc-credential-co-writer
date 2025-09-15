@@ -69,37 +69,37 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                   <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Start Color</label>
                   <input
                     type="color"
-                    className="w-12 h-8 border border-gray-300 rounded cursor-pointer mr-2"
+                    className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
                     value={layer.fill.start_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.start_color', e.target.value)}
                   />
                   <input
                     type="text"
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="flex-1 w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.fill.start_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.start_color', e.target.value)}
                   />
                 </div>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">End Color</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">End Color</label>
                   <input
                     type="color"
-                    className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                    className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
                     value={layer.fill.end_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.end_color', e.target.value)}
                   />
                   <input
                     type="text"
-                    className="ml-2 px-2 py-1 border border-gray-300 rounded-md text-sm"
+                    className="flex-1 w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.fill.end_color || '#000000'}
                     onChange={(e) => updateLayerField('fill.end_color', e.target.value)}
                   />
                 </div>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Vertical Gradient</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Vertical Gradient</label>
                   <input
                     type="checkbox"
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4"
                     checked={layer.fill.vertical}
                     onChange={(e) => updateLayerField('fill.vertical', e.target.checked)}
                   />
@@ -109,10 +109,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
 
             {layer.fill && layer.fill.mode === 'solid' && (
               <div className="flex items-center mb-3">
-                <label className="w-32 text-sm font-medium text-gray-700">Fill Color</label>
+                <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Fill Color</label>
                 <input
                   type="color"
-                  className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                  className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
                   value={layer.fill.color || '#000000'}
                   onChange={(e) => updateLayerField('fill.color', e.target.value)}
                 />
@@ -128,10 +128,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             {/* Show Radius for hexagon, Margin for circle */}
             {layer.shape === 'hexagon' && layer.params && (
               <div className="flex items-center mb-3">
-                <label className="w-32 text-sm font-medium text-gray-700">Radius</label>
+                <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Radius</label>
                 <input
                   type="number"
-                  className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                   value={layer.params.radius || ''}
                   onChange={(e) => {
                     const value = e.target.value === '' ? 0 : parseInt(e.target.value);
@@ -147,10 +147,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             
             {layer.shape === 'circle' && (
               <div className="flex items-center mb-3">
-                <label className="w-32 text-sm font-medium text-gray-700">Radius</label>
+                <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Radius</label>
                 <input
                   type="number"
-                  className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                   value={layer.params?.radius || 250}
                   onChange={(e) => {
                     const value = e.target.value === '' ? 250 : parseInt(e.target.value);
@@ -169,10 +169,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             {layer.shape === 'rounded_rect' && layer.params && (
               <>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Width</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Width</label>
                   <input
                     type="number"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.params.width || 200}
                     onChange={(e) => {
                       const value = e.target.value === '' ? 200 : parseInt(e.target.value);
@@ -185,10 +185,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                   />
                 </div>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Height</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Height</label>
                   <input
                     type="number"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.params.height || 40}
                     onChange={(e) => {
                       const value = e.target.value === '' ? 40 : parseInt(e.target.value);
@@ -201,10 +201,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                   />
                 </div>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Corner Radius</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Corner Radius</label>
                   <input
                     type="number"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.params.radius || 20}
                     onChange={(e) => {
                       const value = e.target.value === '' ? 20 : parseInt(e.target.value);
@@ -222,10 +222,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             {layer.border && (
               <>
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Border Width</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Border Width</label>
                   <input
                     type="number"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                     value={layer.border.width || ''}
                     onChange={(e) => {
                       const value = e.target.value === '' ? 0 : parseInt(e.target.value);
@@ -239,10 +239,22 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                 </div>
                 {layer.border.color && (
                   <div className="flex items-center mb-3">
-                    <label className="w-32 text-sm font-medium text-gray-700">Border Color</label>
+                    <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Border Color</label>
                     <input
                       type="color"
-                      className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                      className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
+                      value={layer.border.color || '#000000'}
+                      onChange={(e) => {
+                        const updatedLayer = {
+                          ...layer,
+                          border: { ...layer.border, color: e.target.value }
+                        };
+                        onChange(updatedLayer);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                       value={layer.border.color || '#000000'}
                       onChange={(e) => {
                         const updatedLayer = {
@@ -263,10 +275,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
         return (
           <>
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Text</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Text</label>
               <input
                 type="text"
-                className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                 value={layer.text || ''}
                 onChange={(e) => updateLayerField('text', e.target.value)}
               />
@@ -274,10 +286,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             
             {layer.font && (
               <div className="flex items-center mb-3">
-                <label className="w-32 text-sm font-medium text-gray-700">Font Size</label>
+                <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Font Size</label>
                 <input
                   type="number"
-                  className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                   value={layer.font.size || ''}
                   onChange={(e) => {
                     const value = e.target.value === '' ? 12 : parseInt(e.target.value);
@@ -292,16 +304,16 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             )}
             
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Text Color</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Text Color</label>
               <input
                 type="color"
-                className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
                 value={layer.color || '#000000'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
               <input
                 type="text"
-                className="ml-2 px-2 py-1 border border-gray-300 rounded-md text-sm"
+                className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                 value={layer.color || '#000000'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
@@ -328,7 +340,7 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
                   </select>
                 </div> */}
                 <div className="flex items-center mb-3">
-                  <label className="w-32 text-sm font-medium text-gray-700">Y Position: {typeof layer.align.y === 'number' ? layer.align.y : layer.align.y || 'center'}</label>
+                  <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Y Position: {typeof layer.align.y === 'number' ? layer.align.y : layer.align.y || 'center'}</label>
                   <input
                     type="range"
                     className="flex-1"
@@ -354,9 +366,9 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
         return (
           <>
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Mode</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Mode</label>
               <select
-                className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                 value={layer.mode || 'solid'}
                 onChange={(e) => updateLayerField('mode', e.target.value)}
               >
@@ -366,16 +378,16 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             </div>
             
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Color</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Color</label>
               <input
                 type="color"
-                className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                className="w-16 h-8 border border-gray-300 rounded cursor-pointer mr-2"
                 value={layer.color || '#FFFFFF'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
               <input
                 type="text"
-                className="ml-2 px-2 py-1 border border-gray-300 rounded-md text-sm"
+                className="flex-1 w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                 value={layer.color || '#FFFFFF'}
                 onChange={(e) => updateLayerField('color', e.target.value)}
               />
@@ -416,7 +428,7 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
         return (
           <>
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Path</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Path</label>
               <input
                 type="text"
                 className="flex-1 px-3 py-1 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
@@ -427,7 +439,7 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             </div>
             
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Size: {currentSize || 280}</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Size: {currentSize || 280}</label>
               <input
                 type="range"
                 className="flex-1"
@@ -442,7 +454,7 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             </div>
             
             <div className="flex items-center mb-3">
-              <label className="w-32 text-sm font-medium text-gray-700">Y Position: {typeof currentY === 'number' ? currentY : currentY || 'dynamic'}</label>
+              <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Y Position: {typeof currentY === 'number' ? currentY : currentY || 'dynamic'}</label>
               <input
                 type="range"
                 className="flex-1"
@@ -458,10 +470,10 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             
             {layer.opacity !== undefined && (
               <div className="flex items-center mb-3">
-                <label className="w-32 text-sm font-medium text-gray-700">Opacity</label>
+                <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Opacity</label>
                 <input
                   type="number"
-                  className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                   min="0"
                   max="1"
                   step="0.1"
