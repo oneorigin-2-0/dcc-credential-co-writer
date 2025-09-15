@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import DynamicForm from './DynamicForm';
 import { generateBadge } from '@/lib/api';
 import useDebounce from '@/lib/hooks/useDebounce';
-import './BadgeEditor.css';
 
 const BadgeEditor = () => {
   const [config, setConfig] = useState<any>(null);
@@ -83,20 +82,20 @@ const BadgeEditor = () => {
 
   if (!config) {
     return (
-      <div className="badge-editor">
-        <div className="waiting-message">
-          <h2>Waiting for configuration...</h2>
-          <p>Please provide a badge configuration JSON</p>
+      <div className="flex h-[calc(100vh-80px)] bg-gray-100">
+        <div className="flex flex-col justify-center items-center h-full text-center p-8 w-full">
+          <h2 className="text-gray-600 mb-2 text-xl">Waiting for configuration...</h2>
+          <p className="text-gray-400">Please provide a badge configuration JSON</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="badge-editor">
-      <div className="control-panel">
-        <div className="panel-header">
-          <h2>Configuration</h2>
+    <div className="flex h-[calc(100vh-80px)] bg-gray-100">
+      <div className="w-2/5 bg-white border-r border-gray-200 overflow-y-auto p-4">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-200">
+          <h2 className="text-xl text-gray-800">Configuration</h2>
         </div>
         
         <DynamicForm 
@@ -105,14 +104,14 @@ const BadgeEditor = () => {
         />
       </div>
 
-      <div className="preview-panel">
-        <div className="panel-header">
-          <h2>Preview</h2>
-          {loading && <span className="loading-text">Generating...</span>}
+      <div className="w-3/5 flex flex-col p-4">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-200">
+          <h2 className="text-xl text-gray-800">Preview</h2>
+          {loading && <span className="text-gray-600 text-sm">Generating...</span>}
           {previewImage && !loading && (
-            <button 
+            <button
               onClick={handleDownload}
-              className="download-button"
+              className="ml-auto px-4 py-2 bg-gray-800 text-white border-none rounded cursor-pointer text-sm font-medium transition-colors hover:bg-gray-700 active:bg-gray-900"
             >
               Download PNG
             </button>
@@ -120,22 +119,22 @@ const BadgeEditor = () => {
         </div>
         
         {error && (
-          <div className="error-message">
+          <div className="bg-red-50 text-red-600 p-4 rounded mb-4">
             Error: {error}
           </div>
         )}
         
-        <div className="preview-container">
+        <div className="flex-1 flex justify-center items-center bg-gray-50 rounded-lg shadow-sm relative overflow-hidden min-h-[400px]">
           {previewImage && !loading && (
-            <img 
-              src={previewImage} 
-              alt="Badge Preview" 
-              className="badge-preview"
+            <img
+              src={previewImage}
+              alt="Badge Preview"
+              className="max-w-[calc(100%-4rem)] max-h-[calc(100%-4rem)] w-auto h-auto object-contain block"
             />
           )}
           {loading && (
-            <div className="loading-spinner">
-              <div className="spinner"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <div className="border-4 border-gray-200 border-t-blue-500 rounded-full w-10 h-10 animate-spin"></div>
             </div>
           )}
         </div>

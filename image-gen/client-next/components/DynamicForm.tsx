@@ -1,7 +1,6 @@
 "use client";
 
 import LayerEditor from './LayerEditor';
-import './DynamicForm.css';
 
 const DynamicForm = ({ config, onChange }: { config: any; onChange: (config: any) => void }) => {
   const updateField = (path: string, value: any) => {
@@ -28,22 +27,24 @@ const DynamicForm = ({ config, onChange }: { config: any; onChange: (config: any
   };
 
   return (
-    <div className="dynamic-form">
+    <div className="p-2">
       {/* Canvas Settings */}
-      <div className="form-section">
-        <h3>Canvas Settings</h3>
-        <div className="form-group">
-          <label>Width</label>
+      <div className="mb-6 p-4 bg-gray-50 rounded">
+        <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Canvas Settings</h3>
+        <div className="flex items-center mb-3">
+          <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Width</label>
           <input
             type="number"
+            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
             value={config.canvas.width}
             onChange={(e) => updateField('canvas.width', parseInt(e.target.value))}
           />
         </div>
-        <div className="form-group">
-          <label>Height</label>
+        <div className="flex items-center mb-3">
+          <label className="flex-shrink-0 w-[120px] text-sm text-gray-600 mr-4">Height</label>
           <input
             type="number"
+            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
             value={config.canvas.height}
             onChange={(e) => updateField('canvas.height', parseInt(e.target.value))}
           />
@@ -51,8 +52,8 @@ const DynamicForm = ({ config, onChange }: { config: any; onChange: (config: any
       </div>
 
       {/* Layers */}
-      <div className="layers-section">
-        <h3>Layers</h3>
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Layers</h3>
         {config.layers.map((layer: any, index: number) => (
           <LayerEditor
             key={index}
