@@ -418,15 +418,16 @@ const LayerEditor = ({ layer, index, onChange }: { layer: any; index: number; on
             </div>
             
             <div className="form-group">
-              <label>Y Position</label>
+              <label>Y Position: {typeof currentY === 'number' ? currentY : currentY || 'dynamic'}</label>
               <input
-                type="number"
-                value={currentY === '' ? '' : currentY}
+                type="range"
+                min="50"
+                max="550"
+                value={typeof currentY === 'number' ? currentY : 300}
                 onChange={(e) => {
-                  const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  const value = parseInt(e.target.value);
                   updateLayerField('y', value);
                 }}
-                placeholder="Y position (center if empty)"
               />
             </div>
             

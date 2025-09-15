@@ -54,6 +54,33 @@ const BadgeEditor = () => {
     setConfig(newConfig);
   };
 
+  const handleDownload = () => {
+    if (!previewImage) return;
+    
+    // Convert base64 to blob
+    const base64Data = previewImage.split(',')[1];
+    const byteString = atob(base64Data);
+    const mimeString = previewImage.split(',')[0].split(':')[1].split(';')[0];
+    
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([ab], { type: 'image/png' });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `badge-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   if (!config) {
     return (
       <div className="badge-editor">
@@ -82,6 +109,14 @@ const BadgeEditor = () => {
         <div className="panel-header">
           <h2>Preview</h2>
           {loading && <span className="loading-text">Generating...</span>}
+          {previewImage && !loading && (
+            <button 
+              onClick={handleDownload}
+              className="download-button"
+            >
+              Download PNG
+            </button>
+          )}
         </div>
         
         {error && (

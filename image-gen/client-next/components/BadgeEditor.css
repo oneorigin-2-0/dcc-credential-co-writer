@@ -108,3 +108,24 @@
 .waiting-message p {
   color: #999;
 }
+
+.download-button {
+  margin-left: auto;
+  padding: 8px 16px;
+  background-color: #282c34;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+  background-color: #282c34;
+}
+
+.download-button:active {
+  background-color: #282c34;
+}
