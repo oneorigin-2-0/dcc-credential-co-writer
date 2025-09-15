@@ -66,7 +66,7 @@ def create_json_interface():
         
         gr.Markdown("""
         ### Configuration Guide:
-        - **canvas**: Set width, height, background color, and scale factor
+        - **canvas**: Set width, height, and background color
         - **layers**: Array of layer objects with different types:
           - **BackgroundLayer**: Solid or gradient background
           - **ShapeLayer**: Main shape (hexagon, circle, shield, rounded_rect)

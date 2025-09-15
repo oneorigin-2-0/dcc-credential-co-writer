@@ -15,10 +15,10 @@ class ImageLayer(Layer):
         src_dir = os.path.dirname(script_dir)
         self.path = os.path.join(src_dir, spec.get("path"))
         
-        # Support both old and new style configuration
-        # New style: single size value for proportional scaling
+        # Support both simple numeric size and object format
         if isinstance(spec.get("size"), (int, float)):
-            self.size = {"scale": spec.get("size")}
+            # If size is a number, use it as width for proportional scaling
+            self.size = {"width": spec.get("size")}
         elif "width" in spec or "height" in spec:
             self.size = {
                 "width": spec.get("width"),
@@ -42,16 +42,8 @@ class ImageLayer(Layer):
         if not (self.path and os.path.exists(self.path)): return
         img = Image.open(self.path).convert("RGBA")
         
-        # Handle scale-based sizing (maintains aspect ratio)
-        if "scale" in self.size:
-            scale_size = self.size["scale"]
-            ow, oh = img.size
-            # Use the scale value as the target width, maintain aspect ratio
-            new_width = int(scale_size)
-            new_height = int(oh * (new_width / ow))
-            img = img.resize((new_width, new_height), Resampling.LANCZOS)
         # Handle dynamic sizing with aspect ratio preservation
-        elif self.size.get("dynamic", False):
+        if self.size.get("dynamic", False) or self.size.get("max_width"):
             img = self._resize_dynamic(img, canvas)
         else:
             # Original static sizing logic
@@ -76,26 +68,21 @@ class ImageLayer(Layer):
         max_width = self.size.get("max_width", 280)
         max_height = self.size.get("max_height", 120)
         
-        # Optional: Scale based on canvas size for better responsiveness
-        canvas_scale = self.size.get("canvas_scale", 1.0)
-        max_width = int(max_width * canvas_scale)
-        max_height = int(max_height * canvas_scale)
-        
         # Calculate scaling factors
-        width_scale = max_width / original_width
-        height_scale = max_height / original_height
+        width_ratio = max_width / original_width
+        height_ratio = max_height / original_height
         
-        # Use the smaller scale to maintain aspect ratio
-        scale = min(width_scale, height_scale)
+        # Use the smaller ratio to maintain aspect ratio
+        ratio = min(width_ratio, height_ratio)
         
         # Ensure we don't upscale too much
-        if scale > 1.0:
+        if ratio > 1.0:
             max_upscale = self.size.get("max_upscale", 2.0)
-            scale = min(scale, max_upscale)
+            ratio = min(ratio, max_upscale)
         
         # Calculate new dimensions
-        new_width = int(original_width * scale)
-        new_height = int(original_height * scale)
+        new_width = int(original_width * ratio)
+        new_height = int(original_height * ratio)
         
         # Resize the image
         return img.resize((new_width, new_height), Resampling.LANCZOS)
@@ -112,19 +99,15 @@ class ImageLayer(Layer):
                 max_width = self.size.get("max_width", 280)
                 max_height = self.size.get("max_height", 120)
                 
-                canvas_scale = self.size.get("canvas_scale", 1.0)
-                max_width = int(max_width * canvas_scale)
-                max_height = int(max_height * canvas_scale)
+                width_ratio = max_width / original_width
+                height_ratio = max_height / original_height
+                ratio = min(width_ratio, height_ratio)
                 
-                width_scale = max_width / original_width
-                height_scale = max_height / original_height
-                scale = min(width_scale, height_scale)
-                
-                if scale > 1.0:
+                if ratio > 1.0:
                     max_upscale = self.size.get("max_upscale", 2.0)
-                    scale = min(scale, max_upscale)
+                    ratio = min(ratio, max_upscale)
                 
-                return int(original_width * scale), int(original_height * scale)
+                return int(original_width * ratio), int(original_height * ratio)
         except:
             return self.size.get("max_width", 280), self.size.get("max_height", 120)
 

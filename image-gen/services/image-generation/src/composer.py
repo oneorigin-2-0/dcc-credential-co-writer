@@ -1,19 +1,17 @@
 import json
 from PIL import Image
-from PIL.Image import Resampling
 from layers import LAYER_REGISTRY
 from layers.shape import ShapeLayer
 from layers.image import LogoLayer
 from layers.text import TextLayer
-from utils.geometry import get_shape_bounds, get_shape_width_at_y
+from utils.geometry import get_shape_bounds
 
 
 class Composer:
-    def __init__(self, width, height, bg=(0,0,0,0), scale_factor=1):
+    def __init__(self, width, height, bg=(0,0,0,0)):
         self.W, self.H = int(width), int(height)
         self.bg = bg
         self.layers = []
-        self.scale = max(1, int(scale_factor))
         self.shape_bounds = None
         self.shape_spec = None
     
@@ -39,7 +37,6 @@ class Composer:
             return
         
         bounds = self.shape_bounds
-        shape_height = bounds["bottom"] - bounds["top"]
         
         # Calculate dynamic positions based on hexagon bounds
         hexagon_height = bounds["bottom"] - bounds["top"]
@@ -116,20 +113,10 @@ class Composer:
             if isinstance(layer, TextLayer) and layer.wrap.get("dynamic", False):
                 layer.composer = self
         
-        W, H = self.W*self.scale, self.H*self.scale
-        canvas = Image.new("RGBA", (W,H), self.bg)
-        
-        # Temporarily scale dimensions for rendering if needed
-        if self.scale > 1:
-            original_W, original_H = self.W, self.H
-            self.W, self.H = W, H
+        canvas = Image.new("RGBA", (self.W, self.H), self.bg)
         
         for layer in sorted(self.layers, key=lambda L: L.z):
             layer.render(canvas)
-        
-        if self.scale > 1:
-            canvas = canvas.resize((original_W, original_H), Resampling.LANCZOS)
-            self.W, self.H = original_W, original_H
         
         # Clean up composer references
         for layer in self.layers:
@@ -141,7 +128,7 @@ class Composer:
 
 def render_from_spec(spec):
     """spec: dict or JSON string with keys:
-       - canvas: {width, height, bg, scale_factor}
+       - canvas: {width, height, bg}
        - layers: [ {type: "...", ...}, ... ]
     """
     if isinstance(spec, str):
@@ -150,8 +137,7 @@ def render_from_spec(spec):
     W = canvas.get("width", 600)
     H = canvas.get("height", 600)
     bg = canvas.get("bg", "white")
-    scale = canvas.get("scale_factor", 1)
-    comp = Composer(W, H, bg=(255,255,255,0) if bg=="transparent" else bg, scale_factor=scale)
+    comp = Composer(W, H, bg=(255,255,255,0) if bg=="transparent" else bg)
 
     for layer_spec in spec.get("layers", []):
         t = layer_spec.get("type")

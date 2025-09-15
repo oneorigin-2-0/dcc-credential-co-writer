@@ -25,7 +25,10 @@ class ShapeLayer(Layer):
             pts = [(cx + r*math.cos(i*ang), cy + r*math.sin(i*ang)) for i in range(6)]
             return polygon_mask(size, pts)
         if s == "circle":
-            return circle_mask(size, int(self.params.get("margin", 50)))
+            #return circle_mask(size, int(self.params.get("margin", 50)))
+            radius = int(self.params.get("radius", min(W,H)//2 - 50))
+            margin = max(0, (min(W,H)//2) - radius)
+            return circle_mask(size, margin)
         if s == "shield":
             margin = int(self.params.get("margin", 56))
             r      = int(self.params.get("corner_radius", 56))
@@ -37,9 +40,9 @@ class ShapeLayer(Layer):
             return m
         if s == "rounded_rect":
             # Use width, height, radius instead of rect coordinates
-            width = int(self.params.get("width", 200))
-            height = int(self.params.get("height", 40))
-            radius = int(self.params.get("radius", 20))
+            width = int(self.params.get("width", 450))
+            height = int(self.params.get("height", 450))
+            radius = int(self.params.get("radius", 50))
             
             # Center the rectangle on canvas
             cx, cy = W//2, H//2
@@ -82,7 +85,9 @@ class ShapeLayer(Layer):
                 pts = [(cx + r*math.cos(i*ang), cy + r*math.sin(i*ang)) for i in range(6)]
                 d.polygon(pts, outline=col, width=bw)
             elif s == "circle":
-                margin = int(self.params.get("margin", 50))
+                #margin = int(self.params.get("margin", 50))
+                radius = int(self.params.get("radius", min(W,H)//2 - 50))
+                margin = max(0, (min(W,H)//2) - radius)
                 d.ellipse([margin, margin, W-margin, H-margin], outline=col, width=bw)
             elif s == "shield":
                 margin = int(self.params.get("margin", 56))
@@ -93,9 +98,9 @@ class ShapeLayer(Layer):
                 d.line(tip + [tip[0]], fill=col, width=bw, joint="curve")
             elif s == "rounded_rect":
                 # Use width, height, radius instead of rect coordinates
-                width = int(self.params.get("width", 200))
-                height = int(self.params.get("height", 40))
-                radius = int(self.params.get("radius", 20))
+                width = int(self.params.get("width", 450))
+                height = int(self.params.get("height", 450))
+                radius = int(self.params.get("radius", 50))
                 
                 # Center the rectangle on canvas
                 cx, cy = W//2, H//2

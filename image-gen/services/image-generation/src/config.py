@@ -1,7 +1,7 @@
 """Configuration file for badge generation system"""
 
 default_badge_config = {
-  "canvas": {"width": 600, "height": 600, "bg": "white", "scale_factor": 1},
+  "canvas": {"width": 600, "height": 600, "bg": "white"},
   "layers": [
     {"type": "BackgroundLayer", "mode": "solid",
      "color": "#FFFFFF", "z": 0},
@@ -52,4 +52,3 @@ default_badge_config = {
 # Constants
 DEFAULT_CANVAS_WIDTH = 600
 DEFAULT_CANVAS_HEIGHT = 600
-DEFAULT_SCALE_FACTOR = 2
