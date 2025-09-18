@@ -63,10 +63,18 @@ class ImageLayer(Layer):
     def _resize_dynamic(self, img, canvas):
         """Dynamically resize image while maintaining aspect ratio"""
         original_width, original_height = img.size
-        
+
+        # Check if this is an icon path
+        is_icon = "icons" in self.path.lower()
+
         # Get maximum dimensions from config
-        max_width = self.size.get("max_width", 280)
-        max_height = self.size.get("max_height", 120)
+        # For icons with dynamic: true, default to 190x190 instead of 280x120
+        if is_icon and self.size.get("dynamic") and "max_width" not in self.size:
+            max_width = self.size.get("max_width", 190)
+            max_height = self.size.get("max_height", 190)
+        else:
+            max_width = self.size.get("max_width", 280)
+            max_height = self.size.get("max_height", 120)
         
         # Calculate scaling factors
         width_ratio = max_width / original_width
@@ -91,13 +99,21 @@ class ImageLayer(Layer):
         """Get the calculated size for dynamic sizing (for positioning calculations)"""
         if not self.size.get("dynamic", False) or not (self.path and os.path.exists(self.path)):
             return self.size.get("width", 0), self.size.get("height", 0)
-        
+
         try:
             with Image.open(self.path) as img:
                 original_width, original_height = img.size
-                
-                max_width = self.size.get("max_width", 280)
-                max_height = self.size.get("max_height", 120)
+
+                # Check if this is an icon path
+                is_icon = "icons" in self.path.lower()
+
+                # Get maximum dimensions with icon-specific defaults
+                if is_icon and self.size.get("dynamic") and "max_width" not in self.size:
+                    max_width = self.size.get("max_width", 190)
+                    max_height = self.size.get("max_height", 190)
+                else:
+                    max_width = self.size.get("max_width", 280)
+                    max_height = self.size.get("max_height", 120)
                 
                 width_ratio = max_width / original_width
                 height_ratio = max_height / original_height
