@@ -4,7 +4,8 @@
  */
 
 import { useState, useCallback } from "react";
-import type { ApiResponse } from "@/lib/api";
+import type { ApiResponse, BadgeGenerationResult } from "@/lib/api";
+import { generateSuggestions } from "@/lib/api";
 
 interface UseApiState<T> {
   data: T | null;
@@ -83,9 +84,8 @@ export function useApi<T>(
 /**
  * Hook specifically for badge generation
  */
-export function useBadgeGeneration() {
-  return useApi(async (content: string) => {
-    const { generateSuggestions } = await import("@/lib/api");
-    return generateSuggestions({ content });
+export function useBadgeGeneration(): UseApiReturn<BadgeGenerationResult> {
+  return useApi<BadgeGenerationResult>(async (content: string) => {
+    return generateSuggestions(content);
   });
 }

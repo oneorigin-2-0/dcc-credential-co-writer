@@ -11,8 +11,8 @@ import {
     CardTitle,
     CardFooter,
 } from '@/components/ui/card';
-import { ArrowLeft, Edit, CheckCircle, Save, X, Copy, FileDown } from 'lucide-react';
-import { Header } from '@/components/shared/header';
+import { ArrowLeft, Edit, CheckCircle, Save, X, Copy, FileDown, RefreshCw, Loader2 } from 'lucide-react';
+import { Header } from '@/components/layout/header';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +44,8 @@ export default function ResultsPage() {
         criteria: string;
     }>({ title: '', description: '', criteria: '' });
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [originalContent, setOriginalContent] = useState<string>('');
 
     useEffect(() => {
         // Get data from URL params or localStorage
@@ -70,8 +72,96 @@ export default function ResultsPage() {
             }
         }
 
+        // Get original content from localStorage
+        const storedContent = localStorage.getItem('originalContent');
+        if (storedContent) {
+            setOriginalContent(storedContent);
+        }
+
         setIsLoading(false);
     }, [searchParams]);
+
+    const handleRegenerate = async () => {
+        if (!originalContent) {
+            toast({
+                variant: 'destructive',
+                title: 'No Content Found',
+                description: 'Original content not found. Please go back and generate new suggestions.',
+            });
+            return;
+        }
+
+        setIsRegenerating(true);
+        
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: originalContent,
+                    regenerate: true,
+                }),
+            });
+
+            const result = await response.json();
+
+            // Handle different response formats
+            let updatedResults = null;
+            
+            if (result.response && result.response.badge_name) {
+                // New API format: { response: { badge_name, badge_description, criteria: { narrative } } }
+                const newSuggestion = {
+                    title: result.response.badge_name,
+                    description: result.response.badge_description,
+                    criteria: result.response.criteria?.narrative || result.response.badge_description,
+                    image: undefined, // No image in new format
+                };
+                updatedResults = { data: [newSuggestion] };
+            } else if (result.success && result.data && result.data.data && result.data.data.length > 0) {
+                // Format: { success: true, data: { data: [suggestions] } }
+                updatedResults = result.data;
+            } else if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+                // Format: { success: true, data: [suggestions] }
+                updatedResults = { data: result.data };
+            } else if (result.success && result.data && result.data.title) {
+                // Format: { success: true, data: { title, description, criteria, image } }
+                updatedResults = { data: [result.data] };
+            } else if (result.title) {
+                // Format: { title, description, criteria, image }
+                updatedResults = { data: [result] };
+            }
+
+            if (updatedResults) {
+                setBadgeResults(updatedResults);
+                setSelectedSuggestion(0); // Reset to first suggestion
+                
+                // Update localStorage
+                localStorage.setItem('generatedBadgeData', JSON.stringify(updatedResults));
+                
+                toast({
+                    title: 'Suggestions Regenerated!',
+                    description: 'New badge suggestions have been generated.',
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Regeneration Failed',
+                    description: result.error || 'Failed to regenerate suggestions.',
+                });
+            }
+        } catch (error) {
+            console.error('Error regenerating suggestions:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Regeneration Failed',
+                description: 'An unexpected error occurred. Please try again.',
+            });
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
 
     const handleUseSuggestion = (suggestion: BadgeSuggestion) => {
         console.log('Using selected badge suggestion:', suggestion);
@@ -227,6 +317,29 @@ export default function ResultsPage() {
     const suggestions = badgeResults.data;
     const currentSuggestion = suggestions[selectedSuggestion];
 
+    // Add null check for currentSuggestion
+    if (!currentSuggestion) {
+        return (
+            <div className="flex flex-col min-h-screen bg-gray-50">
+                <Header />
+                <main className="flex-1 container mx-auto p-4 md:p-8">
+                    <Button
+                        variant="outline"
+                        className="mb-6"
+                        onClick={() => router.push('/genai')}
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Generator
+                    </Button>
+                    <div className="text-center py-8">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">No Suggestion Available</h2>
+                        <p className="text-gray-600">The selected suggestion could not be loaded.</p>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
@@ -292,9 +405,29 @@ export default function ResultsPage() {
                             <div className="lg:col-span-3">
                                 <Card className="border-0 shadow-xl bg-white">
                                     <CardHeader className="pb-8">
-                                        <CardTitle className="text-3xl font-headline font-black text-gray-900 mb-3">
-                                            Badge Suggestion 
-                                        </CardTitle>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <CardTitle className="text-3xl font-headline font-black text-gray-900">
+                                                Badge Suggestion 
+                                            </CardTitle>
+                                            <Button
+                                                onClick={handleRegenerate}
+                                                disabled={isRegenerating}
+                                                variant="outline"
+                                                className="flex items-center gap-2"
+                                            >
+                                                {isRegenerating ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Regenerating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4" />
+                                                        Regenerate
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                         <CardDescription className="text-lg text-gray-600 leading-relaxed font-body">
                                             Review the details and customize as needed.
                                         </CardDescription>
@@ -445,18 +578,16 @@ export default function ResultsPage() {
                                             )}
                                         </div>
 
-                                        {currentSuggestion.image && (
-                                            <div>
-                                                <label className="text-sm font-subhead font-light text-gray-700 mb-2 block">Badge Image:</label>
-                                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                                    <img
-                                                        src={currentSuggestion.image}
-                                                        alt="Generated badge"
-                                                        className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-                                                    />
-                                                </div>
+                                        <div>
+                                            <label className="text-sm font-subhead font-light text-gray-700 mb-2 block">Badge Image:</label>
+                                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                                <img
+                                                    src={currentSuggestion.image || "https://nwccu.org/wp-content/uploads/2024/01/WGU-Logo.png"}
+                                                    alt="Generated badge"
+                                                    className="w-32 h-32 object-contain rounded-lg border border-gray-300"
+                                                />
                                             </div>
-                                        )}
+                                        </div>
                                     </CardContent>
 
                                     <CardFooter className="px-8 pb-8 flex justify-end">

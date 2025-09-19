@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { WandSparkles } from 'lucide-react';
-import { Header } from '@/components/shared/header';
+import { Header } from '@/components/layout/header';
 
 export default function LandingPage() {
   return (

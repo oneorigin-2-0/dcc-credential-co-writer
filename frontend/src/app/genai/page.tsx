@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -27,10 +28,8 @@ import Lottie from 'lottie-react';
 
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { useBadgeGeneration } from '@/hooks/use-api';
-import { generateSuggestionsSchema } from '@/lib/validations';
 
-import { Header } from '@/components/shared/header';
+import { Header } from '@/components/layout/header';
 import { FileParser } from '@/lib/file-parser';
 
 const badgeFormSchema = z.object({
@@ -55,6 +54,7 @@ export default function GenAIPage() {
   const [animationData, setAnimationData] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [isLaiserEnabled, setIsLaiserEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load Lottie animation data
@@ -64,9 +64,6 @@ export default function GenAIPage() {
       .then(data => setAnimationData(data))
       .catch(error => console.error('Error loading animation:', error));
   }, []);
-
-  // Use the API hook for badge generation
-  const { data: generatedData, loading: isGenerating, error: apiError, execute: generateSuggestions } = useBadgeGeneration();
 
   // File parsing is now handled by the FileParser utility
 
@@ -173,33 +170,25 @@ export default function GenAIPage() {
     }
 
     try {
-      // Call the API using the hook with combined content
-      const result = await generateSuggestions(combinedContent);
-
-      if (result) {
-        // Success - store data and navigate to results page
-        console.log('Generated badge suggestions:', result);
-
-        // Store in localStorage as backup
-        localStorage.setItem('generatedBadgeData', JSON.stringify(result));
-
-        toast({
-          title: 'Suggestions Generated!',
-          description: 'Redirecting to results page...',
-        });
-
-        // Navigate to results page with data
-        const encodedData = encodeURIComponent(JSON.stringify(result));
-        router.push(`/genai/results?data=${encodedData}`);
-
-      } else if (apiError) {
-        // Handle API error
-        toast({
-          variant: 'destructive',
-          title: 'Generation Failed',
-          description: apiError,
-        });
+      // Store content and generation state in localStorage
+      try {
+        localStorage.setItem('originalContent', combinedContent);
+        localStorage.setItem('generationStarted', 'true');
+        localStorage.setItem('generationStartedAt', new Date().toISOString());
+        // Clear any previous suggestions
+        localStorage.removeItem('generatedSuggestions');
+      } catch (error) {
+        console.error('Error storing content in localStorage:', error);
       }
+
+      // Show immediate feedback
+      toast({
+        title: 'Starting Generation!',
+        description: 'Redirecting to suggestions page...',
+      });
+
+      // Redirect immediately to suggestions page
+      router.push('/genai/suggestions');
     } catch (error) {
       // Handle unexpected errors
       toast({
@@ -314,30 +303,38 @@ export default function GenAIPage() {
                         )}
                       </Button>
 
-                      <Button
-                        onClick={handleGenerate}
-                        disabled={isGenerating || isParsingFile}
-                        className="bg-primary hover:bg-gradient-to-r hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out transform  shadow-lg hover:shadow-xl"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            {animationData && (
-                              <div className="w-5 h-5">
-                                <Lottie
-                                  animationData={animationData}
-                                  loop={true}
-                                />
-                              </div>
-                            )}
-                            Generate
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex items-center space-x-4">
+                        {/* Skills from LAiSER Toggle */}
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="laiser-toggle"
+                            checked={isLaiserEnabled}
+                            onCheckedChange={setIsLaiserEnabled}
+                          />
+                          <label
+                            htmlFor="laiser-toggle"
+                            className="text-sm font-medium text-gray-700 cursor-pointer"
+                          >
+                            Skills from LAiSER
+                          </label>
+                        </div>
+
+                        <Button
+                          onClick={handleGenerate}
+                          disabled={isParsingFile}
+                          className="bg-primary hover:bg-gradient-to-r hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out transform  shadow-lg hover:shadow-xl"
+                        >
+                          {animationData && (
+                            <div className="w-5 h-5">
+                              <Lottie
+                                animationData={animationData}
+                                loop={true}
+                              />
+                            </div>
+                          )}
+                          Generate Suggestions
+                        </Button>
+                      </div>
                     </div>
 
                     <input
@@ -353,80 +350,6 @@ export default function GenAIPage() {
                 </CardContent>
               </Card>
 
-              {/* Display API Error */}
-              {apiError && (
-                <Card className="mt-8 border-red-200 bg-red-50">
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                      Generated Badge Suggestions
-                    </CardTitle>
-                    <CardDescription className="text-gray-600">
-                      Here are the AI-generated suggestions for your badge.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 mb-2 block">Title:</label>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-800">{generatedData.title}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 mb-2 block">Description:</label>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-800">{generatedData.description}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 mb-2 block">Criteria:</label>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-800">{generatedData.criteria}</p>
-                      </div>
-                    </div>
-
-                    {generatedData.image && (
-                      <div>
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">Badge Image:</label>
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <img
-                            src={generatedData.image}
-                            alt="Generated badge"
-                            className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      onClick={() => {
-                        console.log('Using generated badge data:', generatedData);
-                        toast({
-                          title: 'Badge Data Ready!',
-                          description: 'You can now proceed to create your badge.',
-                        });
-                      }}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Use These Suggestions
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
-
-              {/* Display API Error */}
-              {apiError && (
-                <Card className="mt-8 border-red-200 bg-red-50">
-                  <CardHeader>
-                    <CardTitle className="text-red-700">Error</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-red-600">{apiError}</p>
-                  </CardContent>
-                </Card>
-              )}
             </FormProvider>
           </div>
         </div>
