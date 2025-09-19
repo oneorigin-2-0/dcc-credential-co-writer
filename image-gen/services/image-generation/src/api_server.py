@@ -34,8 +34,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class CanvasConfig(BaseModel):
+    bg: str = "white"
+    scale_factor: float = 1.0
+
 class BadgeConfig(BaseModel):
-    canvas: dict
+    canvas: CanvasConfig = CanvasConfig()
     layers: list
 
 @app.get("/")

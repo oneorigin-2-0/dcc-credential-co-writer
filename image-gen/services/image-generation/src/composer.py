@@ -128,14 +128,15 @@ class Composer:
 
 def render_from_spec(spec):
     """spec: dict or JSON string with keys:
-       - canvas: {width, height, bg}
+       - canvas: {bg, scale_factor} (width and height are fixed at 600)
        - layers: [ {type: "...", ...}, ... ]
     """
     if isinstance(spec, str):
         spec = json.loads(spec)
     canvas = spec.get("canvas", {})
-    W = canvas.get("width", 600)
-    H = canvas.get("height", 600)
+    # Hardcode width and height to 600
+    W = 600
+    H = 600
     bg = canvas.get("bg", "white")
     comp = Composer(W, H, bg=(255,255,255,0) if bg=="transparent" else bg)
 

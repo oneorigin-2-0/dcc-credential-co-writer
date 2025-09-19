@@ -13,7 +13,7 @@ class TextLayer(Layer):
         self.font = spec.get("font", {"path": None, "size": 24})
         self.color = spec.get("color", "#000000")
         self.align = spec.get("align", {"x":"center","y":"center"})
-        self.wrap  = spec.get("wrap", {"max_width": None, "line_gap": 6})
+        self.wrap  = spec.get("wrap", {"dynamic": True, "max_width": None, "line_gap": 6})
         self.composer: Optional[Any] = None  # Will be set during rendering if dynamic wrap is needed
         # optional: "anchor" if you want to change; we'll draw left-top for wrapped blocks
     
