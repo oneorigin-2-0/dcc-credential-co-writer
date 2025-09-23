@@ -1,18 +1,31 @@
+# Python
 .DS_Store
 __pycache__/
 *.pyc
-node_modules/
-CLAUDE.md
-
-.next/
-
-.env
-.venv/
 uv.lock
-
 build/
 develop-eggs/
 .eggs/
 eggs/
 *.egg
 *.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# claude
+CLAUDE.md
+
+# Node.js (if using)
+.next/
+node_modules/

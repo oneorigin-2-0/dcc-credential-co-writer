@@ -1,15 +1,15 @@
 """
-Badge generation endpoints
+Badge image generation controller
 """
 
 from fastapi import APIRouter, HTTPException
 from app.models.requests import BadgeRequest
 from app.models.responses import BadgeResponse
 from app.services.badge_service import BadgeService
-import logging
+from app.core.logging_config import get_logger
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger("badge_image_controller")
 badge_service = BadgeService()
 
 @router.post("/badge/generate", response_model=BadgeResponse)

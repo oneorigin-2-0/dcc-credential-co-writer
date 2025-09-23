@@ -1,3 +1,0 @@
-2025-09-23 15:16:09 - badge_generation - INFO - Starting badge generation
-2025-09-23 15:16:09 - badge_generation - INFO - Badge generated successfully: {'canvas_size': '600x600', 'layers_count': 6, 'success': True, 'generation_time': '0.053s'}
-2025-09-23 15:16:09 - badge_generation - INFO - Badge generated successfully in 0.053s

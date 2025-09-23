@@ -8,7 +8,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.settings import settings
-from app.api.v1.router import api_router
+from app.controllers.badge_image import router as badges_router
+from app.controllers.health import router as health_router
 from app.core.logging_config import get_logger
 from app.core.middleware import LoggingMiddleware
 
@@ -53,8 +54,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
-# Include API router
-app.include_router(api_router, prefix=settings.API_V1_STR)
+# Include routers
+app.include_router(badges_router, prefix=settings.API_V1_STR)
+app.include_router(health_router, prefix=settings.API_V1_STR)
 
 # Root endpoint
 @app.get("/")

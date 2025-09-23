@@ -1,2 +1,0 @@
-2025-09-23 15:23:20 - badge_api.main - ERROR - Validation error on POST /api/v1/badge/generate: [{'type': 'json_invalid', 'loc': ('body', 301), 'msg': 'JSON decode error', 'input': {}, 'ctx': {'error': "Expecting ',' delimiter"}}]
-2025-09-23 15:23:34 - badge_api.main - ERROR - Validation error on POST /api/v1/badge/generate: [{'type': 'json_invalid', 'loc': ('body', 301), 'msg': 'JSON decode error', 'input': {}, 'ctx': {'error': "Expecting ',' delimiter"}}]

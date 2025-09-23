@@ -1,5 +1,5 @@
 """
-Health check endpoints
+Health check controller
 """
 
 from fastapi import APIRouter
@@ -15,4 +15,3 @@ async def health_check():
         "status": "healthy",
         "service": "badge-generator-api"
     }
-
