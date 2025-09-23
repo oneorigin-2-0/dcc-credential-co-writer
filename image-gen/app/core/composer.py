@@ -1,10 +1,10 @@
 import json
 from PIL import Image
-from layers import LAYER_REGISTRY
-from layers.shape import ShapeLayer
-from layers.image import LogoLayer
-from layers.text import TextLayer
-from utils.geometry import get_shape_bounds
+from app.core.layers import LAYER_REGISTRY
+from app.core.layers.shape import ShapeLayer
+from app.core.layers.image import LogoLayer
+from app.core.layers.text import TextLayer
+from app.core.utils.geometry import get_shape_bounds
 
 
 class Composer:

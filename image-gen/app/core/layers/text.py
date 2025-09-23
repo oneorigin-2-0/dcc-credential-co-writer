@@ -1,8 +1,8 @@
 from PIL import ImageDraw
 from typing import Optional, Any
-from layers.base import Layer
-from utils.text import load_font, resolve_align
-from utils.geometry import get_shape_width_at_y
+from app.core.layers.base import Layer
+from app.core.utils.text import load_font, resolve_align
+from app.core.utils.geometry import get_shape_width_at_y
 
 
 class TextLayer(Layer):

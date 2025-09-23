@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
-from layers.base import Layer
-from utils.image_processing import make_linear_gradient
+from app.core.layers.base import Layer
+from app.core.utils.image_processing import make_linear_gradient
 
 
 class BackgroundLayer(Layer):

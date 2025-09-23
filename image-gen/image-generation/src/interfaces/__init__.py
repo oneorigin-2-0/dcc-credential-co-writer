@@ -1,1 +1,0 @@
-# Interfaces module for badge generation

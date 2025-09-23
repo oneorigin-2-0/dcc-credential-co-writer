@@ -1,11 +1,11 @@
 import json
 import gradio as gr
-from config import default_badge_config
-from composer import render_from_spec
+from app.config import default_badge_config
+from app.core.composer import render_from_spec
 
 
 def generate_from_json(json_text):
-    """Generate badge from JSON configuration"""
+    """Generate badge image from JSON configuration"""
     try:
         # Parse the JSON
         config = json.loads(json_text)

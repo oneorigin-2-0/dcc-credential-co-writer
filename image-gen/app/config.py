@@ -1,4 +1,4 @@
-"""Configuration file for badge generation system"""
+"""Configuration file for badge image generation system"""
 
 default_badge_config = {
   "canvas": {"width": 600, "height": 600, "bg": "white"},
@@ -20,7 +20,7 @@ default_badge_config = {
     "z": 10
     },
 
-    {"type": "LogoLayer", "path": "../assets/logos/wgu_logo.png",
+    {"type": "LogoLayer", "path": "assets/logos/wgu_logo.png",
      "size": {"dynamic": True}, "position": {"x": "center", "y": "dynamic"}, "z": 20},
     
     # {"type": "ImageLayer", "path": "../assets/ribbon2.png",

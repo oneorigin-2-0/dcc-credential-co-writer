@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Badge Generation System - Main Entry Point
+Badge Image Generation System - Main Entry Point
 """
 
-from interfaces.json_editor import create_json_interface
+from app.json_editor import create_json_interface
 
 
 if __name__ == "__main__":

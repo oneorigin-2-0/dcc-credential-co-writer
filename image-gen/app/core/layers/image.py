@@ -1,19 +1,18 @@
 import os
 from PIL import Image
 from PIL.Image import Resampling
-from layers.base import Layer
-from utils.text import resolve_align
+from app.core.layers.base import Layer
+from app.core.utils.text import resolve_align
 
 
 class ImageLayer(Layer):
     def __init__(self, spec):
         super().__init__(spec)
         
-        # Resolve path relative to the script file
+        # Get project root (go up from app/core/layers to project root)
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # Go up one level from layers/ to src/ then resolve the path
-        src_dir = os.path.dirname(script_dir)
-        self.path = os.path.join(src_dir, spec.get("path"))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+        self.path = os.path.join(project_root, spec.get("path"))
         
         # Support both simple numeric size and object format
         if isinstance(spec.get("size"), (int, float)):
