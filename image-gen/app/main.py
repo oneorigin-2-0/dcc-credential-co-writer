@@ -69,7 +69,12 @@ async def root():
         "health": f"{settings.API_V1_STR}/health"
     }
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize logging on startup"""
+    logger.info(f"Starting {settings.PROJECT_NAME} on port {settings.PORT}")
+    logger.info(f"API documentation available at http://localhost:{settings.PORT}/docs")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=settings.PORT, log_level="info", reload=True)
-    #test

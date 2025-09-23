@@ -29,7 +29,7 @@ def setup_logging(
     """
     # Create logs directory if it doesn't exist
     logs_dir = Path("logs")
-    logs_dir.mkdir(exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
 
     # Default log file path
     if log_file is None:
@@ -56,6 +56,9 @@ def setup_logging(
     console_handler.setFormatter(simple_formatter)
     api_logger.addHandler(console_handler)
 
+    # Create log file if it doesn't exist
+    Path(log_file).touch(exist_ok=True)
+
     # API File handler with rotation
     api_file_handler = logging.handlers.RotatingFileHandler(
         filename=log_file,
@@ -67,9 +70,13 @@ def setup_logging(
     api_file_handler.setFormatter(detailed_formatter)
     api_logger.addHandler(api_file_handler)
 
+    # Create error log file if it doesn't exist
+    error_log_path = logs_dir / "error.log"
+    error_log_path.touch(exist_ok=True)
+
     # Error file handler (separate file for all errors)
     error_handler = logging.handlers.RotatingFileHandler(
-        filename=logs_dir / "error.log",
+        filename=error_log_path,
         maxBytes=max_bytes,
         backupCount=backup_count,
         encoding="utf-8"
