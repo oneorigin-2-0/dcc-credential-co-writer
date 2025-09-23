@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 
 from app.settings import settings
 from app.api.v1.router import api_router
-from app.logging_config import get_logger
-from app.middleware import LoggingMiddleware
+from app.core.logging_config import get_logger
+from app.core.middleware import LoggingMiddleware
 
 # Initialize logger
 logger = get_logger("main")

@@ -5,7 +5,7 @@ Middleware for the Badge Generator API
 import time
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.logging_config import log_request_info, get_logger
+from app.core.logging_config import log_request_info, get_logger
 
 logger = get_logger("middleware")
 

@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from app.core.composer import render_from_spec
 from app.models.responses import BadgeResponse, BadgeData
-from app.logging_config import get_logger, log_badge_generation
+from app.core.logging_config import get_logger, log_badge_generation
 
 # Use main API logger
 logger = get_logger("badge_service")
