@@ -2,8 +2,10 @@
 FastAPI main application entry point
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.settings import settings
 from app.api.v1.router import api_router
@@ -34,6 +36,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors and log them"""
+    error_details = exc.errors()
+    logger.error(f"Validation error on {request.method} {request.url.path}: {error_details}")
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "message": "Validation error",
+            "errors": error_details
+        }
+    )
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
