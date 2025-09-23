@@ -3,14 +3,16 @@ Badge generation service
 """
 
 import base64
+import time
 from io import BytesIO
 from typing import Dict, Any
-import logging
 
 from app.core.composer import render_from_spec
 from app.models.responses import BadgeResponse, BadgeData
+from app.logging_config import get_logger, log_badge_generation
 
-logger = logging.getLogger(__name__)
+# Use main API logger
+logger = get_logger("badge_service")
 
 class BadgeService:
     """Service for generating badge images"""
@@ -25,7 +27,11 @@ class BadgeService:
         Returns:
             BadgeResponse with base64 encoded image
         """
+        start_time = time.time()
+
         try:
+            logger.info("Starting badge generation")
+
             # Add fixed canvas dimensions
             if "canvas" not in config:
                 config["canvas"] = {}
@@ -46,6 +52,12 @@ class BadgeService:
             # Encode to base64
             img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
+            generation_time = time.time() - start_time
+
+            # Log successful generation
+            log_badge_generation(config, success=True, generation_time=generation_time)
+            logger.info(f"Badge generated successfully in {generation_time:.3f}s")
+
             # Create response
             return BadgeResponse(
                 success=True,
@@ -59,5 +71,10 @@ class BadgeService:
             )
 
         except Exception as e:
-            logger.error(f"Error generating badge: {str(e)}")
+            generation_time = time.time() - start_time
+            error_msg = str(e)
+
+            # Log failed generation
+            log_badge_generation(config, success=False, error=error_msg, generation_time=generation_time)
+            logger.error(f"Badge generation failed after {generation_time:.3f}s: {error_msg}")
             raise

@@ -7,6 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import settings
 from app.api.v1.router import api_router
+from app.logging_config import get_logger
+from app.middleware import LoggingMiddleware
+
+# Initialize logger
+logger = get_logger("main")
 
 # Create FastAPI app
 app = FastAPI(
@@ -17,6 +22,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Add custom middleware
+app.add_middleware(LoggingMiddleware)
 
 # Setup CORS
 app.add_middleware(
@@ -33,6 +41,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 # Root endpoint
 @app.get("/")
 async def root():
+    logger.info("Root endpoint accessed")
     return {
         "message": settings.PROJECT_NAME,
         "version": settings.VERSION,

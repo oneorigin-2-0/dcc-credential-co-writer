@@ -1,0 +1,27 @@
+2025-09-23 15:16:09 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:16:09 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.056s'}
+2025-09-23 15:16:09 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 200 - Time: 0.056s
+2025-09-23 15:18:23 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:18:23 - badge_api.badge_service - INFO - Starting badge generation
+2025-09-23 15:18:23 - badge_api.badge_service - INFO - Badge generated successfully: {'canvas_size': '600x600', 'layers_count': 6, 'success': True, 'generation_time': '0.044s'}
+2025-09-23 15:18:23 - badge_api.badge_service - INFO - Badge generated successfully in 0.044s
+2025-09-23 15:18:23 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.047s'}
+2025-09-23 15:18:23 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 200 - Time: 0.047s
+2025-09-23 15:18:28 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:18:28 - badge_api.badge_service - INFO - Starting badge generation
+2025-09-23 15:18:28 - badge_api.badge_service - INFO - Badge generated successfully: {'canvas_size': '600x600', 'layers_count': 6, 'success': True, 'generation_time': '0.040s'}
+2025-09-23 15:18:28 - badge_api.badge_service - INFO - Badge generated successfully in 0.040s
+2025-09-23 15:18:28 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.042s'}
+2025-09-23 15:18:28 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 200 - Time: 0.042s
+2025-09-23 15:18:39 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:18:39 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.001s'}
+2025-09-23 15:18:39 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 422 - Time: 0.001s
+2025-09-23 15:18:48 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:18:48 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.002s'}
+2025-09-23 15:18:48 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 422 - Time: 0.002s
+2025-09-23 15:18:58 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generate
+2025-09-23 15:18:58 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generate', 'client': '127.0.0.1', 'response_time': '0.001s'}
+2025-09-23 15:18:58 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generate - Status: 422 - Time: 0.001s
+2025-09-23 15:19:36 - badge_api.middleware - INFO - Incoming POST request to /api/v1/badge/generat
+2025-09-23 15:19:36 - badge_api.requests - INFO - Request: {'method': 'POST', 'url': 'http://localhost:3001/api/v1/badge/generat', 'client': '127.0.0.1', 'response_time': '0.002s'}
+2025-09-23 15:19:36 - badge_api.middleware - INFO - Request completed: POST /api/v1/badge/generat - Status: 404 - Time: 0.002s
