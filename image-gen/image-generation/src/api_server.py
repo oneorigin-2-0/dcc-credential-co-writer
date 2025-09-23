@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Badge Generator API",
-    description="Direct API for generating custom badges",
+    title="Badge Image Generator API",
+    description="Direct API for generating custom badge image",
     version="1.0.0"
 )
 
@@ -66,7 +66,7 @@ async def generate_badge(config: BadgeConfig):
         logger.info("Received badge generation request")
         
         # Convert config to dict format expected by render_from_spec
-        config_dict = config.dict()
+        config_dict = config.model_dump()
         logger.info(f"Config: {config_dict}")
         
         # Call render_from_spec directly with the config dict
@@ -93,10 +93,10 @@ async def generate_badge(config: BadgeConfig):
             "message": "Badge generated successfully",
             "data": {
                 "base64": f"data:image/png;base64,{img_base64}",
-                "filename": "badge.png",
-                "mimeType": "image/png"
-            },
-            "config": config.dict()
+                # "filename": "badge.png",
+                # "mimeType": "image/png"
+            }
+            # "config": config.dict()
         }
         
     except Exception as e:
@@ -104,38 +104,6 @@ async def generate_badge(config: BadgeConfig):
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
 
 
-    """
-    Legacy endpoint that matches the Gradio interface
-    Accepts raw JSON string
-    """
-    try:
-        logger.info("Received legacy generate_from_json request")
-        
-        # Call render_from_spec with JSON string (it can handle both dict and string)
-        result = render_from_spec(json_text)
-        
-        if result is None:
-            raise HTTPException(status_code=500, detail="Failed to generate badge")
-        
-        # Convert PIL Image to base64
-        buffer = BytesIO()
-        result.save(buffer, format='PNG')
-        buffer.seek(0)
-        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-        
-        # Return in format similar to Gradio
-        return [{
-            "path": f"/tmp/badge_{hash(json_text)}.png",
-            "url": f"data:image/png;base64,{img_base64}",
-            "orig_name": "badge.png",
-            "mime_type": "image/png",
-            "is_stream": False,
-            "meta": {"_type": "gradio.FileData"}
-        }, ""]
-        
-    except Exception as e:
-        logger.error(f"Error in legacy endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
