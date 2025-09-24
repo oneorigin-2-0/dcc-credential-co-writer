@@ -9,13 +9,12 @@ mit-badge-image-generation/
 ├── app/                          # FastAPI Service
 │   ├── main.py                   # FastAPI entry point
 │   ├── settings.py               # Configuration settings
-│   ├── config.py                 # Badge default configurations
-│   ├── json_editor.py            # Gradio interface module
-│   ├── api/v1/                   # API endpoints
-│   │   └── endpoints/
-│   │       ├── badges.py         # Badge generation endpoint
-│   │       └── health.py         # Health check endpoint
-│   ├── core/                     # Core badge generation logic
+│   ├── controllers/              # Simple API controllers
+│   │   ├── badge_image.py        # Badge generation endpoint
+│   │   └── health.py             # Health check endpoint
+│   ├── core/                     # Core infrastructure
+│   │   ├── logging_config.py     # Production logging setup
+│   │   ├── middleware.py         # Request logging middleware
 │   │   ├── composer.py           # Main rendering engine
 │   │   ├── layers/               # Layer rendering system
 │   │   │   ├── __init__.py       # Layer registry
@@ -28,28 +27,45 @@ mit-badge-image-generation/
 │   │       ├── geometry.py       # Shape calculations
 │   │       ├── text.py           # Text wrapping/alignment
 │   │       └── image_processing.py # Image transformations
-│   └── models/                   # Pydantic models
+│   ├── models/                   # Pydantic models
+│   │   ├── requests.py           # API request models
+│   │   └── responses.py          # API response models
+│   └── services/                 # Business logic
+│       └── badge_service.py      # Badge generation service
+├── scripts/                      # Build and deployment scripts
+│   ├── start.sh                  # Linux/macOS startup script
+│   └── start.bat                 # Windows startup script
 ├── gradio_main.py                # Gradio service entry point
 ├── assets/                       # Static assets
-│   ├── icons/                    # icons
+│   ├── icons/                    # Educational icons (100+)
 │   │   ├── trophy.png            # Achievement icons
 │   │   ├── graduation-cap.png    # Academic icons
 │   │   ├── atom.png              # STEM icons
 │   │   └── ...                   # Additional categories
 │   └── logos/                    # University logos
-│       ├── mit_logo.png
+│       ├── mit_logo.webp
 │       ├── wgu_logo.png
 │       ├── asu_logo.png
 │       └── sjsu_logo.png
-└── requirements.txt              # Python dependencies
+├── logs/                         # Application logs (auto-created)
+│   ├── badge_api.log            # All application logs
+│   └── error.log                # Error logs only
+├── docker-compose.yml            # Docker service definition
+├── Dockerfile                    # Docker image definition
+├── requirements.txt              # Python dependencies
+├── pyproject.toml               # Python project configuration
+├── .env.example                 # Environment configuration template
+└── icon_catalog.json            # Icon metadata catalog
 ```
 
 ## Features
 
-### Dual Service Architecture
-- **FastAPI REST API**: Production-ready API for programmatic badge generation
-- **Gradio Interactive Interface**: Real-time JSON editor with live preview
-- **Flexible Import System**: Supports both services with consistent codebase
+### Production-Ready Architecture
+- **FastAPI REST API**: Production-ready API with comprehensive logging and monitoring
+- **Docker Containerization**: Full Docker support with automated deployment scripts
+- **Cross-Platform Support**: Startup scripts for Linux/macOS and Windows
+- **Comprehensive Logging**: Request/response logging with automatic log rotation
+- **Gradio Interactive Interface**: Real-time JSON editor with live preview (optional)
 
 ### Badge Generation System
 - **Layer-based Composition**: Badges constructed from multiple layers for complex designs
