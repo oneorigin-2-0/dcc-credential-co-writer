@@ -77,6 +77,8 @@ pip install -r requirements.txt
 **For Docker Deployment:**
 - Docker and Docker Compose
 - Git (for cloning the repository)
+- **Linux/macOS**: Bash shell
+- **Windows**: Command Prompt or PowerShell
 
 ### Running the Services
 
@@ -90,7 +92,11 @@ git clone <repository-url>
 cd mit-badge-image-generation
 
 # Start the service using the provided script
+# For Linux/macOS:
 ./scripts/start.sh
+
+# For Windows:
+scripts\start.bat
 ```
 
 The start script will:
