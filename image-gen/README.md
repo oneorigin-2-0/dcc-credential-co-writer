@@ -66,6 +66,7 @@ mit-badge-image-generation/
 
 ### Prerequisites
 
+**For Local Development:**
 - Python 3.8+
 - Required Python libraries (install via requirements.txt)
 
@@ -73,9 +74,51 @@ mit-badge-image-generation/
 pip install -r requirements.txt
 ```
 
+**For Docker Deployment:**
+- Docker and Docker Compose
+- Git (for cloning the repository)
+
 ### Running the Services
 
-#### FastAPI Service (Production API)
+#### Docker Deployment (Recommended for Production)
+
+The easiest way to run the Badge Generator API is using Docker:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mit-badge-image-generation
+
+# Start the service using the provided script
+./scripts/start.sh
+```
+
+The start script will:
+- Validate Docker installation
+- Create environment files if needed
+- Build the Docker image
+- Start the containerized service
+- Perform health checks
+- Display service information
+
+**Manual Docker Commands:**
+```bash
+# Build and start with docker-compose
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Access the containerized API at:
+- API Documentation: `http://localhost:3001/docs`
+- Health Check: `http://localhost:3001/api/v1/health`
+- API Endpoint: `http://localhost:3001/api/v1/badge/generate`
+
+#### Local Development (FastAPI Service)
 ```bash
 # From project root
 python -m app.main

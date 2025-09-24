@@ -15,14 +15,24 @@ class Settings(BaseSettings):
     PORT: int = 3001
 
     # CORS settings
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS_STR: str = "*"
 
     # Canvas settings (fixed)
     CANVAS_WIDTH: int = 600
     CANVAS_HEIGHT: int = 600
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        """Parse CORS_ORIGINS from string"""
+        if self.CORS_ORIGINS_STR.strip() == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
+
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        "env_parse_none_str": "None",
+        "env_parse_enums": False
+    }
 
 settings = Settings()
