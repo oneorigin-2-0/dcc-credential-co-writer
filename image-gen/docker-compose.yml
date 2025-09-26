@@ -11,4 +11,5 @@ services:
     volumes:
       - ./assets:/app/assets
       - ./app:/app/app
+      - ./logs:/app/logs
     restart: unless-stopped
