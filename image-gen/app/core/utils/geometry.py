@@ -56,7 +56,17 @@ def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height):
         return left, right  # Shield has straight sides in our implementation
     
     elif shape == "rounded_rect":
-        rect = params.get("rect", [20, 20, canvas_width-20, canvas_height-20])
+        # Match ShapeLayer implementation - use width, height, radius parameters
+        width = int(params.get("width", 450))
+        height = int(params.get("height", 450))
+
+        # Center the rectangle on canvas (same as ShapeLayer)
+        x1 = cx - width//2
+        y1 = cy - height//2
+        x2 = cx + width//2
+        y2 = cy + height//2
+
+        rect = [x1, y1, x2, y2]
         if rect[1] <= y_position <= rect[3]:
             return rect[0], rect[2]
         return cx, cx  # Outside rectangle
@@ -104,10 +114,21 @@ def get_shape_bounds(shape_spec, canvas_width, canvas_height):
         return {"top": top, "bottom": bottom, "center_x": cx, "center_y": (top + bottom)//2, "radius": min(canvas_width, canvas_height)//2 - margin}
     
     elif shape == "rounded_rect":
-        rect = params.get("rect", [20, 20, canvas_width-20, canvas_height-20])
+        # Match ShapeLayer implementation - use width, height, radius parameters
+        width = int(params.get("width", 450))
+        height = int(params.get("height", 450))
+
+        # Center the rectangle on canvas (same as ShapeLayer)
+        cx = canvas_width//2
+        cy = canvas_height//2
+        x1 = cx - width//2
+        y1 = cy - height//2
+        x2 = cx + width//2
+        y2 = cy + height//2
+
+        rect = [x1, y1, x2, y2]
         top, bottom = rect[1], rect[3]
-        cx = (rect[0] + rect[2])//2
-        return {"top": top, "bottom": bottom, "center_x": cx, "center_y": (top + bottom)//2, "radius": min(rect[2]-rect[0], rect[3]-rect[1])//2}
+        return {"top": top, "bottom": bottom, "center_x": cx, "center_y": cy, "radius": min(width, height)//2}
     
     # Default fallback
     return {"top": 50, "bottom": canvas_height-50, "center_x": canvas_width//2, "center_y": canvas_height//2, "radius": min(canvas_width, canvas_height)//2 - 50}
