@@ -38,6 +38,14 @@ class BadgeService:
             config["canvas"]["width"] = 600
             config["canvas"]["height"] = 600
 
+            # Add default background layer
+            config["layers"].insert(0, {
+                "type": "BackgroundLayer",
+                "mode": "solid",
+                "color": "#FFFFFF00",
+                "z": 0
+            })
+
             # Generate badge using composer
             image = render_from_spec(config)
 

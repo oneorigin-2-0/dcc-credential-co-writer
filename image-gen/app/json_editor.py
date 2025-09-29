@@ -9,7 +9,16 @@ def generate_from_json(json_text):
     try:
         # Parse the JSON
         config = json.loads(json_text)
-        
+
+        # Check if background layer exists, if not add default one
+        has_background = any(layer.get("type") == "BackgroundLayer" for layer in config["layers"])
+        if not has_background:
+            config["layers"].insert(0, {
+                "type": "BackgroundLayer",
+                "mode": "solid",
+                "color": "#FFFFFF00",
+                "z": 0
+            })
         # Generate the image
         image = render_from_spec(config)
         

@@ -3,8 +3,8 @@
 default_badge_config = {
   "canvas": {"width": 600, "height": 600, "bg": "white"},
   "layers": [
-    {"type": "BackgroundLayer", "mode": "solid",
-     "color": "#FFFFFF", "z": 0},
+    # {"type": "BackgroundLayer", "mode": "solid",
+    #  "color": "#FFFFFF00", "z": 0},
 
     {
     "type": "ShapeLayer",
