@@ -215,7 +215,7 @@ curl -X POST http://localhost:3001/api/v1/badge/generate \
         "type": "TextLayer",
         "text": "Achievement Badge",
         "font": {
-          "path": "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+          "path": "assets/fonts/Arial.ttf",
           "size": 45
         },
         "color": "#000000",

@@ -28,12 +28,12 @@ default_badge_config = {
     
 
     {"type": "TextLayer", "text": "Spark Challenge",
-     "font": {"path": "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "size": 45},
+     "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
      "color": "#000000", "align": {"x": "center", "y": "dynamic"},
      "wrap": {"dynamic": True, "line_gap": 6}, "z": 30},
 
     {"type": "TextLayer", "text": "Soft Skill Credential",
-     "font": {"path": "/System/Library/Fonts/Supplemental/Arial.ttf", "size": 37},
+     "font": {"path": "assets/fonts/Arial.ttf", "size": 37},
      "color": "#000000", "align": {"x": "center", "y": "dynamic"},
      "wrap": {"dynamic": True, "line_gap": 6}, "z": 30},
 
@@ -43,7 +43,7 @@ default_badge_config = {
     #  "params": {"rect": "dynamic", "radius": 12}, "z": 35},
 
     {"type": "TextLayer", "text": "Teamwork",
-     "font": {"path": "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "size": 36},
+     "font": {"path": "assets/fonts/Arial.ttf", "size": 36},
      "color": "#FFFFFF", "align": {"x": "center", "y": "dynamic"},
      "wrap": {"dynamic": True,"line_gap": 0}, "z": 36}
   ]

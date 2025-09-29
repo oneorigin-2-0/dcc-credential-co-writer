@@ -45,7 +45,7 @@ class BadgeRequest(BaseModel):
                         "type": "TextLayer",
                         "text": "Sample Badge",
                         "font": {
-                            "path": "/System/Library/Fonts/Arial.ttf",
+                            "path": "assets/fonts/Arial.ttf",
                             "size": 45
                         },
                         "color": "#000000",

@@ -23,7 +23,7 @@ This document provides detailed explanations with visual examples for all functi
 **Purpose**: Safely loads a font file with fallback handling.
 
 **Parameters**:
-- `path`: Font file path (e.g., "/System/Library/Fonts/Arial.ttf")
+- `path`: Font file path (e.g., "assets/fonts/Arial.ttf")
 - `size`: Font size in pixels
 - `fallback`: Optional fallback font (defaults to system default)
 
