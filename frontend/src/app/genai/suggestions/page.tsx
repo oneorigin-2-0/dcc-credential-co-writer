@@ -24,6 +24,13 @@ export default function CredentialSuggestionsPage() {
       if (storedContent) {
         setOriginalContent(storedContent);
       }
+      
+      // Debug: Check what's in localStorage
+      console.log('Suggestions page - localStorage check:');
+      console.log('generatedSuggestions:', localStorage.getItem('generatedSuggestions'));
+      console.log('finalResponses:', localStorage.getItem('finalResponses'));
+      console.log('isGenerating:', localStorage.getItem('isGenerating'));
+      console.log('suggestionCards:', suggestionCards);
     } catch (error) {
       console.error('Error accessing localStorage:', error);
       toast({
@@ -32,7 +39,7 @@ export default function CredentialSuggestionsPage() {
         description: 'Unable to access stored content. Please go back and try again.',
       });
     }
-  }, [toast]);
+  }, [toast, suggestionCards]);
 
   // Auto-start generation if it was initiated from /genai page
   useEffect(() => {
@@ -92,17 +99,26 @@ export default function CredentialSuggestionsPage() {
   }, [isGenerating, router]);
 
   const handleCardClick = (card: any) => {
-    if (!card.data) {
+    // Allow clicking on cards even if they failed or don't have data
+    if (!card.data && !card.error) {
       toast({
         variant: 'destructive',
         title: 'Suggestion Not Ready',
-        description: 'This suggestion is still being generated or failed to load.',
+        description: 'This suggestion is still being generated. Please wait for it to complete.',
       });
       return;
     }
 
+    // If card has data, use it; if it failed, create a fallback for editing
+    const suggestionData = card.data || {
+      title: `Suggestion ${card.id}`,
+      description: 'This suggestion failed to generate. You can edit and customize it manually.',
+      criteria: 'Please define the criteria for this credential.',
+      image: undefined
+    };
+
     // Store the selected suggestion and navigate to editor
-    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(card.data));
+    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionData));
     
     // Navigate to badge suggestion editor
     handleNavigation('/genai/editor');

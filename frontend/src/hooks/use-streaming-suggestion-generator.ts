@@ -38,11 +38,18 @@ export function useStreamingSuggestionGenerator() {
     try {
       const storedIsGenerating = localStorage.getItem('isGenerating');
       const storedSuggestions = localStorage.getItem('generatedSuggestions');
+      const finalResponses = localStorage.getItem('finalResponses');
+      
+      console.log('Hook - Restoring state from localStorage:');
+      console.log('storedIsGenerating:', storedIsGenerating);
+      console.log('storedSuggestions:', storedSuggestions);
+      console.log('finalResponses:', finalResponses);
       
       if (storedIsGenerating === 'true') {
         setIsGenerating(true);
       }
       
+      // First try to restore from generatedSuggestions
       if (storedSuggestions) {
         const suggestions = JSON.parse(storedSuggestions);
         if (suggestions.length > 0) {
@@ -50,10 +57,67 @@ export function useStreamingSuggestionGenerator() {
             prev.map(card => {
               const storedSuggestion = suggestions.find((s: any) => s.id === card.id);
               return storedSuggestion 
-                ? { ...card, data: storedSuggestion.data, loading: false }
+                ? { ...card, data: storedSuggestion.data, loading: false, streamingStarted: true }
                 : card;
             })
           );
+          
+          // If we have stored suggestions, mark generation as complete
+          setIsGenerating(false);
+          setAllCompleted(true);
+          console.log('Hook - Restored from generatedSuggestions:', suggestions);
+          return; // Exit early if we found suggestions
+        }
+      }
+      
+      // Fallback: try to restore from finalResponses if no generatedSuggestions
+      if (finalResponses) {
+        const responses = JSON.parse(finalResponses);
+        const cardIds = Object.keys(responses);
+        
+        if (cardIds.length > 0) {
+          setSuggestionCards(prev => 
+            prev.map(card => {
+              const cardId = card.id.toString();
+              const rawFinalData = responses[cardId];
+              
+              if (rawFinalData) {
+                // Extract mapped suggestion from raw final data
+                let mappedSuggestion;
+                if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
+                  // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+                  const achievement = rawFinalData.credentialSubject.achievement;
+                  mappedSuggestion = {
+                    title: achievement.name,
+                    description: achievement.description,
+                    criteria: achievement.criteria?.narrative || achievement.description,
+                    image: achievement.image?.id || undefined,
+                  };
+                } else {
+                  // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
+                  mappedSuggestion = {
+                    title: rawFinalData.badge_name,
+                    description: rawFinalData.badge_description,
+                    criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
+                    image: undefined,
+                  };
+                }
+                
+                return { 
+                  ...card, 
+                  data: mappedSuggestion, 
+                  loading: false, 
+                  streamingStarted: true 
+                };
+              }
+              return card;
+            })
+          );
+          
+          // If we have final responses, mark generation as complete
+          setIsGenerating(false);
+          setAllCompleted(true);
+          console.log('Hook - Restored from finalResponses:', cardIds);
         }
       }
     } catch (error) {
@@ -97,26 +161,32 @@ export function useStreamingSuggestionGenerator() {
             setSuggestionCards(prev => 
               prev.map(card => 
                 card.id === cardId 
-                  ? { ...card, streamingText: 'AI stream started, generating response...', streamingStarted: true }
+                  ? { ...card, streamingText: 'AI stream started, waiting for response...' }
                   : card
               )
             );
             break;
             
-          case 'data':
-            if (response.progress !== undefined) {
-              // Progress update with contextual messages
-              let statusMessage = 'Generating...';
-              if (response.progress < 20) {
-                statusMessage = 'Analyzing content...';
-              } else if (response.progress < 40) {
-                statusMessage = 'Creating badge concept...';
-              } else if (response.progress < 60) {
-                statusMessage = 'Writing description...';
-              } else if (response.progress < 80) {
-                statusMessage = 'Defining criteria...';
-              } else if (response.progress < 100) {
-                statusMessage = 'Finalizing suggestion...';
+          case 'final':
+            // Handle final response (type: "final")
+            console.log(`Card ${cardId} received final response:`, response.data);
+            console.log(`Card ${cardId} received mapped suggestion:`, response.mappedSuggestion);
+            
+            if (response.data && response.mappedSuggestion) {
+              // Store raw final response data in localStorage
+              try {
+                // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
+                // existingResponses[cardId] = response.data; // Store raw final data
+                // localStorage.setItem('streamingResponses', JSON.stringify(existingResponses));
+                // console.log(`Stored raw final response data for card ${cardId}:`, response.data);
+                
+                // Store raw final data in finalResponses with card ID
+                const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+                existingFinalResponses[cardId] = response.data; // Store raw final data
+                localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+                console.log(`Stored raw final response for card ${cardId} in finalResponses:`, response.data);
+              } catch (error) {
+                console.error('Failed to store final response in localStorage:', error);
               }
               
               setSuggestionCards(prev => 
@@ -124,53 +194,76 @@ export function useStreamingSuggestionGenerator() {
                   card.id === cardId 
                     ? { 
                         ...card, 
-                        progress: response.progress,
-                        streamingText: `${statusMessage} ${response.progress}%`
+                        data: response.mappedSuggestion, // Use mapped suggestion for UI display
+                        loading: false, 
+                        error: null,
+                        streamingText: 'Complete!',
+                        rawStreamingContent: undefined,
+                        isStreamingComplete: true
                       }
                     : card
                 )
               );
-            } else if (response.data && (response.data.title || response.data.description || response.data.criteria)) {
-              // Partial streaming content (parsed JSON)
-              const isPartial = (response as any).isPartial !== false;
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        streamingContent: {
-                          title: response.data.title || card.streamingContent?.title,
-                          description: response.data.description || card.streamingContent?.description,
-                          criteria: response.data.criteria || card.streamingContent?.criteria,
+              
+              console.log(`Card ${cardId} marked as complete with mapped suggestion:`, response.mappedSuggestion);
+              
+              toast({
+                title: `Suggestion ${cardId} Generated!`,
+                description: 'A new credential suggestion is ready.',
+              });
+
+              // Call image generation microservice using imageConfig and update preview with base64
+              try {
+                const imageConfig = response.data?.imageConfig;
+                if (imageConfig) {
+                  console.log(`Card ${cardId}: calling image microservice with imageConfig`, imageConfig);
+                  (async () => {
+                    try {
+                      const resp = await fetch('http://localhost:3001/api/v1/badge/generate', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Access-Control-Allow-Origin': '*',
                         },
-                        streamingText: isPartial ? 'Streaming content...' : 'Generation complete!'
-                      }
-                    : card
-                )
-              );
-              
-              // If this is the final data, mark as complete
-              if (!isPartial) {
-                setSuggestionCards(prev => 
-                  prev.map(card => 
-                    card.id === cardId 
-                      ? { 
-                          ...card, 
-                          data: response.data,
-                          loading: false,
-                          error: null,
-                          progress: 100,
-                          streamingText: 'Generated Successfully!'
+                        body: JSON.stringify(imageConfig),
+                      });
+                      const rawText = await resp.text();
+                      console.log(`Card ${cardId}: image microservice status`, resp.status);
+                      console.log(`Card ${cardId}: image microservice raw response`, rawText);
+                      try {
+                        const json = JSON.parse(rawText);
+                        const base64: string | undefined = (json?.data?.base64 || json?.text?.base64 || json?.base64);
+                        if (base64) {
+                          const imageSrc = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+                          setSuggestionCards(prev => prev.map(card => card.id === cardId && card.data ? { ...card, data: { ...card.data, image: imageSrc } } : card));
+                          try {
+                            const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
+                            const updated = existing.filter((s: any) => s.id !== cardId);
+                            const currentCard = updated.find((s: any) => s.id === cardId) || null;
+                            const cardData = (currentCard?.data) || response.mappedSuggestion;
+                            updated.push({ id: cardId, data: { ...cardData, image: imageSrc } });
+                            localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
+                          } catch {}
+                        } else {
+                          console.warn(`Card ${cardId}: image microservice missing base64`);
                         }
-                      : card
-                  )
-                );
-                toast({ 
-                  title: `Suggestion ${cardId} Generated!`, 
-                  description: 'A new credential suggestion is ready.' 
-                });
+                      } catch (parseErr) {
+                        console.warn(`Card ${cardId}: failed to parse image microservice response`, parseErr);
+                      }
+                    } catch (imgErr) {
+                      console.error(`Card ${cardId}: image microservice call failed`, imgErr);
+                    }
+                  })();
+                }
+              } catch (e) {
+                console.error(`Card ${cardId}: error preparing image request`, e);
               }
-            } else if (response.data && response.data.rawContent) {
+            }
+            break;
+            
+          case 'data':
+            // Handle both token streaming and final response
+            if (response.data && response.data.rawContent) {
               // Raw token streaming content - show like ChatGPT
               const isComplete = response.data.isComplete;
               
@@ -181,7 +274,8 @@ export function useStreamingSuggestionGenerator() {
                         ...card, 
                         rawStreamingContent: response.data.rawContent,
                         isStreamingComplete: isComplete,
-                        streamingText: isComplete ? 'Parsing JSON...' : 'Generating JSON...'
+                        streamingText: isComplete ? 'Parsing Response...' : 'Generating Response...',
+                        streamingStarted: true
                       }
                     : card
                 )
@@ -189,6 +283,7 @@ export function useStreamingSuggestionGenerator() {
               
               // If streaming is complete, parse the JSON
               if (isComplete) {
+                console.log(`Card ${cardId} streaming complete, parsing JSON...`);
                 try {
                   // Extract JSON from accumulated content (remove markdown code blocks)
                   let jsonContent = response.data.rawContent;
@@ -203,13 +298,40 @@ export function useStreamingSuggestionGenerator() {
                   // Parse the accumulated JSON
                   const badgeData = JSON.parse(jsonContent);
                   
-                  // Map to our format
-                  const suggestion = {
-                    title: badgeData.badge_name,
-                    description: badgeData.badge_description,
-                    criteria: badgeData.criteria?.narrative || badgeData.badge_description,
-                    image: undefined,
-                  };
+                  // Store complete response data in localStorage for debugging
+                  try {
+                    const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
+                    existingResponses[cardId] = badgeData;
+                    localStorage.setItem('streamingResponses', JSON.stringify(existingResponses));
+                    console.log(`Stored complete streaming response for card ${cardId}:`, badgeData);
+                  } catch (error) {
+                    console.error('Failed to store streaming response in localStorage:', error);
+                  }
+
+                  // Store the raw badge data as final response
+                  try {
+                    const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+                    existingFinalResponses[cardId] = badgeData; // Store raw badge data instead of mapped suggestion
+                    localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+                    console.log(`Stored raw badge data for card ${cardId} in finalResponses:`, badgeData);
+                  } catch (error) {
+                    console.error('Failed to store final response in localStorage:', error);
+                  }
+                  
+                  // Map to our format - handle new API structure
+                  let suggestion: BadgeSuggestion | null = null;
+                  if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
+                    // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+                    const achievement = badgeData.credentialSubject.achievement;
+                    suggestion = {
+                      title: achievement.name,
+                      description: achievement.description,
+                      criteria: achievement.criteria?.narrative || achievement.description,
+                      image: achievement.image?.id || undefined,
+                    };
+                  }
+                  
+          
                   
                   setSuggestionCards(prev => 
                     prev.map(card => 
@@ -219,11 +341,15 @@ export function useStreamingSuggestionGenerator() {
                             data: suggestion,
                             loading: false,
                             error: null,
-                            streamingText: 'Generated Successfully!'
+                            streamingText: 'Generated Successfully!',
+                            rawStreamingContent: undefined,
+                            isStreamingComplete: true
                           }
                         : card
                     )
                   );
+                  
+                  console.log(`Card ${cardId} marked as complete from token parsing with suggestion:`, suggestion);
                   
                   toast({ 
                     title: `Suggestion ${cardId} Generated!`, 
@@ -258,44 +384,6 @@ export function useStreamingSuggestionGenerator() {
                   );
                 }
               }
-            } else if (response.data && typeof response.data === 'string') {
-              // Handle non-JSON streaming text
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { ...card, streamingText: response.data }
-                    : card
-                )
-              );
-            } else if (response.data && response.data.title) {
-              // Final suggestion data
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        data: response.data, 
-                        loading: false, 
-                        error: null,
-                        streamingText: 'Complete!'
-                      }
-                    : card
-                )
-              );
-              
-              toast({
-                title: `Suggestion ${cardId} Generated!`,
-                description: 'A new credential suggestion is ready.',
-              });
-            } else if (response.data && typeof response.data === 'string') {
-              // Streaming text update
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { ...card, streamingText: response.data }
-                    : card
-                )
-              );
             }
             break;
             
@@ -402,6 +490,9 @@ export function useStreamingSuggestionGenerator() {
     try {
       localStorage.setItem('isGenerating', 'true');
       localStorage.setItem('generationStartedAt', new Date().toISOString());
+      // Clear previous suggestions when starting new generation
+      localStorage.removeItem('generatedSuggestions');
+      localStorage.removeItem('suggestionsGeneratedAt');
     } catch (error) {
       console.error('Error storing generation state:', error);
     }
@@ -427,7 +518,7 @@ export function useStreamingSuggestionGenerator() {
     
     // Wait for all streams to complete
     await Promise.allSettled([promise1, promise2, promise3, promise4]);
-    
+    // await Promise.allSettled([promise1]);
     // Store all completed suggestions in localStorage
     try {
       const completedSuggestions = suggestionCards

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,6 +24,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { BadgeConfiguration } from '@/components/genai/badge-configuration';
+import { BadgeImageDisplay } from '@/components/genai/badge-image-display';
+import { SuggestionCard } from '@/components/genai/suggestion-card';
+import { StreamingApiClient } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
 
 export default function BadgeEditorPage() {
@@ -39,19 +43,116 @@ export default function BadgeEditorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [originalContent, setOriginalContent] = useState<string>('');
+  const [currentCardId, setCurrentCardId] = useState<string | null>(null);
+  const [availableCards, setAvailableCards] = useState<string[]>([]);
+  const [rawFinalData, setRawFinalData] = useState<any>(null);
+  const [badgeConfiguration, setBadgeConfiguration] = useState({
+    badge_style: 'professional',
+    badge_tone: 'authoritative',
+    criterion_style: 'task-oriented',
+    badge_level: 'not-specified'
+  });
+  const [userPrompt, setUserPrompt] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [streamingRawContent, setStreamingRawContent] = useState('');
+  const [streamingError, setStreamingError] = useState<string | null>(null);
+  const [streamingComplete, setStreamingComplete] = useState(false);
+
+  // Auto-hide streaming status after completion
+  useEffect(() => {
+    if (streamingComplete) {
+      const timer = setTimeout(() => {
+        setIsStreaming(false);
+        setStreamingComplete(false);
+      }, 2000); // Hide after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [streamingComplete]);
 
   useEffect(() => {
     // Get selected badge suggestion from localStorage
     const storedSuggestion = localStorage.getItem('selectedBadgeSuggestion');
     if (storedSuggestion) {
-      setBadgeSuggestion(JSON.parse(storedSuggestion));
+      const parsedSuggestion = JSON.parse(storedSuggestion);
+      setBadgeSuggestion(parsedSuggestion);
+      
+      // Try to find corresponding raw final data
+      try {
+        const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+        const cardIds = Object.keys(finalResponses);
+        
+        // Look for raw data that matches this suggestion
+        for (const cardId of cardIds) {
+          const rawFinalData = finalResponses[cardId];
+          if (rawFinalData && rawFinalData.credentialSubject?.achievement?.name === parsedSuggestion.title) {
+            setRawFinalData(rawFinalData);
+            setCurrentCardId(cardId);
+            setAvailableCards(cardIds);
+            console.log(`Found matching raw final data for selectedBadgeSuggestion:`, rawFinalData);
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading raw final data for selectedBadgeSuggestion:', error);
+      }
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'No Suggestion Selected',
-        description: 'Please go back and select a suggestion to edit.',
-      });
-      router.push('/genai/suggestions');
+      // Try to load from finalResponses if no selectedBadgeSuggestion
+      try {
+        const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+        const cardIds = Object.keys(finalResponses);
+        
+        if (cardIds.length > 0) {
+          // Use the first available final response
+          const firstCardId = cardIds[0];
+          const rawFinalData = finalResponses[firstCardId];
+          console.log(`Loading raw final data for card ${firstCardId}:`, rawFinalData);
+          
+          // Extract mapped suggestion from raw final data
+          let mappedSuggestion;
+          if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
+            // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+            const achievement = rawFinalData.credentialSubject.achievement;
+            mappedSuggestion = {
+              title: achievement.name,
+              description: achievement.description,
+              criteria: achievement.criteria?.narrative || achievement.description,
+              image: achievement.image?.id || undefined,
+            };
+          } else {
+            // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
+            mappedSuggestion = {
+              title: rawFinalData.badge_name,
+              description: rawFinalData.badge_description,
+              criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
+              image: undefined,
+            };
+          }
+          
+          setBadgeSuggestion(mappedSuggestion);
+          setRawFinalData(rawFinalData); // Store raw final data for JSON generation
+          setCurrentCardId(firstCardId);
+          setAvailableCards(cardIds);
+          console.log(`Loaded mapped suggestion for card ${firstCardId}:`, mappedSuggestion);
+          console.log(`Loaded raw final data for card ${firstCardId}:`, rawFinalData);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'No Suggestion Available',
+            description: 'Please go back and generate suggestions first.',
+          });
+          router.push('/genai/suggestions');
+        }
+      } catch (error) {
+        console.error('Error loading from finalResponses:', error);
+        toast({
+          variant: 'destructive',
+          title: 'No Suggestion Selected',
+          description: 'Please go back and select a suggestion to edit.',
+        });
+        router.push('/genai/suggestions');
+      }
     }
 
     // Get original content from localStorage
@@ -60,6 +161,51 @@ export default function BadgeEditorPage() {
       setOriginalContent(storedContent);
     }
   }, []); // Empty dependency array since this should only run once on mount
+
+  const handleConfigurationChange = useCallback((config: any) => {
+    setBadgeConfiguration(config);
+  }, []);
+
+  const handleUserPromptChange = useCallback((prompt: string) => {
+    setUserPrompt(prompt);
+  }, []);
+
+  const switchToCard = (cardId: string) => {
+    try {
+      const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+      const rawFinalData = finalResponses[cardId];
+      if (rawFinalData) {
+        // Extract mapped suggestion from raw final data
+        let mappedSuggestion;
+        if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
+          // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+          const achievement = rawFinalData.credentialSubject.achievement;
+          mappedSuggestion = {
+            title: achievement.name,
+            description: achievement.description,
+            criteria: achievement.criteria?.narrative || achievement.description,
+            image: achievement.image?.id || undefined,
+          };
+        } else {
+          // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
+          mappedSuggestion = {
+            title: rawFinalData.badge_name,
+            description: rawFinalData.badge_description,
+            criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
+            image: undefined,
+          };
+        }
+        
+        setBadgeSuggestion(mappedSuggestion);
+        setRawFinalData(rawFinalData); // Store raw final data for JSON generation
+        setCurrentCardId(cardId);
+        console.log(`Switched to card ${cardId} raw data:`, rawFinalData);
+        console.log(`Switched to card ${cardId} mapped suggestion:`, mappedSuggestion);
+      }
+    } catch (error) {
+      console.error('Error switching to card:', error);
+    }
+  };
 
   const handleRegenerate = async () => {
     if (!originalContent) {
@@ -72,69 +218,125 @@ export default function BadgeEditorPage() {
     }
 
     setIsRegenerating(true);
+    setIsStreaming(true);
+    setStreamingContent('');
+    setStreamingRawContent('');
+    setStreamingError(null);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: originalContent,
-          regenerate: true,
-        }),
-      });
-
-      const result = await response.json();
-
-      // Handle different response formats
-      let newSuggestion = null;
+      const apiClient = new StreamingApiClient();
       
-      if (result.response && result.response.badge_name) {
-        // New API format: { response: { badge_name, badge_description, criteria: { narrative } } }
-        newSuggestion = {
-          title: result.response.badge_name,
-          description: result.response.badge_description,
-          criteria: result.response.criteria?.narrative || result.response.badge_description,
-          image: undefined, // No image in new format
-        };
-      } else if (result.success && result.data && result.data.data && result.data.data.length > 0) {
-        // Format: { success: true, data: { data: [suggestions] } }
-        newSuggestion = result.data.data[0];
-      } else if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
-        // Format: { success: true, data: [suggestions] }
-        newSuggestion = result.data[0];
-      } else if (result.success && result.data && result.data.title) {
-        // Format: { success: true, data: { title, description, criteria, image } }
-        newSuggestion = result.data;
-      } else if (result.title) {
-        // Format: { title, description, criteria, image }
-        newSuggestion = result;
-      }
+      for await (const response of apiClient.generateSuggestionsStream(originalContent, {
+        regenerate: true,
+        custom_instructions: userPrompt,
+        ...badgeConfiguration,
+      })) {
+        console.log('Editor streaming response:', response);
+        
+        switch (response.type) {
+          case 'start':
+            console.log('Stream started');
+            setStreamingContent('AI stream started, waiting for response...');
+            break;
+            
+        case 'data':
+          console.log('Stream data received:', response.data);
+          // Our StreamingApiClient emits { rawContent, latestToken, ... } for token events
+          // but may also surface plain strings or objects when parsing fails.
+          const raw = (response?.data?.rawContent
+            ?? response?.data?.accumulated
+            ?? (typeof response?.data === 'string' ? response.data : '')) as string;
+          setStreamingRawContent(raw);
 
-      if (newSuggestion) {
-        setBadgeSuggestion(newSuggestion);
-        
-        // Update localStorage
-        localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(newSuggestion));
-        
-        toast({
-          title: 'Suggestion Regenerated!',
-          description: 'A new badge suggestion has been generated.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Regeneration Failed',
-          description: result.error || 'Failed to regenerate suggestion.',
-        });
+          // Try to parse JSON fenced in ```json ... ``` blocks from the raw content
+          try {
+            const jsonMatch = raw?.match(/```json\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              const jsonStr = jsonMatch[1];
+              const parsed = JSON.parse(jsonStr);
+              setStreamingContent(JSON.stringify(parsed, null, 2));
+            } else {
+              // Fallback: show raw content while streaming
+              setStreamingContent(raw || '');
+            }
+          } catch (e) {
+            // If JSON parsing fails, still surface the raw content so the user sees progress
+            setStreamingContent(raw || '');
+          }
+          break;
+            
+          case 'final':
+            console.log('Stream final response:', response.data);
+            console.log('Stream mapped suggestion:', response.mappedSuggestion);
+            
+            // Handle final response
+            const finalData = response.data;
+            const mappedSuggestion = response.mappedSuggestion;
+            
+            if (mappedSuggestion) {
+              setBadgeSuggestion(mappedSuggestion);
+              setRawFinalData(finalData);
+              localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(mappedSuggestion));
+              localStorage.setItem('rawFinalData', JSON.stringify(finalData));
+              
+              toast({
+                title: 'Badge Regenerated',
+                description: 'Your badge has been successfully regenerated.',
+              });
+            }
+
+            // Use base64 image from final payload when available
+            try {
+              const base64: string | undefined = (
+                finalData?.credentialSubject?.achievement?.image?.image_base64 ||
+                finalData?.image?.image_base64
+              );
+              if (base64) {
+                const imageSrc = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+                setBadgeSuggestion(prev => {
+                  if (!prev) return prev;
+                  const updated = { ...prev, image: imageSrc };
+                  try {
+                    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(updated));
+                    const raw = JSON.parse(localStorage.getItem('rawFinalData') || 'null');
+                    if (raw) {
+                      const merged = { ...raw, generatedImage: imageSrc };
+                      localStorage.setItem('rawFinalData', JSON.stringify(merged));
+                    }
+                  } catch {}
+                  return updated;
+                });
+              }
+            } catch (e) {
+              console.error('Failed to use base64 image from final payload:', e);
+            }
+            
+            setStreamingComplete(true);
+            // Keep isStreaming true to show completion message
+            setStreamingContent('');
+            setStreamingRawContent('');
+            break;
+            
+          case 'error':
+            console.log('Stream error:', response.error);
+            setStreamingError(response.error || 'Unknown error occurred');
+            setIsStreaming(false);
+            setStreamingComplete(false);
+            break;
+            
+          default:
+            console.log('Unknown response type:', response.type);
+        }
       }
     } catch (error) {
-      console.error('Error regenerating suggestion:', error);
+      console.error('Error regenerating badge:', error);
+      setStreamingError('Failed to regenerate the badge. Please try again.');
+      setIsStreaming(false);
+      setStreamingComplete(false);
       toast({
         variant: 'destructive',
         title: 'Regeneration Failed',
-        description: 'An unexpected error occurred. Please try again.',
+        description: 'Failed to regenerate the badge. Please try again.',
       });
     } finally {
       setIsRegenerating(false);
@@ -170,16 +372,24 @@ export default function BadgeEditorPage() {
     setEditValues({ title: '', description: '', criteria: '' });
   };
 
-  const generateBadgeJSON = (suggestion: BadgeSuggestion) => {
+  const generateBadgeJSON = () => {
+    // Use raw final data if available, otherwise fallback to mapped suggestion
+    if (rawFinalData) {
+      return rawFinalData.credentialSubject || null;
+    }
+    
+    // Fallback to mapped suggestion if no raw data
+    if (!badgeSuggestion) return null;
+    
     return {
       "achievement": {
-        "name": suggestion.title,
-        "description": suggestion.description,
+        "name": badgeSuggestion.title,
+        "description": badgeSuggestion.description,
         "criteria": {
-          "narrative": suggestion.criteria
+          "narrative": badgeSuggestion.criteria
         },
         "image": {
-          "id": "https://example.com//achievements/c3c1ea5b-9d6b-416d-ab7f-76da1df3e8d6/image",
+          "id": "",
           "type": "Image"
         }
       }
@@ -187,8 +397,9 @@ export default function BadgeEditorPage() {
   };
 
   const handleCopyJSON = () => {
-    if (!badgeSuggestion) return;
-    const badgeJSON = generateBadgeJSON(badgeSuggestion);
+    const badgeJSON = generateBadgeJSON();
+    if (!badgeJSON) return;
+    
     const jsonString = JSON.stringify(badgeJSON, null, 2);
     
     navigator.clipboard.writeText(jsonString).then(() => {
@@ -206,20 +417,24 @@ export default function BadgeEditorPage() {
   };
 
   const handleExportJSON = () => {
-    if (!badgeSuggestion) return;
-    const badgeJSON = generateBadgeJSON(badgeSuggestion);
+    const badgeJSON = generateBadgeJSON();
+    if (!badgeJSON) return;
+    
     const jsonString = JSON.stringify(badgeJSON, null, 2);
     const dataBlob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${badgeSuggestion.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+    
+    // Use title from raw data or mapped suggestion for filename
+    const title = rawFinalData?.credentialSubject?.achievement?.name || badgeSuggestion?.title || 'badge';
+    link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
     link.click();
     URL.revokeObjectURL(url);
     
     toast({
       title: 'Exported!',
-      description: `Badge JSON has been downloaded as ${badgeSuggestion.title}.json`,
+      description: `Badge JSON has been downloaded as ${title}.json`,
     });
   };
 
@@ -273,39 +488,73 @@ export default function BadgeEditorPage() {
           Back to Suggestions
         </Button>
 
-        <div className="flex justify-center">
-          <div className="w-full max-w-4xl">
-            <Card className="border-0 shadow-xl bg-white">
-              <CardHeader className="pb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <CardTitle className="text-3xl font-bold text-gray-900">
-                    Badge Suggestion Editor
-                  </CardTitle>
-                  <Button
-                    onClick={handleRegenerate}
-                    disabled={isRegenerating}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    {isRegenerating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Regenerating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4" />
-                        Regenerate
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <CardDescription className="text-lg text-gray-600 leading-relaxed">
-                  Edit and customize your badge suggestion before generating the final credential.
-                </CardDescription>
-              </CardHeader>
+        {/* 3-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+          {/* Column 1: Configuration */}
+          <div className="lg:col-span-3">
+            <BadgeConfiguration 
+              onRegenerate={handleRegenerate}
+              isRegenerating={isRegenerating}
+              onConfigurationChange={handleConfigurationChange}
+              userPrompt={userPrompt}
+              onUserPromptChange={handleUserPromptChange}
+            />
+          </div>
 
-              <CardContent className="px-8 pb-8 space-y-6">
+          {/* Column 2: Badge Suggestion Editor / Streaming */}
+          <div className="lg:col-span-6">
+            {isStreaming ? (
+              streamingError ? (
+                <Card className="border-red-300 shadow-lg bg-red-50 h-full">
+                  <CardHeader className="pb-8">
+                    <div className="mb-3">
+                      <CardTitle className="text-3xl font-bold text-red-800 flex items-center gap-3">
+                        <div className="rounded-full h-6 w-6 border-2 border-red-500 flex items-center justify-center">
+                          <span className="text-red-500 text-sm">!</span>
+                        </div>
+                        Regeneration Failed
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-8 pb-8">
+                    <div className="text-red-700 bg-red-100 p-4 rounded-lg border border-red-200">
+                      <h4 className="font-semibold mb-2">Error:</h4>
+                      <p>{streamingError}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <SuggestionCard
+                  id={1}
+                  data={streamingComplete ? badgeSuggestion : null}
+                  loading={isStreaming && !streamingComplete}
+                  error={streamingError}
+                  progress={streamingComplete ? 100 : (streamingContent ? 50 : 0)}
+                  streamingText="Regenerating badge..."
+                  streamingContent={streamingContent ? {
+                    title: streamingContent.includes('badge_name') ? 'Parsing...' : undefined,
+                    description: streamingContent.includes('badge_description') ? 'Parsing...' : undefined,
+                    criteria: streamingContent.includes('criteria') ? 'Parsing...' : undefined,
+                  } : undefined}
+                  rawStreamingContent={streamingRawContent}
+                  isStreamingComplete={streamingComplete}
+                  onClick={() => {
+                    // No navigation needed in editor context
+                    console.log('Card clicked in editor context');
+                  }}
+                />
+              )
+            ) : (
+              <Card className="border-[#429EA6] shadow-lg bg-white h-full">
+                <CardHeader className="pb-8">
+                  <div className="mb-3">
+                    <CardTitle className="text-3xl font-bold text-gray-900">
+                      Badge Suggestion Editor
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="px-8 pb-8 space-y-6">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-semibold text-gray-700">Title:</label>
@@ -450,7 +699,7 @@ export default function BadgeEditorPage() {
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Badge Image:</label>
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <img
@@ -459,7 +708,7 @@ export default function BadgeEditorPage() {
                       className="w-32 h-32 object-contain rounded-lg border border-gray-300"
                     />
                   </div>
-                </div>
+                </div> */}
               </CardContent>
 
               <CardFooter className="px-8 pb-8 flex justify-end">
@@ -485,7 +734,7 @@ export default function BadgeEditorPage() {
                     <div className="space-y-4">
                       <div className="bg-gray-50 rounded-lg p-4 border">
                         <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto">
-                          {JSON.stringify(generateBadgeJSON(badgeSuggestion), null, 2)}
+                          {JSON.stringify(generateBadgeJSON(), null, 2)}
                         </pre>
                       </div>
                       
@@ -511,6 +760,15 @@ export default function BadgeEditorPage() {
                 </Dialog>
               </CardFooter>
             </Card>
+            )}
+          </div>
+
+          {/* Column 3: Badge Image Display */}
+          <div className="lg:col-span-3">
+            <BadgeImageDisplay 
+              imageUrl={badgeSuggestion.image}
+              imageConfig={rawFinalData?.imageConfig}
+            />
           </div>
         </div>
       </main>
