@@ -58,6 +58,19 @@ export default function BadgeEditorPage() {
   const [streamingRawContent, setStreamingRawContent] = useState('');
   const [streamingError, setStreamingError] = useState<string | null>(null);
   const [streamingComplete, setStreamingComplete] = useState(false);
+  const [isImageEditModalOpen, setIsImageEditModalOpen] = useState(false);
+  const [modalImageConfig, setModalImageConfig] = useState<any>(null);
+  const [editedImageConfig, setEditedImageConfig] = useState<any>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [accordionStates, setAccordionStates] = useState<{
+    canvas: boolean;
+    layers: { [key: number]: boolean };
+  }>({
+    canvas: true,
+    layers: {}
+  });
 
   // Auto-hide streaming status after completion
   useEffect(() => {
@@ -70,6 +83,15 @@ export default function BadgeEditorPage() {
       return () => clearTimeout(timer);
     }
   }, [streamingComplete]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
 
   useEffect(() => {
     // Get selected badge suggestion from localStorage
@@ -169,6 +191,121 @@ export default function BadgeEditorPage() {
   const handleUserPromptChange = useCallback((prompt: string) => {
     setUserPrompt(prompt);
   }, []);
+
+  const handleEditImage = () => {
+    const originalConfig = rawFinalData?.imageConfig || null;
+    setModalImageConfig(originalConfig);
+    // Create a deep copy for editing
+    setEditedImageConfig(originalConfig ? JSON.parse(JSON.stringify(originalConfig)) : null);
+    setGeneratedImage(null);
+    setIsImageEditModalOpen(true);
+    
+    // Generate initial image immediately (no debounce for first load)
+    if (originalConfig) {
+      generateImage(originalConfig);
+    }
+  };
+
+  const toggleAccordion = (type: 'canvas' | 'layer', key?: number) => {
+    setAccordionStates(prev => {
+      if (type === 'canvas') {
+        return { ...prev, canvas: !prev.canvas };
+      } else if (type === 'layer' && typeof key === 'number') {
+        // Close all other layers and toggle the clicked one
+        const newLayers: { [key: number]: boolean } = {};
+        // First, close all layers
+        Object.keys(prev.layers).forEach(k => {
+          newLayers[parseInt(k)] = false;
+        });
+        // Then, open only the clicked layer if it wasn't already open
+        newLayers[key] = !prev.layers[key];
+        return { ...prev, layers: newLayers };
+      }
+      return prev;
+    });
+  };
+
+  const updateImageConfig = (path: string, value: any) => {
+    console.log(`Updating image config: ${path} = ${value}`);
+    setEditedImageConfig((prev: any) => {
+      if (!prev) return prev;
+      const newConfig = JSON.parse(JSON.stringify(prev));
+      const keys = path.split('.');
+      let current = newConfig;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
+      }
+      
+      current[keys[keys.length - 1]] = value;
+      console.log('Updated config:', JSON.stringify(newConfig, null, 2));
+      
+      // Trigger debounced image generation with the updated config
+      debouncedGenerateImageWithConfig(newConfig);
+      
+      return newConfig;
+    });
+  };
+
+  const generateImage = async (config?: any) => {
+    const configToUse = config || editedImageConfig;
+    if (!configToUse) return;
+    
+    setIsGeneratingImage(true);
+    try {
+      console.log('Sending image config to API:', JSON.stringify(configToUse, null, 2));
+      const response = await fetch('https://65a1d0db0a65.ngrok-free.app/api/v1/badge/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configToUse),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data?.base64) {
+        setGeneratedImage(result.data.base64);
+      } else {
+        console.error('Image generation failed:', result);
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const debouncedGenerateImage = () => {
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    // Set new timer
+    const newTimer = setTimeout(() => {
+      generateImage();
+    }, 500);
+    
+    setDebounceTimer(newTimer);
+  };
+
+  const debouncedGenerateImageWithConfig = (config: any) => {
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    // Set new timer
+    const newTimer = setTimeout(() => {
+      generateImage(config);
+    }, 500);
+    
+    setDebounceTimer(newTimer);
+  };
 
   const switchToCard = (cardId: string) => {
     try {
@@ -768,9 +905,491 @@ export default function BadgeEditorPage() {
             <BadgeImageDisplay 
               imageUrl={badgeSuggestion.image}
               imageConfig={rawFinalData?.imageConfig}
+              onEditImage={handleEditImage}
             />
           </div>
         </div>
+
+        {/* Image Edit Modal */}
+        <Dialog open={isImageEditModalOpen} onOpenChange={setIsImageEditModalOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    Edit Badge Image
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    Customize your badge image settings and configuration.
+                  </DialogDescription>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="px-4 py-2 bg-[#234467] text-white text-sm rounded-lg hover:bg-[#234467]/90 transition-colors shadow-sm">
+                    Download PNG
+                  </button>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="flex h-[70vh] overflow-hidden">
+              {/* Left Section: Layer Navigation */}
+              <div className="w-64 bg-white border border-gray-200 rounded-l-lg flex flex-col">
+                <div className="flex-1 overflow-y-auto p-2">
+                  {editedImageConfig?.layers?.map((layer: any, index: number) => {
+                    const layerType = layer.type;
+                    const isActive = accordionStates.layers[index];
+                    
+                    return (
+                      <button
+                        key={index} 
+                        className={`w-full p-3 mb-2 text-left rounded-lg border transition-all duration-200 ${
+                          isActive 
+                            ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md' 
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5'
+                        }`}
+                        onClick={() => toggleAccordion('layer', index)}
+                      >
+                        <span className="text-sm font-medium">
+                          {layerType}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex-1 flex">
+                {/* Layer Details Panel */}
+                <div className={`bg-white border border-gray-200 overflow-y-auto transition-all duration-300 ${
+                  editedImageConfig?.layers?.some((_: any, index: number) => accordionStates.layers[index]) 
+                    ? 'w-80' 
+                    : 'w-0'
+                }`}>
+                  {editedImageConfig?.layers?.some((_: any, index: number) => accordionStates.layers[index]) && (
+                    <>
+                      <div className="p-4">
+                        {(() => {
+                          // Find the active layer
+                          const activeLayerIndex = editedImageConfig?.layers?.findIndex((_: any, index: number) => accordionStates.layers[index]);
+                          if (activeLayerIndex === -1 || activeLayerIndex === undefined) return null;
+                          
+                          const layer = editedImageConfig.layers[activeLayerIndex];
+                          const layerType = layer.type;
+                          
+                          return (
+                            <div className="space-y-4">
+                            {/* BackgroundLayer */}
+                            {layerType === 'BackgroundLayer' && (
+                              <>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
+                                  <select 
+                                    value={layer.mode || 'solid'} 
+                                    onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.mode`, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                  >
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradient</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                                  <div className="flex items-center space-x-2">
+                                    <input 
+                                      type="color" 
+                                      value={layer.color || '#FFFFFF'} 
+                                      onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
+                                      className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                    />
+                                    <input 
+                                      type="text" 
+                                      value={layer.color || '#FFFFFF'} 
+                                      onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
+                                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                              
+                            {/* ShapeLayer */}
+                            {layerType === 'ShapeLayer' && (
+                              <>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Shape *</label>
+                                  <select 
+                                    value={layer.shape || ''} 
+                                    onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.shape`, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                  >
+                                    <option value="hexagon">Hexagon</option>
+                                    <option value="circle">Circle</option>
+                                    <option value="rounded_rect">Rounded Rectangle</option>
+                                  </select>
+                                </div>
+                                  
+                                  {layer.fill && (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Fill Mode *</label>
+                                        <select 
+                                          value={layer.fill.mode || 'solid'} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.mode`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        >
+                                          <option value="solid">Solid</option>
+                                          <option value="gradient">Gradient</option>
+                                        </select>
+                                      </div>
+                                      {layer.fill.mode === 'gradient' ? (
+                                        <>
+                                          <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Start Color *</label>
+                                            <div className="flex items-center space-x-2">
+                                              <input 
+                                                type="color" 
+                                                value={layer.fill.start_color || '#E76F51'} 
+                                                onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.start_color`, e.target.value)}
+                                                className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                              />
+                                              <input 
+                                                type="text" 
+                                                value={layer.fill.start_color || '#E76F51'} 
+                                                onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.start_color`, e.target.value)}
+                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">End Color *</label>
+                                            <div className="flex items-center space-x-2">
+                                              <input 
+                                                type="color" 
+                                                value={layer.fill.end_color || '#FF8C42'} 
+                                                onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.end_color`, e.target.value)}
+                                                className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                              />
+                                              <input 
+                                                type="text" 
+                                                value={layer.fill.end_color || '#FF8C42'} 
+                                                onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.end_color`, e.target.value)}
+                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <input 
+                                              type="checkbox" 
+                                              checked={layer.fill.vertical || true} 
+                                              onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.vertical`, e.target.checked)}
+                                              className="rounded" 
+                                            />
+                                            <label className="text-xs text-gray-600">Vertical Gradient</label>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">Fill Color *</label>
+                                          <div className="flex items-center space-x-2">
+                                            <input 
+                                              type="color" 
+                                              value={layer.fill.color || '#00B4D8'} 
+                                              onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.color`, e.target.value)}
+                                              className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                            />
+                                            <input 
+                                              type="text" 
+                                              value={layer.fill.color || '#00B4D8'} 
+                                              onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.color`, e.target.value)}
+                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                  
+                                  {layer.border && (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Border Width *</label>
+                                        <input 
+                                          type="number" 
+                                          value={layer.border.width || 0} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.width`, parseInt(e.target.value))}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Border Color *</label>
+                                        <div className="flex items-center space-x-2">
+                                          <input 
+                                            type="color" 
+                                            value={layer.border.color || '#000000'} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.color`, e.target.value)}
+                                            className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                          />
+                                          <input 
+                                            type="text" 
+                                            value={layer.border.color || '#000000'} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.color`, e.target.value)}
+                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {layer.params && (
+                                    <>
+                                      {layer.params.radius && (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">Radius</label>
+                                          <input 
+                                            type="number" 
+                                            value={layer.params.radius} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.radius`, parseInt(e.target.value))}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          />
+                                        </div>
+                                      )}
+                                      {layer.params.width && (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">Width</label>
+                                          <input 
+                                            type="number" 
+                                            value={layer.params.width} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.width`, parseInt(e.target.value))}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          />
+                                        </div>
+                                      )}
+                                      {layer.params.height && (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">Height</label>
+                                          <input 
+                                            type="number" 
+                                            value={layer.params.height} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.height`, parseInt(e.target.value))}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          />
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              
+                              {/* LogoLayer */}
+                              {layerType === 'LogoLayer' && (
+                                <>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Path</label>
+                                    <input 
+                                      type="text" 
+                                      value={layer.path || ''} 
+                                      onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.path`, e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    />
+                                  </div>
+                                  {layer.size && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Size *</label>
+                                      <div className="flex items-center space-x-2">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={layer.size.dynamic || true} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size.dynamic`, e.target.checked)}
+                                          className="rounded" 
+                                        />
+                                        <label className="text-xs text-gray-600">Dynamic Size</label>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {layer.position && (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">X Position</label>
+                                        <input 
+                                          type="text" 
+                                          value={layer.position.x || 'center'} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.x`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Y Position *</label>
+                                        <input 
+                                          type="text" 
+                                          value={layer.position.y || 'dynamic'} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.y`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Range: 50-550</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              
+                              {/* TextLayer */}
+                              {layerType === 'TextLayer' && (
+                                <>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Text *</label>
+                                    <input 
+                                      type="text" 
+                                      value={layer.text || ''} 
+                                      onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.text`, e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    />
+                                  </div>
+                                  {layer.font && (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Font Path</label>
+                                        <input 
+                                          type="text" 
+                                          value={layer.font.path || ''} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.path`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Font Size *</label>
+                                        <input 
+                                          type="number" 
+                                          value={layer.font.size || 12} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.size`, parseInt(e.target.value))}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                      </div>
+                                    </>
+                                  )}
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Text Color *</label>
+                                    <div className="flex items-center space-x-2">
+                                      <input 
+                                        type="color" 
+                                        value={layer.color || '#000000'} 
+                                        onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
+                                        className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                      />
+                                      <input 
+                                        type="text" 
+                                        value={layer.color || '#000000'} 
+                                        onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
+                                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                      />
+                                    </div>
+                                  </div>
+                                  {layer.align && (
+                                    <>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">X Align</label>
+                                        <input 
+                                          type="text" 
+                                          value={layer.align.x || 'center'} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.x`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Y Align *</label>
+                                        <input 
+                                          type="text" 
+                                          value={layer.align.y || 'dynamic'} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.y`, e.target.value)}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Range: 50-550</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {layer.wrap && (
+                                    <>
+                                      <div className="flex items-center space-x-2">
+                                        <input 
+                                          type="checkbox" 
+                                          checked={layer.wrap.dynamic || false} 
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.dynamic`, e.target.checked)}
+                                          className="rounded" 
+                                        />
+                                        <label className="text-xs text-gray-600">Dynamic Wrap</label>
+                                      </div>
+                                      {layer.wrap.line_gap && (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">Line Gap</label>
+                                          <input 
+                                            type="number" 
+                                            value={layer.wrap.line_gap} 
+                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.line_gap`, parseInt(e.target.value))}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          />
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              
+                            </div>
+                          );
+                        })()}
+                        
+                        {(!editedImageConfig?.layers || editedImageConfig.layers.length === 0) && (
+                          <div className="text-center p-4 text-gray-500 text-sm">
+                            No layers found in image configuration
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Image Preview Section */}
+                <div className="flex-1 flex flex-col border border-gray-200 rounded-r-lg overflow-hidden">
+                  <div className="flex-1 flex items-center justify-center p-4" 
+                       style={{
+                         backgroundImage: `
+                           linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                           linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                           linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                           linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
+                         `,
+                         backgroundSize: '20px 20px',
+                         backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                       }}>
+                    {generatedImage ? (
+                      <img 
+                        src={generatedImage} 
+                        alt="Generated Badge" 
+                        className="max-w-full max-h-full object-contain relative z-10"
+                      />
+                    ) : (
+                      <div className="text-center relative z-10">
+                        <p className="text-sm text-gray-500">Badge Preview</p>
+                        <p className="text-xs text-gray-400 mt-2">Image will generate automatically when you make changes</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+            
+            {/* Loading Indicator */}
+            {isGeneratingImage && (
+              <div className="bg-gray-50 border-t border-gray-200 p-4">
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <div className="w-4 h-4 border-2 border-[#429EA6] border-t-transparent rounded-full animate-spin"></div>
+                  <span>Generating...</span>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
