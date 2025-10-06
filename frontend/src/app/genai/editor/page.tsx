@@ -199,11 +199,66 @@ export default function BadgeEditorPage() {
     setEditedImageConfig(originalConfig ? JSON.parse(JSON.stringify(originalConfig)) : null);
     setGeneratedImage(null);
     setIsImageEditModalOpen(true);
-    
+
     // Generate initial image immediately (no debounce for first load)
     if (originalConfig) {
       generateImage(originalConfig);
     }
+  };
+
+  const handleApplyImageChanges = () => {
+    // Apply the generated image to the badge suggestion
+    if (generatedImage && badgeSuggestion) {
+      const updatedSuggestion = {
+        ...badgeSuggestion,
+        image: generatedImage
+      };
+
+      setBadgeSuggestion(updatedSuggestion);
+
+      // Update localStorage - selectedBadgeSuggestion
+      localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(updatedSuggestion));
+
+      // Update generatedSuggestions in localStorage if currentCardId exists
+      if (currentCardId) {
+        try {
+          const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
+          const updated = existing.filter((s: any) => s.id !== parseInt(currentCardId));
+          updated.push({ id: parseInt(currentCardId), data: updatedSuggestion });
+          localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
+        } catch (error) {
+          console.error('Failed to update generatedSuggestions:', error);
+        }
+      }
+
+      // Update rawFinalData with new imageConfig
+      if (rawFinalData && editedImageConfig) {
+        const updatedRawData = {
+          ...rawFinalData,
+          imageConfig: editedImageConfig
+        };
+        setRawFinalData(updatedRawData);
+        localStorage.setItem('rawFinalData', JSON.stringify(updatedRawData));
+
+        // Update finalResponses in localStorage if currentCardId exists
+        if (currentCardId) {
+          try {
+            const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+            existingFinalResponses[currentCardId] = updatedRawData;
+            localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+          } catch (error) {
+            console.error('Failed to update finalResponses:', error);
+          }
+        }
+      }
+
+      toast({
+        title: 'Image Updated',
+        description: 'Badge image has been successfully updated.',
+      });
+    }
+
+    setIsImageEditModalOpen(false);
   };
 
   const toggleAccordion = (type: 'canvas' | 'layer', key?: number) => {
@@ -257,7 +312,7 @@ export default function BadgeEditorPage() {
     setIsGeneratingImage(true);
     try {
       console.log('Sending image config to API:', JSON.stringify(configToUse, null, 2));
-      const response = await fetch('https://65a1d0db0a65.ngrok-free.app/api/v1/badge/generate', {
+      const response = await fetch('http://localhost:3001/api/v1/badge/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -911,7 +966,18 @@ export default function BadgeEditorPage() {
         </div>
 
         {/* Image Edit Modal */}
-        <Dialog open={isImageEditModalOpen} onOpenChange={setIsImageEditModalOpen}>
+        <Dialog open={isImageEditModalOpen} onOpenChange={(open) => {
+          if (!open) {
+            // When closing, apply changes if there's a generated image
+            if (generatedImage) {
+              handleApplyImageChanges();
+            } else {
+              setIsImageEditModalOpen(false);
+            }
+          } else {
+            setIsImageEditModalOpen(open);
+          }
+        }}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
             <DialogHeader>
               <div className="flex items-center justify-between">
@@ -924,9 +990,28 @@ export default function BadgeEditorPage() {
                   </DialogDescription>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button className="px-4 py-2 bg-[#234467] text-white text-sm rounded-lg hover:bg-[#234467]/90 transition-colors shadow-sm">
+                  <Button
+                    onClick={handleApplyImageChanges}
+                    disabled={!generatedImage}
+                    className="bg-[#429EA6] text-white hover:bg-[#429EA6]/90"
+                  >
+                    Apply Changes
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (generatedImage) {
+                        const link = document.createElement('a');
+                        link.href = generatedImage;
+                        link.download = `${badgeSuggestion?.title || 'badge'}.png`;
+                        link.click();
+                      }
+                    }}
+                    disabled={!generatedImage}
+                    variant="outline"
+                    className="border-[#234467] text-[#234467] hover:bg-[#234467] hover:text-white"
+                  >
                     Download PNG
-                  </button>
+                  </Button>
                 </div>
               </div>
             </DialogHeader>
