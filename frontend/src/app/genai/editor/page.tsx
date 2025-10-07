@@ -50,7 +50,8 @@ export default function BadgeEditorPage() {
     badge_style: 'professional',
     badge_tone: 'authoritative',
     criterion_style: 'task-oriented',
-    badge_level: 'not-specified'
+    badge_level: 'not-specified',
+    institution: ''
   });
   const [userPrompt, setUserPrompt] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
