@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { RefreshCw, Loader2 } from 'lucide-react';
 
 interface BadgeConfigurationProps {
@@ -21,6 +22,7 @@ interface BadgeConfigurationData {
   badge_tone: string;
   criterion_style: string;
   badge_level: string;
+  institution: string;
 }
 
 export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurationChange, userPrompt, onUserPromptChange }: BadgeConfigurationProps) {
@@ -28,6 +30,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
   const [tone, setTone] = useState('Authoritative');
   const [level, setLevel] = useState('Not Specified');
   const [criterionTemplate, setCriterionTemplate] = useState('Task-Oriented');
+  const [institution, setInstitution] = useState('');
 
   // Map UI values to API format
   const mapToApiFormat = (uiValue: string, type: 'style' | 'tone' | 'level' | 'criterion') => {
@@ -68,11 +71,12 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
         badge_style: mapToApiFormat(style, 'style'),
         badge_tone: mapToApiFormat(tone, 'tone'),
         criterion_style: mapToApiFormat(criterionTemplate, 'criterion'),
-        badge_level: mapToApiFormat(level, 'level')
+        badge_level: mapToApiFormat(level, 'level'),
+        institution: institution
       };
       onConfigurationChange(config);
     }
-  }, [style, tone, level, criterionTemplate]); // Remove onConfigurationChange from dependencies
+  }, [style, tone, level, criterionTemplate, institution]); // Remove onConfigurationChange from dependencies
 
   return (
     <Card className="border-[#429EA6] shadow-lg">
@@ -155,6 +159,20 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
             </SelectContent>
            </Select>
          </div>
+
+        {/* Institute Input */}
+        <div className="space-y-2">
+          <Label htmlFor="institution" className="text-[#40464c] font-subhead font-medium text-sm">
+            Institute
+          </Label>
+          <Input
+            id="institution"
+            placeholder="Enter institution name..."
+            className="border-[#429EA6] focus:border-[#234467] focus:ring-[#234467]"
+            value={institution}
+            onChange={(e) => setInstitution(e.target.value)}
+          />
+        </div>
 
          {/* User Prompt Input */}
          <div className="space-y-2">

@@ -206,58 +206,22 @@ export function useStreamingSuggestionGenerator() {
               );
               
               console.log(`Card ${cardId} marked as complete with mapped suggestion:`, response.mappedSuggestion);
-              
+
+              // Save to generatedSuggestions in localStorage
+              try {
+                const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
+                const updated = existing.filter((s: any) => s.id !== cardId);
+                updated.push({ id: cardId, data: response.mappedSuggestion });
+                localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
+                console.log(`Saved suggestion ${cardId} to generatedSuggestions with image:`, response.mappedSuggestion.image ? 'YES' : 'NO');
+              } catch (error) {
+                console.error('Failed to save suggestion to localStorage:', error);
+              }
+
               toast({
                 title: `Suggestion ${cardId} Generated!`,
                 description: 'A new credential suggestion is ready.',
               });
-
-              // Call image generation microservice using imageConfig and update preview with base64
-              try {
-                const imageConfig = response.data?.imageConfig;
-                if (imageConfig) {
-                  console.log(`Card ${cardId}: calling image microservice with imageConfig`, imageConfig);
-                  (async () => {
-                    try {
-                      const resp = await fetch('http://localhost:3001/api/v1/badge/generate', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Access-Control-Allow-Origin': '*',
-                        },
-                        body: JSON.stringify(imageConfig),
-                      });
-                      const rawText = await resp.text();
-                      console.log(`Card ${cardId}: image microservice status`, resp.status);
-                      console.log(`Card ${cardId}: image microservice raw response`, rawText);
-                      try {
-                        const json = JSON.parse(rawText);
-                        const base64: string | undefined = (json?.data?.base64 || json?.text?.base64 || json?.base64);
-                        if (base64) {
-                          const imageSrc = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
-                          setSuggestionCards(prev => prev.map(card => card.id === cardId && card.data ? { ...card, data: { ...card.data, image: imageSrc } } : card));
-                          try {
-                            const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
-                            const updated = existing.filter((s: any) => s.id !== cardId);
-                            const currentCard = updated.find((s: any) => s.id === cardId) || null;
-                            const cardData = (currentCard?.data) || response.mappedSuggestion;
-                            updated.push({ id: cardId, data: { ...cardData, image: imageSrc } });
-                            localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
-                          } catch {}
-                        } else {
-                          console.warn(`Card ${cardId}: image microservice missing base64`);
-                        }
-                      } catch (parseErr) {
-                        console.warn(`Card ${cardId}: failed to parse image microservice response`, parseErr);
-                      }
-                    } catch (imgErr) {
-                      console.error(`Card ${cardId}: image microservice call failed`, imgErr);
-                    }
-                  })();
-                }
-              } catch (e) {
-                console.error(`Card ${cardId}: error preparing image request`, e);
-              }
             }
             break;
             
@@ -351,23 +315,24 @@ export function useStreamingSuggestionGenerator() {
                   
                   console.log(`Card ${cardId} marked as complete from token parsing with suggestion:`, suggestion);
                   
-                  toast({ 
-                    title: `Suggestion ${cardId} Generated!`, 
-                    description: 'A new credential suggestion is ready.' 
-                  });
-                  
-                  // Check if all cards are completed
-                  setTimeout(() => checkAllCompleted(), 100);
-                  
-                  // Store the generated suggestion in localStorage
+                  // Save to generatedSuggestions in localStorage
                   try {
                     const existingSuggestions = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
                     const updatedSuggestions = existingSuggestions.filter((s: any) => s.id !== cardId);
                     updatedSuggestions.push({ id: cardId, data: suggestion });
                     localStorage.setItem('generatedSuggestions', JSON.stringify(updatedSuggestions));
+                    console.log(`Saved suggestion ${cardId} to generatedSuggestions (from token parsing) with image:`, suggestion.image ? 'YES' : 'NO');
                   } catch (error) {
                     console.error('Error storing suggestion in localStorage:', error);
                   }
+
+                  toast({
+                    title: `Suggestion ${cardId} Generated!`,
+                    description: 'A new credential suggestion is ready.'
+                  });
+
+                  // Check if all cards are completed
+                  setTimeout(() => checkAllCompleted(), 100);
                 } catch (parseError) {
                   console.error('Failed to parse final JSON:', parseError);
                   setSuggestionCards(prev => 
@@ -519,20 +484,15 @@ export function useStreamingSuggestionGenerator() {
     // Wait for all streams to complete
     await Promise.allSettled([promise1, promise2, promise3, promise4]);
     // await Promise.allSettled([promise1]);
-    // Store all completed suggestions in localStorage
+
+    // Note: Suggestions are saved to localStorage individually as they complete
+    // (see 'final' and 'data' case handlers above). No bulk save needed here.
     try {
-      const completedSuggestions = suggestionCards
-        .filter(card => card.data)
-        .map(card => ({ id: card.id, data: card.data }));
-      
-      if (completedSuggestions.length > 0) {
-        localStorage.setItem('generatedSuggestions', JSON.stringify(completedSuggestions));
-        localStorage.setItem('suggestionsGeneratedAt', new Date().toISOString());
-      }
+      localStorage.setItem('suggestionsGeneratedAt', new Date().toISOString());
     } catch (error) {
-      console.error('Error storing suggestions in localStorage:', error);
+      console.error('Error storing timestamp in localStorage:', error);
     }
-    
+
     setIsGenerating(false);
     
     // Clear generation state from localStorage
