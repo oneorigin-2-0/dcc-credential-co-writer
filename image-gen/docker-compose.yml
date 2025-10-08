@@ -1,5 +1,5 @@
 services:
-  badge-api:
+  badge-image-api:
     build: .
     container_name: badge-image-generator-api
     ports:

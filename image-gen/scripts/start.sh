@@ -77,7 +77,7 @@ for i in {1..30}; do
     if [ $i -eq 30 ]; then
         echo "❌ API failed to start properly"
         echo "📝 Checking logs..."
-        docker-compose logs --tail=50 badge-api
+        docker-compose logs --tail=50 badge-image-api
         exit 1
     fi
     echo "⏳ Waiting for API... ($i/30)"
@@ -117,10 +117,10 @@ echo ""
 echo "📋 Service Information:"
 echo "   - API Port: ${API_PORT}"
 echo "   - Container: badge-image-generator-api"
-echo "   - Service: badge-api"
-echo "   - Image: mit-badge-image-generation-badge-api:latest"
+echo "   - Service: badge-image-api"
+echo "   - Image: mit-badge-image-generation-badge-image-api:latest"
 echo "   - Canvas Size: 600x600 (fixed)"
 echo ""
 echo "🛑 To stop: docker-compose down"
-echo "📜 To view logs: docker-compose logs -f badge-api"
+echo "📜 To view logs: docker-compose logs -f badge-image-api"
 echo "🔄 To restart: ./scripts/start.sh"
