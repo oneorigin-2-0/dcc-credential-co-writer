@@ -1,47 +1,45 @@
-name: S3 + CloudFront Deployment
+name: Deploy to S3 and CloudFront
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Load environment variables
-        run: |
-          if [ -f .env.local ]; then
-            echo "AWS_CLOUDFRONT_DISTRIBUTION_ID=$(grep AWS_CLOUDFRONT_DISTRIBUTION_ID .env.local | cut -d '=' -f2)" >> $GITHUB_ENV
-            echo "AWS_S3_BUCKET=$(grep AWS_S3_BUCKET .env.local | cut -d '=' -f2)" >> $GITHUB_ENV
-          else
-            echo "AWS_CLOUDFRONT_DISTRIBUTION_ID=${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_ENV
-            echo "AWS_S3_BUCKET=mit-dcc-fe" >> $GITHUB_ENV
-          fi
-
-      - name: Build Next.js static site
+      - name: Build Next.js app
         run: npm run build
 
       - name: Deploy to S3
-        run: aws s3 sync ./out s3://${{ env.AWS_S3_BUCKET }} --delete
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --delete
         env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: ./out
 
-      - name: Invalidate CloudFront Cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ env.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+      - name: Invalidate CloudFront cache
+        uses: chetan/invalidate-cloudfront-action@v2
         env:
+          DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          PATHS: "/*"
+          AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
