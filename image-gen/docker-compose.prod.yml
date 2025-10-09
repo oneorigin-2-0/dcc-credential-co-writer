@@ -1,0 +1,14 @@
+services:
+  badge-image-api:
+    image: badge-image-generator:latest  # Use pre-built image
+    container_name: badge-image-generator-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PROJECT_NAME=Badge Image Generator API
+      - VERSION=1.0.0
+      - PORT=3001
+    volumes:
+      # Only persistent data volumes for production
+      - ./logs:/app/logs
+    restart: always  # Changed from unless-stopped to always for production
