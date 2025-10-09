@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -30,7 +30,7 @@ interface BadgeResultsData {
     data: BadgeSuggestion[];
 }
 
-export default function ResultsPage() {
+function ResultsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -645,5 +645,23 @@ export default function ResultsPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function ResultsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col min-h-screen bg-gray-50">
+                <Header />
+                <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-gray-600 font-body">Loading results...</p>
+                    </div>
+                </main>
+            </div>
+        }>
+            <ResultsContent />
+        </Suspense>
     );
 }
