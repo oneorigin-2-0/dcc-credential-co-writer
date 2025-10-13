@@ -1,16 +1,6 @@
-# DCC Gen AI UI
+# DCC Gen-AI UI
 
 A modern, AI-powered credential suggestion generator built with Next.js, React, and TypeScript. This application allows users to generate personalized badge suggestions through an intuitive streaming interface.
-
-## 🚀 Features
-
-- **AI-Powered Generation**: Generate credential suggestions using advanced AI models
-- **Real-time Streaming**: Watch suggestions generate in real-time with streaming responses
-- **Interactive Cards**: Click on generated suggestions to edit and customize
-- **File Upload Support**: Attach documents to enhance generation context
-- **Responsive Design**: Beautiful UI that works on all devices
-- **DCC Brand Guidelines**: Consistent design following DCC brand standards
-- **Navigation Guards**: Prevent data loss with smart navigation protection
 
 ## 🛠️ Tech Stack
 
@@ -30,22 +20,22 @@ Before you begin, ensure you have the following installed:
 - **Node.js** (v18.0 or higher)
 - **npm** or **yarn** package manager
 - **Git** for version control
+- **AWS CLI** (for deployment)
+- **AWS Account** with S3 and CloudFront access
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd dcc-genai-ui
+git clone https://github.com/oneorigin-inc/mit-badge-front-end.git
+cd mit-badge-front-end
 ```
 
 ### 2. Install Dependencies
 
 ```bash
 npm install
-# or
-yarn install
 ```
 
 ### 3. Environment Setup
@@ -53,54 +43,56 @@ yarn install
 Create a `.env.local` file in the root directory:
 
 ```env
+# API Configuration
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8001/api/v1
+
+# AWS Configuration (for deployment)
+AWS_CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
+AWS_S3_BUCKET=your-bucket-name
+
 ```
 
-**Note**: Update the API URL to match your backend service endpoint.
-
-### 4. Start the Development Server
+### 4. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
 The application will be available at [http://localhost:3000](http://localhost:3000).
 
-## 🏗️ Project Structure
+## 🏗️ Production Setup
+
+### Environment Variables
+
+Create `.env.production` for production:
+
+```env
+# Production API
+NEXT_PUBLIC_API_BASE_URL=https://your-production-api.com/api/v1
+
+# AWS Configuration
+AWS_CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
+AWS_S3_BUCKET=your-production-bucket
 
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── genai/             # Main AI generation pages
-│   │   ├── page.tsx       # Main generation form
-│   │   ├── suggestions/   # Suggestions display page
-│   │   ├── editor/        # Badge editor page
-│   │   └── results/       # Results display page
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Landing page
-├── components/            # Reusable UI components
-│   ├── genai/            # AI-specific components
-│   │   ├── suggestion-card.tsx
-│   │   └── streaming-status.tsx
-│   ├── layout/           # Layout components
-│   │   └── header.tsx
-│   └── ui/               # Base UI components
-├── hooks/                # Custom React hooks
-│   ├── use-api.ts
-│   ├── use-mobile.tsx
-│   ├── use-streaming-suggestion-generator.ts
-│   └── use-toast.ts
-└── lib/                  # Utility libraries
-    ├── api.ts            # API client and streaming logic
-    ├── constants/        # App constants
-    ├── file-parser.ts    # File parsing utilities
-    ├── theme/            # Theme configuration
-    ├── types/            # TypeScript type definitions
-    └── utils.ts          # General utilities
+
+### Build for Production
+
+```bash
+# Build the application
+npm run build
+
+# Verify build output
+ls -la out/
 ```
+
+### Local Production Test
+
+```bash
+# Serve built files locally
+npx serve out
+```
+
 
 ## 🔧 Configuration
 
@@ -135,63 +127,96 @@ export const DCC_BRAND = {
 };
 ```
 
-## 🎨 UI Components
 
-### Core Components
-
-- **SuggestionCard**: Displays individual badge suggestions with streaming content
-- **StreamingStatus**: Shows overall generation progress
-- **Header**: Navigation header component
-
-### Custom Hooks
-
-- **useStreamingSuggestionGenerator**: Manages streaming badge generation
-- **useApi**: Generic API hook for HTTP requests
-- **useToast**: Toast notification management
-
-## 🔄 API Integration
-
-### Streaming API
-
-The application uses Server-Sent Events (SSE) for real-time streaming:
-
-```typescript
-// API Response Format
-{
-  "type": "token",
-  "content": "```",
-  "accumulated": "```",
-  "done": false
-}
-```
-
-### Badge Data Structure
-
-```typescript
-interface BadgeSuggestion {
-  title: string;
-  description: string;
-  criteria: string;
-  image?: string;
-}
-```
 
 ## 🚀 Deployment
 
-### Build for Production
+### Automated Deployment (Recommended)
+
+The application uses GitHub Actions for automated deployment to AWS S3 + CloudFront.
+
+#### 1. GitHub Secrets Setup
+
+Configure the following secrets in your GitHub repository:
+
+**Go to**: `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
+
+```bash
+# AWS Credentials
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+
+# Deployment Configuration
+AWS_S3_BUCKET=your-bucket-name
+CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
+```
+
+#### 2. AWS Infrastructure Setup
+
+**S3 Bucket Configuration:**
+```bash
+# Create S3 bucket
+aws s3 mb s3://your-bucket-name --region us-east-1
+
+# Configure bucket policy for public access
+aws s3api put-bucket-policy --bucket your-bucket-name --policy '{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
+}'
+
+# Enable static website hosting
+aws s3 website s3://your-bucket-name --index-document index.html --error-document 404.html
+```
+
+**CloudFront Distribution:**
+```bash
+# Create CloudFront distribution
+aws cloudfront create-distribution --distribution-config file://cloudfront-config.json
+```
+
+#### 3. Deploy
+
+```bash
+# Push to main branch to trigger deployment
+git add .
+git commit -m "Deploy to production"
+git push origin main
+```
+
+**Monitor deployment**: Check GitHub Actions tab for deployment status.
+
+### Manual Deployment
+
+#### 1. Build Application
 
 ```bash
 npm run build
-# or
-yarn build
 ```
 
-### Start Production Server
+#### 2. Deploy to S3
 
 ```bash
-npm start
-# or
-yarn start
+# Sync files to S3
+aws s3 sync ./out s3://your-bucket-name --delete
+
+# Verify deployment
+aws s3 ls s3://your-bucket-name --recursive
+```
+
+#### 3. Invalidate CloudFront Cache
+
+```bash
+# Invalidate CloudFront cache
+aws cloudfront create-invalidation --distribution-id E1234567890ABC --paths "/*"
 ```
 
 ### Environment Variables for Production
@@ -199,18 +224,33 @@ yarn start
 Ensure these environment variables are set in your production environment:
 
 ```env
+# API Configuration
 NEXT_PUBLIC_API_BASE_URL=https://your-production-api.com/api/v1
+
+# AWS Configuration
+AWS_CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
+AWS_S3_BUCKET=your-production-bucket
+
 ```
+
+### Deployment URLs
+
+- **S3 Website**: `https://your-bucket-name.s3-website-us-east-1.amazonaws.com`
+- **CloudFront**: `https://d1234567890abc.cloudfront.net`
+- **Custom Domain**: `https://your-domain.com` (if configured)
 
 ## 🧪 Development
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking
+```bash
+# Development
+npm run dev          # Start development server with Turbopack
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run typecheck    # Run TypeScript type checking
+```
 
 ### Code Style
 
@@ -218,6 +258,37 @@ The project uses:
 - **ESLint** for code linting
 - **Prettier** for code formatting
 - **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Radix UI** for accessible components
+
+### Development Workflow
+
+1. **Create feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make changes and test**:
+   ```bash
+   npm run dev
+   npm run lint
+   npm run typecheck
+   ```
+
+3. **Build and test production**:
+   ```bash
+   npm run build
+   npx serve out
+   ```
+
+4. **Commit and push**:
+   ```bash
+   git add .
+   git commit -m "feat: add your feature"
+   git push origin feature/your-feature-name
+   ```
+
+5. **Create Pull Request** and merge to `main` for deployment
 
 ## 🔍 Troubleshooting
 
@@ -227,51 +298,92 @@ The project uses:
    - Verify `NEXT_PUBLIC_API_BASE_URL` is correct
    - Check if the API server is running
    - Ensure CORS is properly configured
+   - Check network connectivity
 
 2. **Streaming Not Working**
    - Check browser console for errors
    - Verify API supports Server-Sent Events
    - Check network connectivity
+   - Ensure API endpoint is accessible
 
 3. **File Upload Issues**
    - Ensure file size is within limits
    - Check file format is supported
    - Verify file parsing logic
+   - Check browser compatibility
 
-### Debug Mode
+4. **Deployment Issues**
+   - Verify GitHub secrets are configured correctly
+   - Check AWS credentials and permissions
+   - Ensure S3 bucket policy allows public access
+   - Verify CloudFront distribution is active
+   - Check GitHub Actions logs for errors
 
-Enable debug logging by adding to `.env.local`:
+5. **Build Issues**
+   - Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
+   - Check TypeScript errors: `npm run typecheck`
+   - Verify all dependencies are installed
+   - Check Node.js version compatibility
 
-```env
-NEXT_PUBLIC_DEBUG=true
-```
+### Performance Optimization
+
+- **Build Analysis**: Use `npm run build` to check bundle size
+- **Lighthouse**: Run Lighthouse audit for performance metrics
+- **Network**: Monitor API response times
+- **Caching**: Verify CloudFront cache headers
+
+### Security Checklist
+
+- [ ] Environment variables are properly configured
+- [ ] API endpoints use HTTPS in production
+- [ ] CORS is properly configured
+- [ ] File uploads have size limits
+- [ ] Sensitive data is not exposed in client-side code
+- [ ] AWS credentials are stored as GitHub secrets
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and test thoroughly
+4. **Commit your changes**: `git commit -m 'feat: add amazing feature'`
+5. **Push to the branch**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request** with a clear description
+
+### Contribution Guidelines
+
+- Follow the existing code style and conventions
+- Add tests for new features
+- Update documentation as needed
+- Ensure all checks pass (`npm run lint`, `npm run typecheck`)
+- Use conventional commit messages
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
 For support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation
 
-## 🔄 Version History
+- **Issues**: Create an issue in the repository
+- **Documentation**: Check this README and code comments
+- **Team**: Contact the development team
+- **Security**: Report security issues privately
 
-- **v1.0.0** - Initial release with streaming AI generation
-- **v1.1.0** - Added file upload support
-- **v1.2.0** - Enhanced UI with DCC brand guidelines
-- **v1.3.0** - Added navigation guards and error handling
 
----
+## 📊 Project Status
 
-**Built with ❤️ for DCC**
+- **Status**: ✅ Production Ready
+- **Deployment**: ✅ Automated (GitHub Actions)
+- **CDN**: ✅ CloudFront Distribution
+- **Monitoring**: ✅ GitHub Actions
+- **Security**: ✅ Environment Variables + Secrets
+
+## 🔗 Links
+
+- **Repository**: [https://github.com/oneorigin-inc/mit-badge-front-end](https://github.com/oneorigin-inc/mit-badge-front-end)
+- **Deployment**: [GitHub Actions](https://github.com/oneorigin-inc/mit-badge-front-end/actions)
+- **Issues**: [GitHub Issues](https://github.com/oneorigin-inc/mit-badge-front-end/issues)
