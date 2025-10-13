@@ -51,7 +51,8 @@ export default function BadgeEditorPage() {
     badge_tone: 'authoritative',
     criterion_style: 'task-oriented',
     badge_level: 'not-specified',
-    institution: ''
+    institution: '',
+    institution_url: '',
   });
   const [userPrompt, setUserPrompt] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
