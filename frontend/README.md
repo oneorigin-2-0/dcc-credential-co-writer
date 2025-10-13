@@ -45,11 +45,6 @@ Create a `.env.local` file in the root directory:
 ```env
 # API Configuration
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8001/api/v1
-
-# AWS Configuration (for deployment)
-AWS_CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
-AWS_S3_BUCKET=your-bucket-name
-
 ```
 
 ### 4. Start Development Server
@@ -64,15 +59,14 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ### Environment Variables
 
+Create `.env.local` for local:
+
 Create `.env.production` for production:
 
 ```env
 # Production API
 NEXT_PUBLIC_API_BASE_URL=https://your-production-api.com/api/v1
 
-# AWS Configuration
-AWS_CLOUDFRONT_DISTRIBUTION_ID=E1234567890ABC
-AWS_S3_BUCKET=your-production-bucket
 
 ```
 
@@ -158,7 +152,6 @@ The project uses:
    ```
 
 5. **Create Pull Request** and merge to `main` for deployment
-
 
 ## 📝 License
 

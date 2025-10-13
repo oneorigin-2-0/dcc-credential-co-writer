@@ -201,7 +201,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             {/* 1. Image First */}
             <div className="flex justify-center">
               <img
-                src={data.image || "https://nwccu.org/wp-content/uploads/2024/01/WGU-Logo.png"}
+                src={data.image}
                 alt="Badge preview"
                 className="w-20 h-20 object-contain rounded-lg border border-gray-300 shadow-sm"
               />
