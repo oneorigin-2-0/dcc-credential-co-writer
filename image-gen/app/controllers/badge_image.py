@@ -59,7 +59,7 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
             short_title=request.short_title,
             institute=request.institute or "",
             achievement_phrase=request.achievement_phrase,
-            institution_colors=request.institution_colors,
+            colors=request.colors,
             seed=request.seed
         )
 
@@ -99,7 +99,7 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
         # Step 1: Generate image config
         config = generate_icon_based_config(
             icon_name=request.icon_name,
-            institution_colors=request.institution_colors,
+            colors=request.colors,
             seed=request.seed
         )
 

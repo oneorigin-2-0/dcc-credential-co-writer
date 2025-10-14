@@ -20,7 +20,7 @@ class TextOverlayBadgeRequest(BaseModel):
     short_title: str = Field(description="Short badge title text")
     institute: Optional[str] = Field(default="", description="Institution/organization name (optional)")
     achievement_phrase: str = Field(description="Achievement phrase or motto")
-    institution_colors: Optional[Dict[str, str]] = Field(default=None, description="Institution brand colors (primary, secondary, tertiary)")
+    colors: Optional[Dict[str, str]] = Field(default=None, description="Brand colors (primary, secondary, tertiary)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
 
     class Config:
@@ -29,7 +29,7 @@ class TextOverlayBadgeRequest(BaseModel):
                 "short_title": "Python Expert",
                 "institute": "MIT",
                 "achievement_phrase": "Code with Confidence",
-                "institution_colors": {
+                "colors": {
                     "primary": "#A31F34",
                     "secondary": "#8A8B8C",
                     "tertiary": "#C2C0BF"
@@ -40,14 +40,14 @@ class TextOverlayBadgeRequest(BaseModel):
 class IconBasedBadgeRequest(BaseModel):
     """Request model for generating badge with icon"""
     icon_name: str = Field(description="Icon filename (e.g., 'atom.png', 'trophy.png')")
-    institution_colors: Optional[Dict[str, str]] = Field(default=None, description="Institution brand colors")
+    colors: Optional[Dict[str, str]] = Field(default=None, description="Brand colors (primary, secondary, tertiary)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "icon_name": "atom.png",
-                "institution_colors": {
+                "colors": {
                     "primary": "#A31F34",
                     "secondary": "#8A8B8C",
                     "tertiary": "#C2C0BF"

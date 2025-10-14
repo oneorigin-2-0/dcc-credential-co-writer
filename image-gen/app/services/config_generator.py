@@ -352,7 +352,7 @@ def generate_text_overlay_config(
     short_title: str,
     institute: str = "",
     achievement_phrase: str = "",
-    institution_colors: Optional[dict] = None,
+    colors: Optional[dict] = None,
     seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with text overlay
@@ -361,7 +361,7 @@ def generate_text_overlay_config(
         short_title: Short badge title text
         institute: Institution/organization name (optional, defaults to empty string)
         achievement_phrase: Achievement phrase or motto (optional, defaults to empty string)
-        institution_colors: Optional institution brand colors
+        colors: Optional brand colors (primary, secondary, tertiary)
         seed: Optional random seed for reproducibility
 
     Returns:
@@ -380,7 +380,7 @@ def generate_text_overlay_config(
         meta=meta,
         seed=seed,
         logo_path="assets/logos/wgu_logo.png",
-        institution_colors=institution_colors
+        institution_colors=colors
     )
 
     return config
@@ -388,14 +388,14 @@ def generate_text_overlay_config(
 
 def generate_icon_based_config(
     icon_name: str,
-    institution_colors: Optional[dict] = None,
+    colors: Optional[dict] = None,
     seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with specified icon
 
     Args:
         icon_name: Icon filename (e.g., 'atom.png', 'trophy.png')
-        institution_colors: Optional institution colors
+        colors: Optional brand colors (primary, secondary, tertiary)
         seed: Optional random seed for reproducibility
 
     Returns:
@@ -411,7 +411,7 @@ def generate_icon_based_config(
         meta=meta,
         seed=seed,
         suggested_icon=icon_name,
-        institution_colors=institution_colors
+        institution_colors=colors
     )
 
     return config
