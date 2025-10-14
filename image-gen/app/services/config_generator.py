@@ -349,30 +349,31 @@ def generate_badge_image_config(
 
 
 def generate_text_overlay_config(
-    badge_name: str,
-    badge_description: str,
-    optimized_text: dict,
-    institution: str = "",
-    institution_colors: Optional[dict] = None
+    short_title: str,
+    institute: str = "",
+    achievement_phrase: str = "",
+    institution_colors: Optional[dict] = None,
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Generate image configuration with optimized text overlay
+    """Generate image configuration with text overlay
 
     Args:
-        badge_name: Name of the badge
-        badge_description: Description of the badge
-        optimized_text: Optimized text from mit-slm's optimize_badge_text function
-        institution: Institution name
-        institution_colors: Optional institution colors
+        short_title: Short badge title text
+        institute: Institution/organization name (optional, defaults to empty string)
+        achievement_phrase: Achievement phrase or motto (optional, defaults to empty string)
+        institution_colors: Optional institution brand colors
+        seed: Optional random seed for reproducibility
 
     Returns:
         Complete badge configuration ready for rendering
     """
-    seed = random.randint(1, 10000)
+    if seed is None:
+        seed = random.randint(1, 10000)
 
     meta = {
-        "badge_title": optimized_text.get("short_title", badge_name),
-        "subtitle": optimized_text.get("institution_display", institution),
-        "extra_text": optimized_text.get("achievement_phrase", "Achievement Unlocked")
+        "badge_title": short_title,
+        "subtitle": institute,
+        "extra_text": achievement_phrase
     }
 
     config = generate_badge_config(

@@ -17,25 +17,23 @@ class BadgeRequest(BaseModel):
 
 class TextOverlayBadgeRequest(BaseModel):
     """Request model for generating badge with text overlay"""
-    badge_name: str = Field(description="Name of the badge")
-    badge_description: str = Field(description="Description of the badge")
-    optimized_text: Dict[str, Any] = Field(description="Optimized text from mit-slm optimize_badge_text")
-    institution: Optional[str] = Field(default="", description="Institution name")
-    institution_colors: Optional[Dict[str, str]] = Field(default=None, description="Institution brand colors")
+    short_title: str = Field(description="Short badge title text")
+    institute: Optional[str] = Field(default="", description="Institution/organization name (optional)")
+    achievement_phrase: str = Field(description="Achievement phrase or motto")
+    institution_colors: Optional[Dict[str, str]] = Field(default=None, description="Institution brand colors (primary, secondary, tertiary)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "badge_name": "Python Programming Expert",
-                "badge_description": "Demonstrates advanced proficiency in Python",
-                "optimized_text": {
-                    "short_title": "Python Expert",
-                    "brief_description": "Advanced Python Skills",
-                    "institution_display": "MIT",
-                    "achievement_phrase": "Code with Confidence"
-                },
-                "institution": "Massachusetts Institute of Technology"
+                "short_title": "Python Expert",
+                "institute": "MIT",
+                "achievement_phrase": "Code with Confidence",
+                "institution_colors": {
+                    "primary": "#A31F34",
+                    "secondary": "#8A8B8C",
+                    "tertiary": "#C2C0BF"
+                }
             }
         }
 

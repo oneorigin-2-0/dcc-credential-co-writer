@@ -46,21 +46,21 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
     Generate a badge with text overlay - generates config and renders in one call
 
     Args:
-        request: Text overlay badge request with optimized text
+        request: Text overlay badge request with title, institute, and achievement phrase
 
     Returns:
         BadgeResponse with base64 encoded image
     """
     try:
-        logger.info(f"Generating text overlay badge for: {request.badge_name}")
+        logger.info(f"Generating text overlay badge: {request.short_title}")
 
         # Step 1: Generate image config
         config = generate_text_overlay_config(
-            badge_name=request.badge_name,
-            badge_description=request.badge_description,
-            optimized_text=request.optimized_text,
-            institution=request.institution or "",
-            institution_colors=request.institution_colors
+            short_title=request.short_title,
+            institute=request.institute or "",
+            achievement_phrase=request.achievement_phrase,
+            institution_colors=request.institution_colors,
+            seed=request.seed
         )
 
         # Step 2: Render badge image
@@ -71,7 +71,7 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
 
         result = await badge_service.generate_badge(badge_request)
 
-        logger.info(f"Text overlay badge generated successfully: {request.badge_name}")
+        logger.info(f"Text overlay badge generated successfully: {request.short_title}")
         return result
 
     except ValueError as e:
