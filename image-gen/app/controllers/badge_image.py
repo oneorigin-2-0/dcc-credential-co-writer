@@ -22,12 +22,19 @@ async def generate_badge(request: BadgeRequest):
         request: Badge configuration request
 
     Returns:
-        BadgeResponse with base64 encoded image
+        BadgeResponse with base64 encoded image and configuration
     """
     try:
         logger.info("Received badge generation request")
 
-        result = await badge_service.generate_badge(request.model_dump())
+        request_dict = request.model_dump()
+        result = await badge_service.generate_badge(request_dict)
+
+        # Add the input configuration to the response
+        result.config = {
+            "canvas": request_dict.get("canvas", {}),
+            "layers": request_dict.get("layers", [])
+        }
 
         logger.info("Badge generated successfully")
         return result
@@ -49,7 +56,7 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
         request: Text overlay badge request with title, institute, and achievement phrase
 
     Returns:
-        BadgeResponse with base64 encoded image
+        BadgeResponse with base64 encoded image and configuration
     """
     try:
         logger.info(f"Generating text overlay badge: {request.short_title}")
@@ -71,6 +78,9 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
 
         result = await badge_service.generate_badge(badge_request)
 
+        # Step 3: Add config to response
+        result.config = config
+
         logger.info(f"Text overlay badge generated successfully: {request.short_title}")
         return result
 
@@ -91,7 +101,7 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
         request: Icon-based badge request with icon name
 
     Returns:
-        BadgeResponse with base64 encoded image
+        BadgeResponse with base64 encoded image and configuration
     """
     try:
         logger.info(f"Generating icon-based badge with icon: {request.icon_name}")
@@ -110,6 +120,9 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
         }
 
         result = await badge_service.generate_badge(badge_request)
+
+        # Step 3: Add config to response
+        result.config = config
 
         logger.info(f"Icon-based badge generated successfully with icon: {request.icon_name}")
         return result

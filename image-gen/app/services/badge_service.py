@@ -74,8 +74,8 @@ class BadgeService:
                     base64=f"data:image/png;base64,{img_base64}"
                     #filename="badge.png",
                     #mimeType="image/png"
-                )
-                #config=config
+                ),
+                config=config
             )
 
         except Exception as e:

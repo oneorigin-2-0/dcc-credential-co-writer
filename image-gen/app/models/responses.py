@@ -16,7 +16,7 @@ class BadgeResponse(BaseModel):
     success: bool = Field(description="Operation success status")
     message: str = Field(description="Status message")
     data: BadgeData = Field(description="Generated badge data")
-    #config: Dict[str, Any] = Field(description="Original configuration")
+    config: Dict[str, Any] = Field(description="Configuration used to generate the badge")
 
     class Config:
         json_schema_extra = {
@@ -28,9 +28,9 @@ class BadgeResponse(BaseModel):
                     #"filename": "badge.png",
                     #"mimeType": "image/png"
                 },
-                #"config": {
-                #    "canvas": {"bg": "white", "scale_factor": 1},
-                #    "layers": []
-                #}
+                "config": {
+                    "canvas": {"width": 600, "height": 600},
+                    "layers": []
+                }
             }
         }
