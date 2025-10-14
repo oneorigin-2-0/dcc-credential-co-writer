@@ -29,3 +29,6 @@ CLAUDE.md
 # Node.js (if using)
 .next/
 node_modules/
+
+# VS Code
+.vscode/

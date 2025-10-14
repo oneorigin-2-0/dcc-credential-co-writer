@@ -3,9 +3,10 @@ Badge image generation controller
 """
 
 from fastapi import APIRouter, HTTPException
-from app.models.requests import BadgeRequest
+from app.models.requests import BadgeRequest, TextOverlayBadgeRequest, IconBasedBadgeRequest
 from app.models.responses import BadgeResponse
 from app.services.badge_service import BadgeService
+from app.services.config_generator import generate_text_overlay_config, generate_icon_based_config
 from app.core.logging_config import get_logger
 
 router = APIRouter()
@@ -21,12 +22,19 @@ async def generate_badge(request: BadgeRequest):
         request: Badge configuration request
 
     Returns:
-        BadgeResponse with base64 encoded image
+        BadgeResponse with base64 encoded image and configuration
     """
     try:
         logger.info("Received badge generation request")
 
-        result = await badge_service.generate_badge(request.model_dump())
+        request_dict = request.model_dump()
+        result = await badge_service.generate_badge(request_dict)
+
+        # Add the input configuration to the response
+        result.config = {
+            "canvas": request_dict.get("canvas", {}),
+            "layers": request_dict.get("layers", [])
+        }
 
         logger.info("Badge generated successfully")
         return result
@@ -36,4 +44,92 @@ async def generate_badge(request: BadgeRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error generating badge: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
+
+
+@router.post("/badge/generate-with-text", response_model=BadgeResponse)
+async def generate_badge_with_text(request: TextOverlayBadgeRequest):
+    """
+    Generate a badge with text overlay - generates config and renders in one call
+
+    Args:
+        request: Text overlay badge request with title, institute, and achievement phrase
+
+    Returns:
+        BadgeResponse with base64 encoded image and configuration
+    """
+    try:
+        logger.info(f"Generating text overlay badge: {request.short_title}")
+
+        # Step 1: Generate image config
+        config = generate_text_overlay_config(
+            short_title=request.short_title,
+            institute=request.institute or "",
+            achievement_phrase=request.achievement_phrase,
+            colors=request.colors,
+            seed=request.seed
+        )
+
+        # Step 2: Render badge image
+        badge_request = {
+            "canvas": {"bg": "white"},
+            "layers": config["layers"]
+        }
+
+        result = await badge_service.generate_badge(badge_request)
+
+        # Step 3: Add config to response
+        result.config = config
+
+        logger.info(f"Text overlay badge generated successfully: {request.short_title}")
+        return result
+
+    except ValueError as e:
+        logger.error(f"Invalid configuration: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating text overlay badge: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
+
+
+@router.post("/badge/generate-with-icon", response_model=BadgeResponse)
+async def generate_badge_with_icon(request: IconBasedBadgeRequest):
+    """
+    Generate a badge with icon - generates config and renders in one call
+
+    Args:
+        request: Icon-based badge request with icon name
+
+    Returns:
+        BadgeResponse with base64 encoded image and configuration
+    """
+    try:
+        logger.info(f"Generating icon-based badge with icon: {request.icon_name}")
+
+        # Step 1: Generate image config
+        config = generate_icon_based_config(
+            icon_name=request.icon_name,
+            colors=request.colors,
+            seed=request.seed
+        )
+
+        # Step 2: Render badge image
+        badge_request = {
+            "canvas": {"bg": "white"},
+            "layers": config["layers"]
+        }
+
+        result = await badge_service.generate_badge(badge_request)
+
+        # Step 3: Add config to response
+        result.config = config
+
+        logger.info(f"Icon-based badge generated successfully with icon: {request.icon_name}")
+        return result
+
+    except ValueError as e:
+        logger.error(f"Invalid configuration: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating icon-based badge: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
