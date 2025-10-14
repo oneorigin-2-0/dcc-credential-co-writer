@@ -1,6 +1,17 @@
 # Badge Image Generation System
 
-A comprehensive badge generation system featuring both FastAPI REST API and Gradio interactive interface. The system uses a layered architecture for compositing custom badges with support for shapes, text, logos, and icons.
+A microservice for generating custom badge images with layered composition. This service provides REST APIs for creating badges with shapes, text, logos, and icons. It's designed to be called by the main `mit-slm` service for educational badge generation.
+
+## Architecture Overview
+
+This service is part of a microservices architecture:
+- **mit-slm**: Main badge generation service (handles metadata, text optimization, icon suggestions)
+- **mit-badge-image-generation**: Image rendering service (handles visual badge generation)
+
+The separation ensures:
+- **Scalability**: Image generation can be scaled independently
+- **Separation of Concerns**: Business logic (mit-slm) separated from rendering (this service)
+- **Maintainability**: Image generation logic centralized in one service
 
 ## Project Structure
 
@@ -9,8 +20,8 @@ mit-badge-image-generation/
 ├── app/                          # FastAPI Service
 │   ├── main.py                   # FastAPI entry point
 │   ├── settings.py               # Configuration settings
-│   ├── controllers/              # Simple API controllers
-│   │   ├── badge_image.py        # Badge generation endpoint
+│   ├── controllers/              # API controllers
+│   │   ├── badge_image.py        # Badge generation endpoints
 │   │   └── health.py             # Health check endpoint
 │   ├── core/                     # Core infrastructure
 │   │   ├── logging_config.py     # Production logging setup
@@ -28,25 +39,30 @@ mit-badge-image-generation/
 │   │       ├── text.py           # Text wrapping/alignment
 │   │       └── image_processing.py # Image transformations
 │   ├── models/                   # Pydantic models
-│   │   ├── requests.py           # API request models
-│   │   └── responses.py          # API response models
+│   │   ├── requests.py           # API request models (BadgeRequest, TextOverlayBadgeRequest, IconBasedBadgeRequest)
+│   │   └── responses.py          # API response models (BadgeResponse, BadgeData)
 │   └── services/                 # Business logic
-│       └── badge_service.py      # Badge generation service
+│       ├── badge_service.py      # Badge rendering service
+│       └── config_generator.py   # Intelligent badge configuration generation
 ├── scripts/                      # Build and deployment scripts
 │   ├── start.sh                  # Linux/macOS startup script
 │   └── start.bat                 # Windows startup script
-├── gradio_main.py                # Gradio service entry point
+├── gradio_main.py                # Gradio service entry point (development/testing)
 ├── assets/                       # Static assets
 │   ├── icons/                    # Educational icons (100+)
 │   │   ├── trophy.png            # Achievement icons
 │   │   ├── graduation-cap.png    # Academic icons
 │   │   ├── atom.png              # STEM icons
+│   │   ├── code.png              # Technology icons
 │   │   └── ...                   # Additional categories
-│   └── logos/                    # University logos
-│       ├── mit_logo.webp
-│       ├── wgu_logo.png
-│       ├── asu_logo.png
-│       └── sjsu_logo.png
+│   ├── logos/                    # University logos
+│   │   ├── mit_logo.webp
+│   │   ├── wgu_logo.png
+│   │   ├── asu_logo.png
+│   │   └── sjsu_logo.png
+│   └── fonts/                    # Font files
+│       ├── Arial.ttf
+│       └── ArialBold.ttf
 ├── logs/                         # Application logs (auto-created)
 │   ├── badge_api.log            # All application logs
 │   └── error.log                # Error logs only
@@ -165,94 +181,255 @@ Access at: `http://127.0.0.1:7870`
 
 ## API Usage
 
-### FastAPI Endpoints
+### API Endpoints Overview
 
-#### Generate Badge
-```bash
-POST /api/v1/badge/generate
-Content-Type: application/json
+The service provides three main endpoints:
 
+1. **`/api/v1/badge/generate`** - Low-level API accepting raw layer configuration
+2. **`/api/v1/badge/generate-with-text`** - High-level API for text overlay badges
+3. **`/api/v1/badge/generate-with-icon`** - High-level API for icon-based badges
+
+### 1. Generate Badge with Text Overlay
+
+**Endpoint:** `POST /api/v1/badge/generate-with-text`
+
+Generates a badge with text overlay, institution name, and achievement phrase. The service automatically generates a configuration with shapes, colors, and text layers.
+
+**Request:**
+```json
 {
-  "canvas": {"width": 600, "height": 600, "bg": "white"},
-  "layers": [...]
+  "short_title": "Python Expert",
+  "institute": "MIT",
+  "achievement_phrase": "Code with Confidence",
+  "colors": {
+    "primary": "#A31F34",
+    "secondary": "#8A8B8C",
+    "tertiary": "#C2C0BF"
+  },
+  "seed": 12345
 }
 ```
 
-#### Example Request
+**Parameters:**
+- `short_title` (required): Badge title text
+- `institute` (optional): Institution/organization name
+- `achievement_phrase` (optional): Achievement phrase or motto
+- `colors` (optional): Brand colors (primary, secondary, tertiary)
+- `seed` (optional): Random seed for reproducibility
+
+**Example:**
 ```bash
-curl -X POST http://localhost:3001/api/v1/badge/generate \
+curl -X POST http://localhost:3001/api/v1/badge/generate-with-text \
   -H "Content-Type: application/json" \
   -d '{
-    "canvas": {"width": 600, "height": 600, "bg": "white"},
-    "layers": [
-      {
-        "type": "BackgroundLayer",
-        "mode": "solid",
-        "color": "#FFFFFF",
-        "z": 0
-      },
-      {
-        "type": "ShapeLayer",
-        "shape": "hexagon",
-        "fill": {
-          "mode": "gradient",
-          "start_color": "#FFD700",
-          "end_color": "#FF4500",
-          "vertical": true
-        },
-        "border": {"color": "#800000", "width": 6},
-        "params": {"radius": 250},
-        "z": 10
-      },
-      {
-        "type": "LogoLayer",
-        "path": "assets/logos/wgu_logo.png",
-        "size": {"dynamic": true},
-        "position": {"x": "center", "y": "dynamic"},
-        "z": 20
-      },
-      {
-        "type": "TextLayer",
-        "text": "Achievement Badge",
-        "font": {
-          "path": "assets/fonts/Arial.ttf",
-          "size": 45
-        },
-        "color": "#000000",
-        "align": {"x": "center", "y": "dynamic"},
-        "wrap": {"dynamic": true, "line_gap": 6},
-        "z": 30
-      }
-    ]
+    "short_title": "Python Expert",
+    "institute": "MIT",
+    "achievement_phrase": "Code with Confidence",
+    "colors": {
+      "primary": "#A31F34",
+      "secondary": "#8A8B8C",
+      "tertiary": "#C2C0BF"
+    }
   }'
 ```
 
+### 2. Generate Badge with Icon
+
+**Endpoint:** `POST /api/v1/badge/generate-with-icon`
+
+Generates a badge with an icon/image centered on a decorative shape background.
+
+**Request:**
+```json
+{
+  "icon_name": "trophy.png",
+  "colors": {
+    "primary": "#A31F34",
+    "secondary": "#8A8B8C",
+    "tertiary": "#C2C0BF"
+  },
+  "seed": 12345
+}
+```
+
+**Parameters:**
+- `icon_name` (required): Icon filename from `assets/icons/` (e.g., "trophy.png", "graduation-cap.png", "atom.png")
+- `colors` (optional): Brand colors (primary, secondary, tertiary)
+- `seed` (optional): Random seed for reproducibility
+
+**Example:**
+```bash
+curl -X POST http://localhost:3001/api/v1/badge/generate-with-icon \
+  -H "Content-Type: application/json" \
+  -d '{
+    "icon_name": "trophy.png",
+    "colors": {
+      "primary": "#FFD700",
+      "secondary": "#FF8C42"
+    }
+  }'
+```
+
+### 3. Generate Badge (Low-Level API)
+
+**Endpoint:** `POST /api/v1/badge/generate`
+
+Accepts raw layer configuration for full control over badge rendering. This is the low-level API used internally by the other endpoints.
+
+**Request:**
+```json
+{
+  "canvas": {"bg": "white"},
+  "layers": [
+    {
+      "type": "ShapeLayer",
+      "shape": "hexagon",
+      "fill": {
+        "mode": "gradient",
+        "start_color": "#FFD700",
+        "end_color": "#FF4500",
+        "vertical": true
+      },
+      "params": {"radius": 250},
+      "z": 10
+    },
+    {
+      "type": "TextLayer",
+      "text": "Achievement",
+      "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
+      "color": "#000000",
+      "align": {"x": "center", "y": "center"},
+      "z": 30
+    }
+  ]
+}
+```
+
 ### Response Format
+
+All endpoints return the same response structure:
+
 ```json
 {
   "success": true,
+  "message": "Badge generated successfully",
   "data": {
-    "base64": "data:image/webp;base64,UklGRiQEAABXRUJQ...",
-    "filename": "badge.webp",
-    "mimeType": "image/webp"
+    "base64": "data:image/png;base64,iVBORw0KGgoAAAANS..."
+  },
+  "config": {
+    "canvas": {"width": 600, "height": 600},
+    "layers": [
+      {
+        "type": "ShapeLayer",
+        "shape": "hexagon",
+        "fill": {...},
+        "border": {...},
+        "params": {...},
+        "z": 10
+      },
+      {
+        "type": "TextLayer",
+        "text": "Achievement",
+        "font": {...},
+        "color": "#000000",
+        "align": {...},
+        "z": 30
+      }
+    ]
   }
 }
 ```
 
-## Badge Configuration
+**Response Fields:**
+- `success`: Operation status
+- `message`: Status message
+- `data.base64`: Base64-encoded PNG image with data URI prefix
+- `config`: Complete configuration used to generate the badge (useful for debugging and reproduction)
+
+## Configuration Generator
+
+The service includes intelligent configuration generation (`app/services/config_generator.py`) that creates complete badge designs from simple parameters.
+
+### Automatic Configuration Features
+
+**Text Overlay Badges:**
+- Randomly selects shape type (hexagon, circle, rounded rectangle)
+- Generates gradient or solid fill with color palettes
+- Adds institution logo with dynamic positioning
+- Creates text layers with smart wrapping and sizing
+- Applies institution brand colors if provided, otherwise uses default palettes
+
+**Icon-Based Badges:**
+- Selects decorative shape background
+- Centers icon/image in the badge
+- Applies brand colors to shapes and borders
+- Pure visual design with no text layers
+
+### Color Palette System
+
+**Institution Colors (optional):**
+```json
+{
+  "primary": "#A31F34",    // Used for warm palette
+  "secondary": "#8A8B8C",  // Used for cool palette
+  "tertiary": "#C2C0BF"    // Additional warm color
+}
+```
+
+**Default Color Palettes (when colors not provided):**
+- **Warm**: `["#FF6F61", "#FF8C42", "#FFB703", "#FB8500", "#E76F51", "#D9544D"]`
+- **Cool**: `["#118AB2", "#06D6A0", "#26547C", "#2A9D8F", "#457B9D", "#00B4D8"]`
+- **Neutrals**: `["#000000", "#222222", "#333333", "#555555", "#777777", "#999999"]`
+
+### Randomization & Reproducibility
+
+Both high-level endpoints support an optional `seed` parameter for reproducible badge generation. The same seed will always produce the same badge design.
+
+## Integration with Other Services
+
+This microservice is designed to be called by other services via HTTP. It provides both high-level convenience endpoints and low-level configuration control.
+
+### Typical Request Flow
+
+```
+External Service
+    ↓
+[Prepare badge parameters]
+    ↓
+HTTP POST to /api/v1/badge/generate-with-text or generate-with-icon
+    ↓
+Badge Image Generation Service
+    ↓
+[Generate config → Render image → Return both]
+    ↓
+Response: { data: { base64 }, config: {...} }
+```
+
+### Response Components
+
+- **`data.base64`**: Ready-to-use base64-encoded PNG with data URI
+- **`config`**: Complete configuration for reproduction or customization
+
+## Badge Configuration Details
 
 ### Canvas Properties
-- `width`, `height`: Canvas dimensions in pixels
-- `bg`: Background color ("white", "#FFFFFF", #FFFFFF00 (transparent))
+- `width`, `height`: Canvas dimensions (fixed at 600x600 pixels)
+- `bg`: Background color ("white", "#FFFFFF", "#FFFFFF00" for transparent)
 
 ### Layer Types
-- `BackgroundLayer`: Solid colors or gradients
-- `ShapeLayer`: Geometric shapes (hexagon, circle, rectangle)
-- `LogoLayer`: University/organization logos
-- `ImageLayer`: Educational icons and images
-- `TextLayer`: Text with custom fonts and alignment
+- **BackgroundLayer**: Solid colors or gradients
+- **ShapeLayer**: Geometric shapes (hexagon, circle, rounded_rect) with fill and border
+- **LogoLayer**: University/organization logos with dynamic sizing
+- **ImageLayer**: Educational icons with smart scaling
+- **TextLayer**: Multi-line text with dynamic wrapping and alignment
+
+### Layer Z-Index Ranges
+- Background: 0-9
+- Shapes: 10-19
+- Logos/Images: 20-29
+- Text: 30-39
 
 ### Asset Paths
-- **Icons**: `"assets/icons/trophy.png"`
-- **Logos**: `"assets/logos/wgu_logo.png"`
-- **Fonts**: System font paths or custom font files
+- **Icons**: `"assets/icons/trophy.png"`, `"assets/icons/graduation-cap.png"`, etc.
+- **Logos**: `"assets/logos/wgu_logo.png"`, `"assets/logos/mit_logo.webp"`, etc.
+- **Fonts**: `"assets/fonts/Arial.ttf"`, `"assets/fonts/ArialBold.ttf"`
