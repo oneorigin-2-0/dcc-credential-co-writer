@@ -88,21 +88,19 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
     Generate a badge with icon - generates config and renders in one call
 
     Args:
-        request: Icon-based badge request with icon suggestions
+        request: Icon-based badge request with icon name
 
     Returns:
         BadgeResponse with base64 encoded image
     """
     try:
-        logger.info(f"Generating icon-based badge for: {request.badge_name}")
+        logger.info(f"Generating icon-based badge with icon: {request.icon_name}")
 
         # Step 1: Generate image config
         config = generate_icon_based_config(
-            badge_name=request.badge_name,
-            badge_description=request.badge_description,
-            icon_suggestions=request.icon_suggestions,
-            institution=request.institution or "",
-            institution_colors=request.institution_colors
+            icon_name=request.icon_name,
+            institution_colors=request.institution_colors,
+            seed=request.seed
         )
 
         # Step 2: Render badge image
@@ -113,7 +111,7 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
 
         result = await badge_service.generate_badge(badge_request)
 
-        logger.info(f"Icon-based badge generated successfully: {request.badge_name}")
+        logger.info(f"Icon-based badge generated successfully with icon: {request.icon_name}")
         return result
 
     except ValueError as e:

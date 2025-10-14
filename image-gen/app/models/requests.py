@@ -39,25 +39,20 @@ class TextOverlayBadgeRequest(BaseModel):
 
 class IconBasedBadgeRequest(BaseModel):
     """Request model for generating badge with icon"""
-    badge_name: str = Field(description="Name of the badge")
-    badge_description: str = Field(description="Description of the badge")
-    icon_suggestions: Dict[str, Any] = Field(description="Icon suggestions from mit-slm")
-    institution: Optional[str] = Field(default="", description="Institution name")
+    icon_name: str = Field(description="Icon filename (e.g., 'atom.png', 'trophy.png')")
     institution_colors: Optional[Dict[str, str]] = Field(default=None, description="Institution brand colors")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "badge_name": "Data Science Achievement",
-                "badge_description": "Mastery in data analysis and visualization",
-                "icon_suggestions": {
-                    "suggested_icon": {
-                        "name": "chart.png",
-                        "display_name": "Chart"
-                    }
+                "icon_name": "atom.png",
+                "institution_colors": {
+                    "primary": "#A31F34",
+                    "secondary": "#8A8B8C",
+                    "tertiary": "#C2C0BF"
                 },
-                "institution": "Massachusetts Institute of Technology"
+                "seed": 12345
             }
         }
 

@@ -387,40 +387,30 @@ def generate_text_overlay_config(
 
 
 def generate_icon_based_config(
-    badge_name: str,
-    badge_description: str,
-    icon_suggestions: dict,
-    institution: str = "",
-    institution_colors: Optional[dict] = None
+    icon_name: str,
+    institution_colors: Optional[dict] = None,
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Generate image configuration with suggested icon
+    """Generate image configuration with specified icon
 
     Args:
-        badge_name: Name of the badge
-        badge_description: Description of the badge
-        icon_suggestions: Icon suggestions from mit-slm
-        institution: Institution name
+        icon_name: Icon filename (e.g., 'atom.png', 'trophy.png')
         institution_colors: Optional institution colors
+        seed: Optional random seed for reproducibility
 
     Returns:
         Complete badge configuration ready for rendering
     """
-    suggested_icon = None
-    if icon_suggestions and icon_suggestions.get('suggested_icon', {}).get('name'):
-        suggested_icon = icon_suggestions['suggested_icon']['name']
+    if seed is None:
+        seed = random.randint(1, 10000)
 
-    seed = random.randint(1, 10000)
-
-    meta = {
-        "badge_title": badge_name,
-        "subtitle": institution,
-        "extra_text": badge_description
-    }
+    # Icon-based badges don't use text, so meta is minimal
+    meta = {}
 
     config = generate_badge_image_config(
         meta=meta,
         seed=seed,
-        suggested_icon=suggested_icon,
+        suggested_icon=icon_name,
         institution_colors=institution_colors
     )
 
