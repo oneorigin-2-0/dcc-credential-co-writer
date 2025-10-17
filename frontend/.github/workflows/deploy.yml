@@ -23,6 +23,8 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
 
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@v0.5.1
