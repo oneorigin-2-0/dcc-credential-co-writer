@@ -140,8 +140,6 @@ export class StreamingApiClient {
     const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.GENERATE}`;
     
     try {
-      console.log(`Making API request to: ${url}`);
-      console.log(`Request body:`, JSON.stringify({ course_input: content, ...additionalParams }));
       
       const response = await fetch(url, {
         method: 'POST',
@@ -270,7 +268,6 @@ export class StreamingApiClient {
                     };
                   }
                   
-                  console.log(`API Client yielding raw final data:`, finalData);
                   yield {
                     type: 'final',
                     data: finalData, // Store the raw final data instead of mapped suggestion

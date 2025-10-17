@@ -45,7 +45,6 @@ export default function BadgeEditorPage() {
   const [originalContent, setOriginalContent] = useState<string>('');
   const [currentCardId, setCurrentCardId] = useState<string | null>(null);
   const [availableCards, setAvailableCards] = useState<string[]>([]);
-  const [rawFinalData, setRawFinalData] = useState<any>(null);
   const [badgeConfiguration, setBadgeConfiguration] = useState({
     badge_style: 'professional',
     badge_tone: 'authoritative',
@@ -109,12 +108,9 @@ export default function BadgeEditorPage() {
         
         // Look for raw data that matches this suggestion
         for (const cardId of cardIds) {
-          const rawFinalData = finalResponses[cardId];
-          if (rawFinalData && rawFinalData.credentialSubject?.achievement?.name === parsedSuggestion.title) {
-            setRawFinalData(rawFinalData);
+          if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
             setCurrentCardId(cardId);
             setAvailableCards(cardIds);
-            console.log(`Found matching raw final data for selectedBadgeSuggestion:`, rawFinalData);
             break;
           }
         }
@@ -131,7 +127,6 @@ export default function BadgeEditorPage() {
           // Use the first available final response
           const firstCardId = cardIds[0];
           const rawFinalData = finalResponses[firstCardId];
-          console.log(`Loading raw final data for card ${firstCardId}:`, rawFinalData);
           
           // Extract mapped suggestion from raw final data
           let mappedSuggestion;
@@ -155,11 +150,8 @@ export default function BadgeEditorPage() {
           }
           
           setBadgeSuggestion(mappedSuggestion);
-          setRawFinalData(rawFinalData); // Store raw final data for JSON generation
           setCurrentCardId(firstCardId);
           setAvailableCards(cardIds);
-          console.log(`Loaded mapped suggestion for card ${firstCardId}:`, mappedSuggestion);
-          console.log(`Loaded raw final data for card ${firstCardId}:`, rawFinalData);
         } else {
           toast({
             variant: 'destructive',
@@ -195,7 +187,10 @@ export default function BadgeEditorPage() {
   }, []);
 
   const handleEditImage = () => {
-    const originalConfig = rawFinalData?.imageConfig || null;
+    // Get image config from finalResponses if available
+    const originalConfig = currentCardId ? 
+      JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig || null : 
+      null;
     setModalImageConfig(originalConfig);
     // Create a deep copy for editing
     setEditedImageConfig(originalConfig ? JSON.parse(JSON.stringify(originalConfig)) : null);
@@ -233,24 +228,17 @@ export default function BadgeEditorPage() {
         }
       }
 
-      // Update rawFinalData with new imageConfig
-      if (rawFinalData && editedImageConfig) {
-        const updatedRawData = {
-          ...rawFinalData,
-          imageConfig: editedImageConfig
-        };
-        setRawFinalData(updatedRawData);
-        localStorage.setItem('rawFinalData', JSON.stringify(updatedRawData));
-
-        // Update finalResponses in localStorage if currentCardId exists
-        if (currentCardId) {
-          try {
-            const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
-            existingFinalResponses[currentCardId] = updatedRawData;
-            localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
-          } catch (error) {
-            console.error('Failed to update finalResponses:', error);
-          }
+      // Update finalResponses in localStorage with new imageConfig
+      if (currentCardId && editedImageConfig) {
+        try {
+          const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+          existingFinalResponses[currentCardId] = {
+            ...existingFinalResponses[currentCardId],
+            imageConfig: editedImageConfig
+          };
+          localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+        } catch (error) {
+          console.error('Failed to update finalResponses:', error);
         }
       }
 
@@ -283,7 +271,6 @@ export default function BadgeEditorPage() {
   };
 
   const updateImageConfig = (path: string, value: any) => {
-    console.log(`Updating image config: ${path} = ${value}`);
     setEditedImageConfig((prev: any) => {
       if (!prev) return prev;
       const newConfig = JSON.parse(JSON.stringify(prev));
@@ -298,7 +285,6 @@ export default function BadgeEditorPage() {
       }
       
       current[keys[keys.length - 1]] = value;
-      console.log('Updated config:', JSON.stringify(newConfig, null, 2));
       
       // Trigger debounced image generation with the updated config
       debouncedGenerateImageWithConfig(newConfig);
@@ -313,7 +299,6 @@ export default function BadgeEditorPage() {
     
     setIsGeneratingImage(true);
     try {
-      console.log('Sending image config to API:', JSON.stringify(configToUse, null, 2));
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/badge/generate`, {
         method: 'POST',
         headers: {
@@ -336,19 +321,6 @@ export default function BadgeEditorPage() {
     }
   };
 
-  const debouncedGenerateImage = () => {
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-    
-    // Set new timer
-    const newTimer = setTimeout(() => {
-      generateImage();
-    }, 500);
-    
-    setDebounceTimer(newTimer);
-  };
 
   const debouncedGenerateImageWithConfig = (config: any) => {
     // Clear existing timer
@@ -359,7 +331,7 @@ export default function BadgeEditorPage() {
     // Set new timer
     const newTimer = setTimeout(() => {
       generateImage(config);
-    }, 500);
+    }, 1500);
     
     setDebounceTimer(newTimer);
   };
@@ -391,10 +363,7 @@ export default function BadgeEditorPage() {
         }
         
         setBadgeSuggestion(mappedSuggestion);
-        setRawFinalData(rawFinalData); // Store raw final data for JSON generation
         setCurrentCardId(cardId);
-        console.log(`Switched to card ${cardId} raw data:`, rawFinalData);
-        console.log(`Switched to card ${cardId} mapped suggestion:`, mappedSuggestion);
       }
     } catch (error) {
       console.error('Error switching to card:', error);
@@ -425,16 +394,13 @@ export default function BadgeEditorPage() {
         custom_instructions: userPrompt,
         ...badgeConfiguration,
       })) {
-        console.log('Editor streaming response:', response);
         
         switch (response.type) {
           case 'start':
-            console.log('Stream started');
             setStreamingContent('AI stream started, waiting for response...');
             break;
             
         case 'data':
-          console.log('Stream data received:', response.data);
           // Our StreamingApiClient emits { rawContent, latestToken, ... } for token events
           // but may also surface plain strings or objects when parsing fails.
           const raw = (response?.data?.rawContent
@@ -460,8 +426,6 @@ export default function BadgeEditorPage() {
           break;
             
           case 'final':
-            console.log('Stream final response:', response.data);
-            console.log('Stream mapped suggestion:', response.mappedSuggestion);
             
             // Handle final response
             const finalData = response.data;
@@ -469,9 +433,7 @@ export default function BadgeEditorPage() {
             
             if (mappedSuggestion) {
               setBadgeSuggestion(mappedSuggestion);
-              setRawFinalData(finalData);
-              localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(mappedSuggestion));
-              localStorage.setItem('rawFinalData', JSON.stringify(finalData));
+              updateAllLocalStorageKeys(mappedSuggestion, currentCardId);
               
               toast({
                 title: 'Badge Regenerated',
@@ -490,16 +452,23 @@ export default function BadgeEditorPage() {
                 setBadgeSuggestion(prev => {
                   if (!prev) return prev;
                   const updated = { ...prev, image: imageSrc };
-                  try {
-                    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(updated));
-                    const raw = JSON.parse(localStorage.getItem('rawFinalData') || 'null');
-                    if (raw) {
-                      const merged = { ...raw, generatedImage: imageSrc };
-                      localStorage.setItem('rawFinalData', JSON.stringify(merged));
-                    }
-                  } catch {}
+                  updateAllLocalStorageKeys(updated, currentCardId);
                   return updated;
                 });
+
+                // Also update imageConfig in finalResponses if available
+                if (currentCardId && finalData?.imageConfig) {
+                  try {
+                    const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+                    existingFinalResponses[currentCardId] = {
+                      ...existingFinalResponses[currentCardId],
+                      imageConfig: finalData.imageConfig
+                    };
+                    localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+                  } catch (error) {
+                    console.error('Failed to update imageConfig in finalResponses:', error);
+                  }
+                }
               }
             } catch (e) {
               console.error('Failed to use base64 image from final payload:', e);
@@ -549,9 +518,7 @@ export default function BadgeEditorPage() {
     (updatedSuggestion as any)[field] = editValues[field as keyof typeof editValues];
 
     setBadgeSuggestion(updatedSuggestion);
-
-    // Update localStorage
-    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(updatedSuggestion));
+    updateAllLocalStorageKeys(updatedSuggestion, currentCardId);
 
     setEditingField(null);
 
@@ -566,13 +533,69 @@ export default function BadgeEditorPage() {
     setEditValues({ title: '', description: '', criteria: '' });
   };
 
-  const generateBadgeJSON = () => {
-    // Use raw final data if available, otherwise fallback to mapped suggestion
-    if (rawFinalData) {
-      return rawFinalData.credentialSubject || null;
+  // Helper function to update all localStorage keys with new suggestion data
+  const updateAllLocalStorageKeys = useCallback((updatedSuggestion: BadgeSuggestion, cardId?: string | null) => {
+    try {
+      // Update selectedBadgeSuggestion
+      localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(updatedSuggestion));
+      
+      // Update finalResponses if cardId is provided
+      if (cardId) {
+        const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
+        const currentFinalResponse = existingFinalResponses[cardId];
+        if (currentFinalResponse) {
+          // Update the final response with new data
+          if (currentFinalResponse.credentialSubject?.achievement) {
+            currentFinalResponse.credentialSubject.achievement.name = updatedSuggestion.title;
+            currentFinalResponse.credentialSubject.achievement.description = updatedSuggestion.description;
+            currentFinalResponse.credentialSubject.achievement.criteria = { narrative: updatedSuggestion.criteria };
+            if (updatedSuggestion.image) {
+              currentFinalResponse.credentialSubject.achievement.image = { id: updatedSuggestion.image };
+            }
+          } else {
+            currentFinalResponse.badge_name = updatedSuggestion.title;
+            currentFinalResponse.badge_description = updatedSuggestion.description;
+            currentFinalResponse.criteria = { narrative: updatedSuggestion.criteria };
+            if (updatedSuggestion.image) {
+              currentFinalResponse.image = updatedSuggestion.image;
+            }
+          }
+          existingFinalResponses[cardId] = currentFinalResponse;
+          localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
+        }
+      }
+      
+      // Update generatedSuggestions
+      const existingSuggestions = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
+      let targetSuggestionId = cardId ? parseInt(cardId) : null;
+      
+      // If no cardId, find matching suggestion by title
+      if (!targetSuggestionId) {
+        const matchingSuggestion = existingSuggestions.find((suggestion: any) => 
+          suggestion.data && suggestion.data.title === updatedSuggestion.title
+        );
+        targetSuggestionId = matchingSuggestion?.id;
+      }
+      
+      if (targetSuggestionId) {
+        const updatedSuggestions = existingSuggestions.map((suggestion: any) => {
+          if (suggestion.id === targetSuggestionId) {
+            return {
+              ...suggestion,
+              data: updatedSuggestion
+            };
+          }
+          return suggestion;
+        });
+        localStorage.setItem('generatedSuggestions', JSON.stringify(updatedSuggestions));
+      }
+    } catch (error) {
+      console.error('Error updating localStorage keys:', error);
     }
-    
-    // Fallback to mapped suggestion if no raw data
+  }, []);
+
+  const generateBadgeJSON = () => {
+    // Use selectedBadgeSuggestion to generate JSON
     if (!badgeSuggestion) return null;
     
     return {
@@ -583,7 +606,7 @@ export default function BadgeEditorPage() {
           "narrative": badgeSuggestion.criteria
         },
         "image": {
-          "id": "",
+          "id": badgeSuggestion.image || "",
           "type": "Image"
         }
       }
@@ -620,8 +643,8 @@ export default function BadgeEditorPage() {
     const link = document.createElement('a');
     link.href = url;
     
-    // Use title from raw data or mapped suggestion for filename
-    const title = rawFinalData?.credentialSubject?.achievement?.name || badgeSuggestion?.title || 'badge';
+    // Use title from mapped suggestion for filename
+    const title = badgeSuggestion?.title || 'badge';
     link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
     link.click();
     URL.revokeObjectURL(url);
@@ -719,7 +742,7 @@ export default function BadgeEditorPage() {
                 </Card>
               ) : (
                 <SuggestionCard
-                  id={1}
+                  id={currentCardId ? parseInt(currentCardId) : 1}
                   data={streamingComplete ? badgeSuggestion : null}
                   loading={isStreaming && !streamingComplete}
                   error={streamingError}
@@ -734,7 +757,6 @@ export default function BadgeEditorPage() {
                   isStreamingComplete={streamingComplete}
                   onClick={() => {
                     // No navigation needed in editor context
-                    console.log('Card clicked in editor context');
                   }}
                 />
               )
@@ -961,7 +983,7 @@ export default function BadgeEditorPage() {
           <div className="lg:col-span-3">
             <BadgeImageDisplay 
               imageUrl={badgeSuggestion.image}
-              imageConfig={rawFinalData?.imageConfig}
+              imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
               onEditImage={handleEditImage}
             />
           </div>
@@ -970,12 +992,11 @@ export default function BadgeEditorPage() {
         {/* Image Edit Modal */}
         <Dialog open={isImageEditModalOpen} onOpenChange={(open) => {
           if (!open) {
-            // When closing, apply changes if there's a generated image
-            if (generatedImage) {
-              handleApplyImageChanges();
-            } else {
-              setIsImageEditModalOpen(false);
-            }
+            // When closing, don't auto-apply changes - let user decide
+            setIsImageEditModalOpen(false);
+            // Reset any unsaved changes
+            setGeneratedImage(null);
+            setEditedImageConfig(null);
           } else {
             setIsImageEditModalOpen(open);
           }

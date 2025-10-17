@@ -40,10 +40,6 @@ export function useStreamingSuggestionGenerator() {
       const storedSuggestions = localStorage.getItem('generatedSuggestions');
       const finalResponses = localStorage.getItem('finalResponses');
       
-      console.log('Hook - Restoring state from localStorage:');
-      console.log('storedIsGenerating:', storedIsGenerating);
-      console.log('storedSuggestions:', storedSuggestions);
-      console.log('finalResponses:', finalResponses);
       
       if (storedIsGenerating === 'true') {
         setIsGenerating(true);
@@ -65,7 +61,6 @@ export function useStreamingSuggestionGenerator() {
           // If we have stored suggestions, mark generation as complete
           setIsGenerating(false);
           setAllCompleted(true);
-          console.log('Hook - Restored from generatedSuggestions:', suggestions);
           return; // Exit early if we found suggestions
         }
       }
@@ -117,7 +112,6 @@ export function useStreamingSuggestionGenerator() {
           // If we have final responses, mark generation as complete
           setIsGenerating(false);
           setAllCompleted(true);
-          console.log('Hook - Restored from finalResponses:', cardIds);
         }
       }
     } catch (error) {
@@ -140,7 +134,6 @@ export function useStreamingSuggestionGenerator() {
 
   const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string) => {
     try {
-      console.log(`🚀 Starting API call for card ${cardId} at ${new Date().toISOString()}`);
       
       // Set loading state (but don't mark as streaming started yet)
       setSuggestionCards(prev => 
@@ -154,7 +147,6 @@ export function useStreamingSuggestionGenerator() {
       const stream = new StreamingApiClient().generateSuggestionsStream(content);
       
       for await (const response of stream) {
-        console.log(`Stream response for card ${cardId}:`, response);
         
         switch (response.type) {
           case 'start':
@@ -169,8 +161,6 @@ export function useStreamingSuggestionGenerator() {
             
           case 'final':
             // Handle final response (type: "final")
-            console.log(`Card ${cardId} received final response:`, response.data);
-            console.log(`Card ${cardId} received mapped suggestion:`, response.mappedSuggestion);
             
             if (response.data && response.mappedSuggestion) {
               // Store raw final response data in localStorage
@@ -184,7 +174,6 @@ export function useStreamingSuggestionGenerator() {
                 const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
                 existingFinalResponses[cardId] = response.data; // Store raw final data
                 localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
-                console.log(`Stored raw final response for card ${cardId} in finalResponses:`, response.data);
               } catch (error) {
                 console.error('Failed to store final response in localStorage:', error);
               }
@@ -205,7 +194,6 @@ export function useStreamingSuggestionGenerator() {
                 )
               );
               
-              console.log(`Card ${cardId} marked as complete with mapped suggestion:`, response.mappedSuggestion);
 
               // Save to generatedSuggestions in localStorage
               try {
@@ -213,7 +201,6 @@ export function useStreamingSuggestionGenerator() {
                 const updated = existing.filter((s: any) => s.id !== cardId);
                 updated.push({ id: cardId, data: response.mappedSuggestion });
                 localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
-                console.log(`Saved suggestion ${cardId} to generatedSuggestions with image:`, response.mappedSuggestion.image ? 'YES' : 'NO');
               } catch (error) {
                 console.error('Failed to save suggestion to localStorage:', error);
               }
@@ -247,7 +234,6 @@ export function useStreamingSuggestionGenerator() {
               
               // If streaming is complete, parse the JSON
               if (isComplete) {
-                console.log(`Card ${cardId} streaming complete, parsing JSON...`);
                 try {
                   // Extract JSON from accumulated content (remove markdown code blocks)
                   let jsonContent = response.data.rawContent;
@@ -267,7 +253,6 @@ export function useStreamingSuggestionGenerator() {
                     const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
                     existingResponses[cardId] = badgeData;
                     localStorage.setItem('streamingResponses', JSON.stringify(existingResponses));
-                    console.log(`Stored complete streaming response for card ${cardId}:`, badgeData);
                   } catch (error) {
                     console.error('Failed to store streaming response in localStorage:', error);
                   }
@@ -277,7 +262,6 @@ export function useStreamingSuggestionGenerator() {
                     const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
                     existingFinalResponses[cardId] = badgeData; // Store raw badge data instead of mapped suggestion
                     localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
-                    console.log(`Stored raw badge data for card ${cardId} in finalResponses:`, badgeData);
                   } catch (error) {
                     console.error('Failed to store final response in localStorage:', error);
                   }
@@ -313,7 +297,6 @@ export function useStreamingSuggestionGenerator() {
                     )
                   );
                   
-                  console.log(`Card ${cardId} marked as complete from token parsing with suggestion:`, suggestion);
                   
                   // Save to generatedSuggestions in localStorage
                   try {
@@ -321,7 +304,6 @@ export function useStreamingSuggestionGenerator() {
                     const updatedSuggestions = existingSuggestions.filter((s: any) => s.id !== cardId);
                     updatedSuggestions.push({ id: cardId, data: suggestion });
                     localStorage.setItem('generatedSuggestions', JSON.stringify(updatedSuggestions));
-                    console.log(`Saved suggestion ${cardId} to generatedSuggestions (from token parsing) with image:`, suggestion.image ? 'YES' : 'NO');
                   } catch (error) {
                     console.error('Error storing suggestion in localStorage:', error);
                   }
@@ -400,7 +382,6 @@ export function useStreamingSuggestionGenerator() {
             break;
             
           case 'complete':
-            console.log(`Streaming completed for card ${cardId}`);
             setSuggestionCards(prev => 
               prev.map(card => 
                 card.id === cardId 
@@ -454,10 +435,8 @@ export function useStreamingSuggestionGenerator() {
     // Store generation state in localStorage
     try {
       localStorage.setItem('isGenerating', 'true');
-      localStorage.setItem('generationStartedAt', new Date().toISOString());
       // Clear previous suggestions when starting new generation
       localStorage.removeItem('generatedSuggestions');
-      localStorage.removeItem('suggestionsGeneratedAt');
     } catch (error) {
       console.error('Error storing generation state:', error);
     }
@@ -471,7 +450,6 @@ export function useStreamingSuggestionGenerator() {
     ]);
 
     // Generate all 4 suggestions in TRUE PARALLEL (no delays)
-    console.log(`🔥 Creating ${[1, 2, 3, 4].length} parallel promises at ${new Date().toISOString()}`);
     
     // Create all promises immediately - they start executing right away
     const promise1 = generateSingleSuggestionStream(1, originalContent);
@@ -479,7 +457,6 @@ export function useStreamingSuggestionGenerator() {
     const promise3 = generateSingleSuggestionStream(3, originalContent);
     const promise4 = generateSingleSuggestionStream(4, originalContent);
     
-    console.log(`✅ All 4 promises started simultaneously`);
     
     // Wait for all streams to complete
     await Promise.allSettled([promise1, promise2, promise3, promise4]);
@@ -487,11 +464,6 @@ export function useStreamingSuggestionGenerator() {
 
     // Note: Suggestions are saved to localStorage individually as they complete
     // (see 'final' and 'data' case handlers above). No bulk save needed here.
-    try {
-      localStorage.setItem('suggestionsGeneratedAt', new Date().toISOString());
-    } catch (error) {
-      console.error('Error storing timestamp in localStorage:', error);
-    }
 
     setIsGenerating(false);
     

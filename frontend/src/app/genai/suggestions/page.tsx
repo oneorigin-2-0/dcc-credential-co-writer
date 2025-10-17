@@ -26,11 +26,11 @@ export default function CredentialSuggestionsPage() {
       }
       
       // Debug: Check what's in localStorage
-      console.log('Suggestions page - localStorage check:');
-      console.log('generatedSuggestions:', localStorage.getItem('generatedSuggestions'));
-      console.log('finalResponses:', localStorage.getItem('finalResponses'));
-      console.log('isGenerating:', localStorage.getItem('isGenerating'));
-      console.log('suggestionCards:', suggestionCards);
+      // console.log('Suggestions page - localStorage check:');
+      // console.log('generatedSuggestions:', localStorage.getItem('generatedSuggestions'));
+      // console.log('finalResponses:', localStorage.getItem('finalResponses'));
+      // console.log('isGenerating:', localStorage.getItem('isGenerating'));
+      // console.log('suggestionCards:', suggestionCards);
     } catch (error) {
       console.error('Error accessing localStorage:', error);
       toast({
@@ -138,7 +138,7 @@ export default function CredentialSuggestionsPage() {
         </Button>
 
         <div className="flex justify-center">
-          <div className="w-full max-w-6xl">
+          <div className="w-full">
             <div className="mb-8 text-center">
               <h1 className="text-3xl font-bold text-gray-900 mb-3">
                 Credential Suggestions
