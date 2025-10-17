@@ -314,7 +314,7 @@ export default function BadgeEditorPage() {
     setIsGeneratingImage(true);
     try {
       console.log('Sending image config to API:', JSON.stringify(configToUse, null, 2));
-      const response = await fetch('http://localhost:3001/api/v1/badge/generate', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/badge/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
