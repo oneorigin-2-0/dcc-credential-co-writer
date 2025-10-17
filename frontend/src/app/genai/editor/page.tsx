@@ -897,7 +897,7 @@ export default function BadgeEditorPage() {
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Badge Image:</label>
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <img
-                      src={badgeSuggestion.image || "https://nwccu.org/wp-content/uploads/2024/01/WGU-Logo.png"}
+                      src={badgeSuggestion.image}
                       alt="Generated badge"
                       className="w-32 h-32 object-contain rounded-lg border border-gray-300"
                     />
