@@ -932,7 +932,7 @@ export default function BadgeEditorPage() {
                         </pre>
                       </div>
                       
-                      <div className="flex gap-3 justify-end">
+                      <div className="flex gap-3">
                         <Button
                           variant="outline"
                           onClick={handleCopyJSON}
