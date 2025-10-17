@@ -6,7 +6,7 @@
 export const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1',
   ENDPOINTS: {
-    GENERATE: '/generate/stream',
+    GENERATE: '/generate-badge-suggestions/stream',
   },
 } as const;
 
@@ -120,8 +120,9 @@ export default apiClient;
 
 // Streaming types
 export interface StreamingResponse {
-  type: 'start' | 'data' | 'error' | 'complete';
+  type: 'start' | 'data' | 'error' | 'complete' | 'final';
   data?: any;
+  mappedSuggestion?: any; // For final responses, includes the mapped suggestion
   error?: string;
   progress?: number;
   isPartial?: boolean;
@@ -135,24 +136,33 @@ export class StreamingApiClient {
     this.baseURL = baseURL;
   }
 
-  async *generateSuggestionsStream(content: string): AsyncGenerator<StreamingResponse, void, unknown> {
+  async *generateSuggestionsStream(content: string, additionalParams?: Record<string, any>): AsyncGenerator<StreamingResponse, void, unknown> {
     const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.GENERATE}`;
     
     try {
+      console.log(`Making API request to: ${url}`);
+      console.log(`Request body:`, JSON.stringify({ course_input: content, ...additionalParams }));
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
+          'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'no-cache',
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ 
+          course_input: content,
+          ...additionalParams 
+        }),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP Error Response:`, errorText);
         yield {
           type: 'error',
-          error: `HTTP error! status: ${response.status}`,
+          error: `HTTP error! status: ${response.status}, message: ${errorText}`,
         };
         return;
       }
@@ -200,6 +210,7 @@ export class StreamingApiClient {
                 
                 // Handle different streaming response formats
                 if (parsed.type === 'error') {
+                  console.error(`API Error Response for card:`, parsed);
                   yield {
                     type: 'error',
                     error: parsed.error || parsed.message || 'API returned an error',
@@ -221,6 +232,49 @@ export class StreamingApiClient {
                       isPartial: !parsed.done,
                       isComplete: parsed.done,
                     },
+                  };
+                } else if (parsed.type === 'final' && parsed.content) {
+                  // Final response with complete badge data
+                  const finalData = parsed.content;
+                  let suggestion;
+                  
+                  if (finalData.credentialSubject && finalData.credentialSubject.achievement) {
+                    // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+                    const achievement = finalData.credentialSubject.achievement;
+                    const rawImageBase64 = achievement.image?.image_base64 as string | undefined;
+                    const imageSrc = rawImageBase64
+                      ? (rawImageBase64.startsWith('data:') ? rawImageBase64 : `data:image/png;base64,${rawImageBase64}`)
+                      : (achievement.image?.id && typeof achievement.image.id === 'string' && !achievement.image.id.includes('example.com')
+                        ? achievement.image.id
+                        : undefined);
+                    suggestion = {
+                      title: achievement.name,
+                      description: achievement.description,
+                      criteria: achievement.criteria?.narrative || achievement.description,
+                      image: imageSrc,
+                    };
+                  } else {
+                    // Fallback to legacy format
+                    const rawImageBase64 = finalData?.image?.image_base64 as string | undefined;
+                    const legacyImage = rawImageBase64
+                      ? (rawImageBase64.startsWith('data:') ? rawImageBase64 : `data:image/png;base64,${rawImageBase64}`)
+                      : (finalData.image?.id || finalData.image);
+                    const sanitizedLegacyImage = legacyImage && typeof legacyImage === 'string' && legacyImage.includes('example.com')
+                      ? undefined
+                      : legacyImage;
+                    suggestion = {
+                      title: finalData.badge_name || finalData.title,
+                      description: finalData.badge_description || finalData.description,
+                      criteria: finalData.criteria?.narrative || finalData.criteria || finalData.description,
+                      image: sanitizedLegacyImage,
+                    };
+                  }
+                  
+                  console.log(`API Client yielding raw final data:`, finalData);
+                  yield {
+                    type: 'final',
+                    data: finalData, // Store the raw final data instead of mapped suggestion
+                    mappedSuggestion: suggestion, // Include mapped suggestion for UI display
                   };
                 } else if (parsed.response) {
                   // Final response with badge data

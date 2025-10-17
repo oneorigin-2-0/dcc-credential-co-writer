@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle , CardFooter} from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle, Sparkles, Brain } from 'lucide-react';
 import type { BadgeSuggestion } from '@/lib/types';
 
@@ -24,6 +24,15 @@ interface SuggestionCardProps {
 }
 
 export function SuggestionCard({ id, data, loading, error, progress, streamingText, streamingContent, rawStreamingContent, isStreamingComplete, onClick }: SuggestionCardProps) {
+  const preRef = useRef<HTMLPreElement>(null);
+
+  // Auto-scroll to bottom when rawStreamingContent updates
+  useEffect(() => {
+    if (preRef.current && rawStreamingContent) {
+      preRef.current.scrollTop = preRef.current.scrollHeight;
+    }
+  }, [rawStreamingContent]);
+
   const getStatus = () => {
     if (loading) return 'loading';
     if (error) return 'error';
@@ -58,7 +67,8 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
   };
 
   const status = getStatus();
-  const isClickable = status === 'success' && !loading && !rawStreamingContent;
+  const isCurrentlyStreaming = rawStreamingContent && !isStreamingComplete;
+  const isClickable = (status === 'success' || status === 'error') && !loading && !isCurrentlyStreaming;
 
   return (
     <Card
@@ -68,7 +78,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
           : 'bg-gray-50'
       } ${status === 'error' ? 'border-red-200 bg-red-50' : ''} ${
         status === 'loading' ? 'border-blue-200 bg-blue-50' : ''
-      }`}
+      } ${status === 'error' && isClickable ? 'hover:border-red-300 hover:bg-red-100' : ''}`}
       onClick={isClickable ? onClick : undefined}
     >
       <CardHeader className="pb-4">
@@ -100,9 +110,8 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 
                 {/* Raw JSON Content Display */}
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-[#40464c] font-subhead">AI Generated Response:</label>
                   <div className="p-4 bg-[#234467] rounded-lg border border-[#429EA6] max-h-64 overflow-y-auto shadow-lg">
-                    <pre className="text-xs text-[#DDD78D] font-mono leading-relaxed whitespace-pre-wrap">
+                    <pre ref={preRef} className="text-xs text-[#DDD78D] font-mono leading-relaxed whitespace-pre-wrap">
                       {rawStreamingContent}
                       {!isStreamingComplete && <span className="animate-pulse text-[#429EA6]">|</span>}
                     </pre>
@@ -190,7 +199,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
         {status === 'error' && (
           <div className="text-center py-4">
             <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="text-red-600 text-sm">
+            <p className="text-red-600 text-sm mb-3">
               {error || 'Failed to generate suggestion'}
             </p>
           </div>
@@ -229,14 +238,22 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 {data.criteria}
               </p>
             </div>
-            
-            {/* Click to edit message */}
-            <div className="text-center pt-2 border-t border-gray-200">
-              <p className="text-xs text-[#626a73] font-body">Click to edit and customise</p>
-            </div>
           </div>
         )}
       </CardContent>
+      
+      {/* Footer - only show for clickable cards */}
+      {isClickable && (
+        <CardFooter className="pt-0">
+          <div className="text-center w-full">
+            <p className={`text-xs font-body ${
+              status === 'error' ? 'text-red-500' : 'text-[#626a73]'
+            }`}>
+              Click to edit and customise
+            </p>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

@@ -218,7 +218,7 @@ function ResultsContent() {
                     "narrative": suggestion.criteria
                 },
                 "image": {
-                    "id": "https://example.com//achievements/c3c1ea5b-9d6b-416d-ab7f-76da1df3e8d6/image",
+                    "id": "",
                     "type": "Image"
                 }
             }
