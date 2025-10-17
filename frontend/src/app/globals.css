@@ -11,7 +11,7 @@ body {
 @layer base {
   :root {
     /* DCC Brand Colors - Light Mode */
-    --background: 0 0% 100%;
+    --background: 210 20% 98%;
     --foreground: 210 13% 26%; /* Dark Grey #40464c */
     --card: 0 0% 100%;
     --card-foreground: 210 13% 26%;

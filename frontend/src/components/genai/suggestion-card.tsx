@@ -72,9 +72,9 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
   return (
     <Card
-      className={`border-0 shadow-lg transition-all duration-500 ${
+      className={`border-2 border-transparent shadow-lg transition-all duration-300 ${
         isClickable 
-          ? 'cursor-pointer hover:shadow-xl hover:scale-105 bg-white' 
+          ? 'cursor-pointer hover:shadow-xl hover:border-[#429EA6] bg-white' 
           : 'bg-gray-50'
       } ${status === 'error' ? 'border-red-200 bg-red-50' : ''} ${
         status === 'loading' ? 'border-blue-200 bg-blue-50' : ''
@@ -110,7 +110,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 
                 {/* Raw JSON Content Display */}
                 <div className="space-y-1">
-                  <div className="p-4 bg-[#234467] rounded-lg border border-[#429EA6] max-h-64 overflow-y-auto shadow-lg">
+                  <div className="p-4 bg-[#234467] rounded-lg border border-[#429EA6] overflow-y-auto shadow-lg">
                     <pre ref={preRef} className="text-xs text-[#DDD78D] font-mono leading-relaxed whitespace-pre-wrap">
                       {rawStreamingContent}
                       {!isStreamingComplete && <span className="animate-pulse text-[#429EA6]">|</span>}

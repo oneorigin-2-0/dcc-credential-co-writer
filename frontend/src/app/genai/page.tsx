@@ -98,7 +98,7 @@ export default function GenAIPage() {
 
         try {
           const parsedFile = await FileParser.parseFile(file);
-          console.log(">>>parsedFile", parsedFile)
+          // console.log(">>>parsedFile", parsedFile)
           newAttachedFiles.push({
             file,
             content: parsedFile.content,
@@ -170,13 +170,21 @@ export default function GenAIPage() {
     }
 
     try {
+      // Clear all localStorage values to avoid confusion
+      try {
+        localStorage.removeItem('generatedSuggestions');
+        localStorage.removeItem('finalResponses');
+        localStorage.removeItem('selectedBadgeSuggestion');
+        localStorage.removeItem('isGenerating');
+        // console.log('Cleared all localStorage values for fresh generation');
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
+      }
+
       // Store content and generation state in localStorage
       try {
         localStorage.setItem('originalContent', combinedContent);
         localStorage.setItem('generationStarted', 'true');
-        localStorage.setItem('generationStartedAt', new Date().toISOString());
-        // Clear any previous suggestions
-        localStorage.removeItem('generatedSuggestions');
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
       }
