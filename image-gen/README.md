@@ -91,8 +91,8 @@ docker-compose down
 ```
 
 Access the containerized API at:
-- API Documentation: `http://localhost:3001/docs`
-- Health Check: `http://localhost:3001/api/v1/health`
+- API Documentation: `http://localhost:3001/badge-image/docs`
+- Health Check: `http://localhost:3001/badge-image/health`
 - API Endpoint: `http://localhost:3001/api/v1/badge/generate`
 
 #### Local Development (FastAPI Service)
@@ -105,8 +105,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 3001 --reload
 ```
 
 Access at: `http://localhost:3001`
-- API Documentation: `http://localhost:3001/docs`
-- Health Check: `http://localhost:3001/api/v1/health`
+- API Documentation: `http://localhost:3001/badge-image/docs`
+- Health Check: `http://localhost:3001/badge-image/health`
+
 
 #### Gradio Service (Interactive Interface)
 ```bash
