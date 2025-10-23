@@ -370,5 +370,5 @@ Response: { data: { base64 }, config: {...} }
 
 ### Asset Paths
 - **Icons**: `"assets/icons/trophy.png"`, `"assets/icons/graduation-cap.png"`, etc.
-- **Logos**: `"assets/logos/wgu_logo.png"`, `"assets/logos/mit_logo.webp"`, etc.
+- **Logos**: `"assets/logos/dcc_logo.png"`, `"assets/logos/wgu_logo.webp"`, etc.
 - **Fonts**: `"assets/fonts/Arial.ttf"`, `"assets/fonts/ArialBold.ttf"`

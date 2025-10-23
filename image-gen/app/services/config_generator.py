@@ -33,7 +33,7 @@ def calculate_font_size(text: str, base_size: int) -> int:
 def generate_badge_config(
     meta: dict,
     seed: Optional[int] = None,
-    logo_path: str = "assets/logos/wgu_logo.png",
+    logo_path: str = "assets/logos/dcc_logo.png",
     institution_colors: Optional[dict] = None,
 ):
     """Generate text-based badge configuration following spec
@@ -379,7 +379,7 @@ def generate_text_overlay_config(
     config = generate_badge_config(
         meta=meta,
         seed=seed,
-        logo_path="assets/logos/wgu_logo.png",
+        logo_path="assets/logos/dcc_logo.png",
         institution_colors=colors
     )
 
