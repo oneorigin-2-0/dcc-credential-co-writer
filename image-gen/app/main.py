@@ -22,8 +22,8 @@ app = FastAPI(
     description=settings.PROJECT_DESCRIPTION,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/badge-image/docs",
+    redoc_url="/badge-image/redoc"
 )
 
 # Add custom middleware
@@ -56,7 +56,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # Include routers
 app.include_router(badges_router, prefix=settings.API_V1_STR)
-app.include_router(health_router, prefix=settings.API_V1_STR)
+app.include_router(health_router, prefix="/badge-image")
 
 # Root endpoint
 @app.get("/")
@@ -65,15 +65,15 @@ async def root():
     return {
         "message": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "docs": "/docs",
-        "health": f"{settings.API_V1_STR}/health"
+        "docs": "/badge-image/docs",
+        "health": "/badge-image/health"
     }
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize logging on startup"""
     logger.info(f"Starting {settings.PROJECT_NAME} on port {settings.PORT}")
-    logger.info(f"API documentation available at http://localhost:{settings.PORT}/docs")
+    logger.info(f"API documentation available at http://localhost:{settings.PORT}/badge-image/docs")
 
 if __name__ == "__main__":
     import uvicorn

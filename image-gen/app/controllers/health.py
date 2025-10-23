@@ -13,5 +13,5 @@ async def health_check():
     """
     return {
         "status": "healthy",
-        "service": "badge-generator-api"
+        "service": "badge-image-generator-api"
     }
