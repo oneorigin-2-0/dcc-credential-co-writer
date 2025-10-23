@@ -21,7 +21,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url="/badge-image/openapi.json",
     docs_url="/badge-image/docs",
     redoc_url="/badge-image/redoc"
 )
