@@ -66,11 +66,11 @@ sleep 5
 echo "🔍 Checking API health..."
 API_PORT=${PORT:-3001}
 for i in {1..30}; do
-    if curl -f http://localhost:${API_PORT}/api/v1/health > /dev/null 2>&1; then
+    if curl -f http://localhost:${API_PORT}/badge-image/health > /dev/null 2>&1; then
         echo "✅ API is healthy"
 
         # Get and display health status
-        HEALTH_STATUS=$(curl -s http://localhost:${API_PORT}/api/v1/health)
+        HEALTH_STATUS=$(curl -s http://localhost:${API_PORT}/badge-image/health)
         echo "📊 Health Status: ${HEALTH_STATUS}"
         break
     fi
@@ -109,9 +109,9 @@ fi
 echo ""
 echo "🎉 Badge Image Generator API is running in production mode!"
 echo "======================================================="
-echo "📊 API Health: http://localhost:${API_PORT}/api/v1/health"
-echo "📚 API Docs: http://localhost:${API_PORT}/docs"
-echo "🔧 Swagger UI: http://localhost:${API_PORT}/redoc"
+echo "📊 API Health: http://localhost:${API_PORT}/badge-image/health"
+echo "📚 API Docs: http://localhost:${API_PORT}/badge-image/docs"
+echo "🔧 Swagger UI: http://localhost:${API_PORT}/badge-image/redoc"
 echo "📝 Logs: tail -f logs/badge_api.log"
 echo ""
 echo "📋 Service Information:"
