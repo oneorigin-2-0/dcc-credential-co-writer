@@ -30,9 +30,8 @@ async def generate_badge(request: BadgeRequest):
         request_dict = request.model_dump()
         result = await badge_service.generate_badge(request_dict)
 
-        # Add the input configuration to the response
+        # Add the input layers to the response config
         result.config = {
-            "canvas": request_dict.get("canvas", {}),
             "layers": request_dict.get("layers", [])
         }
 
@@ -72,7 +71,6 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
 
         # Step 2: Render badge image
         badge_request = {
-            "canvas": {"bg": "white"},
             "layers": config["layers"]
         }
 
@@ -115,7 +113,6 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
 
         # Step 2: Render badge image
         badge_request = {
-            "canvas": {"bg": "white"},
             "layers": config["layers"]
         }
 

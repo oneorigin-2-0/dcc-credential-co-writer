@@ -219,7 +219,6 @@ Accepts raw layer configuration for full control over badge rendering. This is t
 **Request:**
 ```json
 {
-  "canvas": {"bg": "white"},
   "layers": [
     {
       "type": "ShapeLayer",
@@ -257,7 +256,6 @@ All endpoints return the same response structure:
     "base64": "data:image/png;base64,iVBORw0KGgoAAAANS..."
   },
   "config": {
-    "canvas": {"width": 600, "height": 600},
     "layers": [
       {
         "type": "ShapeLayer",
