@@ -60,7 +60,7 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
         BadgeResponse with base64 encoded image and configuration
     """
     try:
-        logger.info(f"Generating text overlay badge: {request.short_title}")
+        logger.info(f"Generating text overlay badge with Title: {request.short_title}, Achievement Phrase: {request.achievement_phrase}")
 
         # Step 1: Generate image config
         config = generate_text_overlay_config(

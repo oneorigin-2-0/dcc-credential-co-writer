@@ -145,6 +145,7 @@ def log_request_info(request, response_time: Optional[float] = None):
 
 
 from typing import Optional
+import json
 
 def log_badge_generation(config: dict, success: bool, error: Optional[str] = None, generation_time: Optional[float] = None):
     """
@@ -170,6 +171,13 @@ def log_badge_generation(config: dict, success: bool, error: Optional[str] = Non
 
     if generation_time:
         log_data["generation_time"] = f"{generation_time:.3f}s"
+
+    # Log full configuration in JSON format
+    try:
+        config_json = json.dumps(config, indent=2)
+        logger.info(f"Badge configuration:\n{config_json}")
+    except Exception as e:
+        logger.warning(f"Failed to serialize config to JSON: {e}")
 
     if success:
         logger.info(f"Badge generated successfully: {log_data}")
