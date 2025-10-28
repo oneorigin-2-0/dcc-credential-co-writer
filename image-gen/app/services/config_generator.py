@@ -30,7 +30,7 @@ def calculate_font_size(text: str, base_size: int) -> int:
     return min(base_size, 45)
 
 
-def generate_badge_config(
+def _generate_text_badge_layers(
     meta: dict,
     seed: Optional[int] = None,
     logo_path: str = "assets/logos/dcc_logo.png",
@@ -79,43 +79,44 @@ def generate_badge_config(
     # Shape layer (z: 10-19)
     shape = random.choice(["hexagon", "circle", "rounded_rect"])
 
-    fill_mode = random.choice(["solid", "gradient"])
-    if fill_mode == "solid":
-        fill = {
-            "mode": "solid",
-            "color": _pick_palette_color(warm + cool),
-        }
+    # Always use gradient fill 
+    # fill_mode = random.choice(["solid", "gradient"])
+    # if fill_mode == "solid":
+    #     fill = {
+    #         "mode": "solid",
+    #         "color": _pick_palette_color(warm + cool),
+    #     }
+    # else:
+    # For gradient, try to pick different colors
+    all_colors = warm + cool
+    if len(all_colors) >= 2:
+        # Pick two different colors
+        start = random.choice(all_colors)
+        available = [c for c in all_colors if c != start]
+        end = random.choice(available)
     else:
-        # For gradient, try to pick different colors
-        all_colors = warm + cool
-        if len(all_colors) >= 2:
-            # Pick two different colors
-            start = random.choice(all_colors)
-            available = [c for c in all_colors if c != start]
-            end = random.choice(available)
-        else:
-            # Fallback if only one color available
-            start = _pick_palette_color(warm)
-            end = _pick_palette_color(cool if cool else warm)
+        # Fallback if only one color available
+        start = _pick_palette_color(warm)
+        end = _pick_palette_color(cool if cool else warm)
 
-        fill = {
-            "mode": "gradient",
-            "start_color": start,
-            "end_color": end,
-            "vertical": True,
-        }
+    fill = {
+        "mode": "gradient",
+        "start_color": start,
+        "end_color": end,
+        "vertical": True,
+    }
 
-    # Border (optional per spec)
-    if random.random() < 0.6:
-        border = {
-            "color": _pick_palette_color(neutrals + cool + warm),
-            "width": random.randint(1, 6),
-        }
-    else:
-        border = {
-            "color": None,
-            "width": 0
-        }
+    # Border disabled by default 
+    # if random.random() < 0.6:
+    #     border = {
+    #         "color": _pick_palette_color(neutrals + cool + warm),
+    #         "width": random.randint(1, 6),
+    #     }
+    # else:
+    border = {
+        "color": None,
+        "width": 0
+    }
 
     # Shape-specific params per spec
     if shape == "hexagon":
@@ -223,7 +224,7 @@ def generate_badge_config(
     return config
 
 
-def generate_badge_image_config(
+def _generate_icon_badge_layers(
     meta: dict,
     seed: Optional[int] = None,
     icon_dir: str = "assets/icons/",
@@ -279,39 +280,41 @@ def generate_badge_image_config(
     shape = random.choice(["hexagon", "circle", "rounded_rect"])
     z_shape = random.randint(10, 19)
 
-    fill_mode = random.choice(["solid", "gradient"])
-    if fill_mode == "solid":
-        fill = {
-            "mode": "solid",
-            "color": _pick_palette_color(warm + cool)
-        }
+    # Always use gradient fill 
+    # fill_mode = random.choice(["solid", "gradient"])
+    # if fill_mode == "solid":
+    #     fill = {
+    #         "mode": "solid",
+    #         "color": _pick_palette_color(warm + cool)
+    #     }
+    # else:
+    # For gradient, try to pick different colors
+    all_colors = warm + cool
+    if len(all_colors) >= 2:
+        # Pick two different colors
+        start = random.choice(all_colors)
+        available = [c for c in all_colors if c != start]
+        end = random.choice(available)
     else:
-        # For gradient, try to pick different colors
-        all_colors = warm + cool
-        if len(all_colors) >= 2:
-            # Pick two different colors
-            start = random.choice(all_colors)
-            available = [c for c in all_colors if c != start]
-            end = random.choice(available)
-        else:
-            # Fallback if only one color available
-            start = _pick_palette_color(warm)
-            end = _pick_palette_color(cool if cool else warm)
+        # Fallback if only one color available
+        start = _pick_palette_color(warm)
+        end = _pick_palette_color(cool if cool else warm)
 
-        fill = {
-            "mode": "gradient",
-            "start_color": start,
-            "end_color": end,
-            "vertical": True,
-        }
+    fill = {
+        "mode": "gradient",
+        "start_color": start,
+        "end_color": end,
+        "vertical": True,
+    }
 
-    if random.random() < 0.6:
-        border = {
-            "color": _pick_palette_color(neutrals + cool + warm),
-            "width": random.randint(1, 6),
-        }
-    else:
-        border = {"color": None, "width": 0}
+    # Border disabled by default 
+    # if random.random() < 0.6:
+    #     border = {
+    #         "color": _pick_palette_color(neutrals + cool + warm),
+    #         "width": random.randint(1, 6),
+    #     }
+    # else:
+    border = {"color": None, "width": 0}
 
     if shape in ("hexagon", "circle"):
         params = {"radius": 250}
@@ -374,7 +377,7 @@ def generate_text_overlay_config(
         "extra_text": achievement_phrase
     }
 
-    config = generate_badge_config(
+    config = _generate_text_badge_layers(
         meta=meta,
         seed=seed,
         logo_path="assets/logos/dcc_logo.png",
@@ -405,7 +408,7 @@ def generate_icon_based_config(
     # Icon-based badges don't use text, so meta is minimal
     meta = {}
 
-    config = generate_badge_image_config(
+    config = _generate_icon_badge_layers(
         meta=meta,
         seed=seed,
         suggested_icon=icon_name,
