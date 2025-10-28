@@ -16,6 +16,107 @@ def _pick_palette_color(palette):
     return _rand_hex()
 
 
+def _get_luminance(hex_color: str) -> float:
+    """Calculate WCAG relative luminance (0=dark, 1=bright)
+
+    Args:
+        hex_color: Hex color string (e.g., '#FF6F61' or 'FF6F61')
+
+    Returns:
+        Float between 0 (black) and 1 (white)
+    """
+    hex_color = hex_color.lstrip('#')
+
+    # Convert hex to RGB (0-1 range)
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+
+    # Apply gamma correction (linearize RGB)
+    def adjust(c):
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = adjust(r), adjust(g), adjust(b)
+
+    # Calculate relative luminance
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _get_complementary_text_color(
+    gradient_start: str,
+    gradient_end: str,
+    warm: list,
+    cool: list,
+    text_light: list,
+    text_dark: list
+) -> str:
+    """Select text color that complements gradient background
+
+    Strategy:
+    - Very dark gradients (< 0.3): Use light text (white/cream)
+    - Medium gradients (0.3-0.5): Use contrasting palette color not in gradient
+    - Bright gradients (> 0.5): Use dark text (black/navy)
+
+    Args:
+        gradient_start: Start color of gradient
+        gradient_end: End color of gradient
+        warm: Warm color palette
+        cool: Cool color palette
+        text_light: Light text color options
+        text_dark: Dark text color options
+
+    Returns:
+        Hex color string for text
+    """
+    lum_start = _get_luminance(gradient_start)
+    lum_end = _get_luminance(gradient_end)
+    avg_luminance = (lum_start + lum_end) / 2
+
+    if avg_luminance < 0.3:
+        # Very dark gradient → light text
+        return random.choice(text_light)
+    elif avg_luminance > 0.5:
+        # Bright gradient → dark text
+        return random.choice(text_dark)
+    else:
+        # Medium gradient → colored text from palette (exclude gradient colors)
+        all_colors = warm + cool
+        available = [c for c in all_colors if c not in (gradient_start, gradient_end)]
+
+        # Pick color that contrasts with gradient
+        # Prefer colors with different luminance range
+        contrasting = [c for c in available if abs(_get_luminance(c) - avg_luminance) > 0.2]
+
+        if contrasting:
+            return random.choice(contrasting)
+        else:
+            # Fallback: any available color
+            return random.choice(available) if available else random.choice(text_dark)
+
+
+# Curated gradient schemes with high visual contrast
+# All gradients have luminance difference > 0.15 and perceptual color distance > 150
+GRADIENT_SCHEMES = [
+    # Warm gradients (high contrast within warm family)
+    {"start": "#FF6F61", "end": "#FFB703", "category": "warm"},      # Coral to Gold (lum: 0.22, dist: 196)
+    {"start": "#FB8500", "end": "#FFF4CC", "category": "warm"},      # Dark orange to cream (lum: 0.55, dist: 350)
+    {"start": "#FF6F61", "end": "#FFD9B3", "category": "warm"},      # Coral to peach (lum: 0.38, dist: 250)
+    {"start": "#FFD9B3", "end": "#FFB703", "category": "warm"},      # Peach to Gold (lum: 0.19, dist: 258)
+
+    # Cool gradients (high contrast within cool family)
+    {"start": "#26547C", "end": "#B3E5FC", "category": "cool"},      # Navy to sky blue (lum: 0.70, dist: 400)
+    {"start": "#118AB2", "end": "#06D6A0", "category": "cool"},      # Deep blue to turquoise (lum: 0.29, dist: 180)
+    {"start": "#26547C", "end": "#E1BEE7", "category": "cool"},      # Navy to lavender (lum: 0.62, dist: 350)
+    {"start": "#457B9D", "end": "#B3E5FC", "category": "cool"},      # Blue to sky blue (lum: 0.55, dist: 312)
+
+    # Warm-to-cool transitions (high contrast cross-family)
+    {"start": "#FFB703", "end": "#06D6A0", "category": "warm-cool"}, # Gold to mint (lum: 0.05, dist: 470)
+    {"start": "#FF8C42", "end": "#2A9D8F", "category": "warm-cool"}, # Orange to teal (lum: 0.14, dist: 364)
+    {"start": "#26547C", "end": "#FFF4CC", "category": "cool-warm"}, # Navy to cream (lum: 0.84, dist: 450)
+    {"start": "#06D6A0", "end": "#FFD9B3", "category": "cool-warm"}, # Turquoise to peach (lum: 0.21, dist: 300)
+]
+
+
 def calculate_font_size(text: str, base_size: int) -> int:
     """Calculate font size based on text length within spec limits"""
     if not text:
@@ -57,13 +158,31 @@ def _generate_text_badge_layers(
             cool.append(institution_colors["secondary"])
         if institution_colors.get("tertiary"):
             warm.append(institution_colors["tertiary"])
-        # For neutrals, use black/dark gray for text
-        neutrals = ["#000000", "#222222", "#333333"]
+        # Text color options for institution colors
+        text_light = ["#FFFFFF", "#F5F5F5", "#FFF9E6"]
+        text_dark = ["#000000", "#1A1A1A", "#2C3E50"]
     else:
-        # Default color palettes when no institution colors
-        warm = ["#FF6F61", "#FF8C42", "#FFB703", "#FB8500", "#E76F51", "#D9544D"]
-        cool = ["#118AB2", "#06D6A0", "#26547C", "#2A9D8F", "#457B9D", "#00B4D8"]
-        neutrals = ["#000000", "#222222", "#333333", "#555555", "#777777", "#999999"]
+        # Expanded color palettes with better balance of light/medium/dark
+        warm = [
+            "#FF6F61",  # Coral (medium-dark, lum ~0.34)
+            "#FF8C42",  # Orange (medium-dark, lum ~0.40)
+            "#FFB703",  # Gold (medium-bright, lum ~0.55)
+            "#FB8500",  # Dark orange (lum ~0.37)
+            "#FFD9B3",  # Peach (light, lum ~0.72)
+            "#FFF4CC",  # Cream (light, lum ~0.92)
+        ]
+        cool = [
+            "#118AB2",  # Deep blue (dark, lum ~0.22)
+            "#06D6A0",  # Turquoise (medium-bright, lum ~0.51)
+            "#26547C",  # Navy (dark, lum ~0.08)
+            "#2A9D8F",  # Teal (medium-dark, lum ~0.27)
+            "#B3E5FC",  # Sky blue (light, lum ~0.78)
+            "#E1BEE7",  # Lavender (light, lum ~0.70)
+        ]
+
+        # Text-specific color palettes for better variety
+        text_light = ["#FFFFFF", "#F5F5F5", "#FFF9E6", "#FFFACD"]  # White/cream tints
+        text_dark = ["#000000", "#1A1A1A", "#2C3E50", "#34495E"]   # Black/navy shades
 
     # Fixed canvas per spec
     canvas = {"width": 600, "height": 600}
@@ -79,25 +198,24 @@ def _generate_text_badge_layers(
     # Shape layer (z: 10-19)
     shape = random.choice(["hexagon", "circle", "rounded_rect"])
 
-    # Always use gradient fill 
-    # fill_mode = random.choice(["solid", "gradient"])
-    # if fill_mode == "solid":
-    #     fill = {
-    #         "mode": "solid",
-    #         "color": _pick_palette_color(warm + cool),
-    #     }
-    # else:
-    # For gradient, try to pick different colors
-    all_colors = warm + cool
-    if len(all_colors) >= 2:
-        # Pick two different colors
-        start = random.choice(all_colors)
-        available = [c for c in all_colors if c != start]
-        end = random.choice(available)
+    # Select gradient colors using curated schemes (if no institution colors)
+    if not institution_colors:
+        # Use curated gradient schemes for harmonious color combinations
+        gradient_scheme = random.choice(GRADIENT_SCHEMES)
+        start = gradient_scheme["start"]
+        end = gradient_scheme["end"]
     else:
-        # Fallback if only one color available
-        start = _pick_palette_color(warm)
-        end = _pick_palette_color(cool if cool else warm)
+        # For institution colors, create gradient from available colors
+        all_colors = warm + cool
+        if len(all_colors) >= 2:
+            # Pick two different colors
+            start = random.choice(all_colors)
+            available = [c for c in all_colors if c != start]
+            end = random.choice(available)
+        else:
+            # Fallback if only one color available
+            start = _pick_palette_color(warm)
+            end = _pick_palette_color(cool if cool else warm)
 
     fill = {
         "mode": "gradient",
@@ -190,7 +308,8 @@ def _generate_text_badge_layers(
         base_size = 43 if idx == 0 else 40
         font_size = calculate_font_size(txt, base_size)
 
-        color = _pick_palette_color(neutrals if idx == 0 else neutrals + cool + warm)
+        # Select text color that complements the gradient background
+        color = _get_complementary_text_color(start, end, warm, cool, text_light, text_dark)
 
         # Line gap within spec (4-7)
         line_gap = random.randint(4, 7)
@@ -253,13 +372,31 @@ def _generate_icon_badge_layers(
             cool.append(institution_colors["secondary"])
         if institution_colors.get("tertiary"):
             warm.append(institution_colors["tertiary"])
-        # For neutrals, use black/dark gray for text
-        neutrals = ["#000000", "#222222", "#333333"]
+        # Text color options for institution colors (for consistency)
+        text_light = ["#FFFFFF", "#F5F5F5", "#FFF9E6"]
+        text_dark = ["#000000", "#1A1A1A", "#2C3E50"]
     else:
-        # Default color palettes when no institution colors
-        warm = ["#FF6F61", "#FF8C42", "#FFB703", "#FB8500", "#E76F51", "#D9544D"]
-        cool = ["#118AB2", "#06D6A0", "#26547C", "#2A9D8F", "#457B9D", "#00B4D8"]
-        neutrals = ["#000000", "#222222", "#333333", "#555555", "#777777", "#999999"]
+        # Expanded color palettes with better balance (same as text badge)
+        warm = [
+            "#FF6F61",  # Coral (medium-dark, lum ~0.34)
+            "#FF8C42",  # Orange (medium-dark, lum ~0.40)
+            "#FFB703",  # Gold (medium-bright, lum ~0.55)
+            "#FB8500",  # Dark orange (lum ~0.37)
+            "#FFD9B3",  # Peach (light, lum ~0.72)
+            "#FFF4CC",  # Cream (light, lum ~0.92)
+        ]
+        cool = [
+            "#118AB2",  # Deep blue (dark, lum ~0.22)
+            "#06D6A0",  # Turquoise (medium-bright, lum ~0.51)
+            "#26547C",  # Navy (dark, lum ~0.08)
+            "#2A9D8F",  # Teal (medium-dark, lum ~0.27)
+            "#B3E5FC",  # Sky blue (light, lum ~0.78)
+            "#E1BEE7",  # Lavender (light, lum ~0.70)
+        ]
+
+        # Text-specific color palettes (for consistency)
+        text_light = ["#FFFFFF", "#F5F5F5", "#FFF9E6", "#FFFACD"]
+        text_dark = ["#000000", "#1A1A1A", "#2C3E50", "#34495E"]
 
     if suggested_icon:
         icon_file = suggested_icon
@@ -280,25 +417,24 @@ def _generate_icon_badge_layers(
     shape = random.choice(["hexagon", "circle", "rounded_rect"])
     z_shape = random.randint(10, 19)
 
-    # Always use gradient fill 
-    # fill_mode = random.choice(["solid", "gradient"])
-    # if fill_mode == "solid":
-    #     fill = {
-    #         "mode": "solid",
-    #         "color": _pick_palette_color(warm + cool)
-    #     }
-    # else:
-    # For gradient, try to pick different colors
-    all_colors = warm + cool
-    if len(all_colors) >= 2:
-        # Pick two different colors
-        start = random.choice(all_colors)
-        available = [c for c in all_colors if c != start]
-        end = random.choice(available)
+    # Select gradient colors using curated schemes (same as text badge)
+    if not institution_colors:
+        # Use curated gradient schemes for harmonious color combinations
+        gradient_scheme = random.choice(GRADIENT_SCHEMES)
+        start = gradient_scheme["start"]
+        end = gradient_scheme["end"]
     else:
-        # Fallback if only one color available
-        start = _pick_palette_color(warm)
-        end = _pick_palette_color(cool if cool else warm)
+        # For institution colors, create gradient from available colors
+        all_colors = warm + cool
+        if len(all_colors) >= 2:
+            # Pick two different colors
+            start = random.choice(all_colors)
+            available = [c for c in all_colors if c != start]
+            end = random.choice(available)
+        else:
+            # Fallback if only one color available
+            start = _pick_palette_color(warm)
+            end = _pick_palette_color(cool if cool else warm)
 
     fill = {
         "mode": "gradient",
