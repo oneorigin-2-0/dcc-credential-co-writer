@@ -23,11 +23,11 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
       <CardContent className="flex flex-col items-center justify-center space-y-4 h-full">
         {/* Badge Image */}
         <div className="flex flex-col items-center space-y-3">
-          <div className="flex justify-center items-center p-6 rounded-lg border-2 border-[#429EA6]/20">
+          <div className="flex justify-center items-center p-3 rounded-lg border-2 border-[#429EA6]/20">
             <img
               src={imageUrl}
               alt="Badge preview"
-              className="w-32 h-32 object-contain rounded-lg shadow-lg"
+              className="w-50 h-50 object-contain rounded-lg shadow-lg"
             />
           </div>
           
@@ -45,7 +45,7 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
           )}
         </div>
 
-        {/* Image Config Display */}
+        {/* Image Config Display
         {imageConfig && (
           <div className="w-full">
             <h4 className="text-sm font-semibold text-gray-700 mb-2">Image Configuration</h4>
@@ -55,7 +55,7 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
               </pre>
             </div>
           </div>
-        )}
+        )} */}
 
       </CardContent>
     </Card>

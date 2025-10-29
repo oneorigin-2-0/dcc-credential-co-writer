@@ -12,7 +12,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { ArrowLeft, Edit, Save, X, Copy, FileDown, RefreshCw, Loader2 } from 'lucide-react';
-import { Header } from '@/components/layout/header';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -657,24 +656,19 @@ export default function BadgeEditorPage() {
 
   if (!badgeSuggestion) {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+        <main className="container mx-auto bg-gray-50 p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-gray-600 font-body">Loading badge suggestion...</p>
           </div>
         </main>
-      </div>
     );
   }
 
   // Add null check for badgeSuggestion
   if (!badgeSuggestion) {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto p-4 md:p-8">
+        <main className="container mx-auto bg-gray-50 p-4 md:p-8">
           <Button
             variant="outline"
             className="mb-6"
@@ -688,14 +682,11 @@ export default function BadgeEditorPage() {
             <p className="text-gray-600">The selected suggestion could not be loaded.</p>
           </div>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
-      <main className="flex-1 container mx-auto p-4 md:p-8">
+      <main className="container mx-auto bg-gray-50 p-4 md:p-8">
         <Button
           variant="outline"
           className="mb-6"
@@ -1499,6 +1490,5 @@ export default function BadgeEditorPage() {
           </DialogContent>
         </Dialog>
       </main>
-    </div>
   );
 }

@@ -32,6 +32,7 @@ export function useStreamingSuggestionGenerator() {
   ]);
   const [allCompleted, setAllCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false); // Track fresh completions only
 
   // Restore generation state from localStorage on page load
   useEffect(() => {
@@ -58,9 +59,8 @@ export function useStreamingSuggestionGenerator() {
             })
           );
           
-          // If we have stored suggestions, mark generation as complete
+          // If we have stored suggestions, just restore them (don't show completion alert)
           setIsGenerating(false);
-          setAllCompleted(true);
           return; // Exit early if we found suggestions
         }
       }
@@ -109,9 +109,8 @@ export function useStreamingSuggestionGenerator() {
             })
           );
           
-          // If we have final responses, mark generation as complete
+          // If we have final responses, just restore them (don't show completion alert)
           setIsGenerating(false);
-          setAllCompleted(true);
         }
       }
     } catch (error) {
@@ -119,18 +118,21 @@ export function useStreamingSuggestionGenerator() {
     }
   }, []);
 
-  // Function to check if all cards are completed and update allCompleted state
-  const checkAllCompleted = useCallback(() => {
-    const allCardsCompleted = suggestionCards.every(card => card.data || card.error);
-    const hasAnyErrors = suggestionCards.some(card => card.error);
+  // Check if all suggestions are complete whenever cards change
+  // Only trigger completion alert for fresh generations (not page reloads)
+  useEffect(() => {
+    const allHaveData = suggestionCards.every(card => card.data !== null);
+    const hasErrors = suggestionCards.some(card => card.error !== null);
+    const wasGenerating = isGenerating;
     
-    // Only set allCompleted to true if all cards are done AND none have errors
-    if (allCardsCompleted && !hasAnyErrors) {
+    if (allHaveData && !hasErrors && !isGenerating && justCompleted) {
       setAllCompleted(true);
-    } else {
+    } else if (isGenerating) {
+      // Reset states when generation starts
       setAllCompleted(false);
+      setJustCompleted(false);
     }
-  }, [suggestionCards]);
+  }, [suggestionCards, isGenerating, justCompleted]);
 
   const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string) => {
     try {
@@ -312,9 +314,6 @@ export function useStreamingSuggestionGenerator() {
                     title: `Suggestion ${cardId} Generated!`,
                     description: 'A new credential suggestion is ready.'
                   });
-
-                  // Check if all cards are completed
-                  setTimeout(() => checkAllCompleted(), 100);
                 } catch (parseError) {
                   console.error('Failed to parse final JSON:', parseError);
                   setSuggestionCards(prev => 
@@ -376,9 +375,6 @@ export function useStreamingSuggestionGenerator() {
               title: `Suggestion ${cardId} Failed`,
               description: response.error || 'An error occurred during generation.',
             });
-            
-            // Check if all cards are completed
-            setTimeout(() => checkAllCompleted(), 100);
             break;
             
           case 'complete':
@@ -413,11 +409,8 @@ export function useStreamingSuggestionGenerator() {
         title: `Suggestion ${cardId} Failed`,
         description: `Failed to generate this credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
-      
-      // Check if all cards are completed
-      setTimeout(() => checkAllCompleted(), 100);
     }
-  }, [toast, checkAllCompleted]);
+  }, [toast]);
 
   const generateAllSuggestionsStream = useCallback(async (originalContent: string) => {
     if (!originalContent) {
@@ -431,6 +424,7 @@ export function useStreamingSuggestionGenerator() {
 
     setIsGenerating(true);
     setAllCompleted(false);
+    setJustCompleted(false); // Reset flag for new generation
     
     // Store generation state in localStorage
     try {
@@ -465,6 +459,8 @@ export function useStreamingSuggestionGenerator() {
     // Note: Suggestions are saved to localStorage individually as they complete
     // (see 'final' and 'data' case handlers above). No bulk save needed here.
 
+    // Mark as just completed (for fresh generation alert)
+    setJustCompleted(true);
     setIsGenerating(false);
     
     // Clear generation state from localStorage

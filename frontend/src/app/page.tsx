@@ -1,13 +1,10 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { WandSparkles } from 'lucide-react';
-import { Header } from '@/components/layout/header';
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+      <main className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
         <div className="w-full max-w-4xl text-center">
           <div>
             <h2 className="text-3xl font-headline font-black">Forge Your Recognition</h2>
@@ -33,6 +30,5 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
-    </div>
   );
 }
