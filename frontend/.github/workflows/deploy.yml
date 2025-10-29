@@ -6,6 +6,12 @@ on:
       - main
       - develop
       - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    types: [opened, synchronize, reopened]
 
 jobs:
   deploy:
