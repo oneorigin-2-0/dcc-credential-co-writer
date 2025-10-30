@@ -1449,7 +1449,7 @@ export default function BadgeEditorPage() {
 
                 {/* Image Preview Section */}
                 <div className="flex-1 flex flex-col border border-gray-200 rounded-r-lg overflow-hidden">
-                  <div className="flex-1 flex items-center justify-center p-4" 
+                  <div className="flex-1 flex items-center justify-center p-4 overflow-auto" 
                        style={{
                          backgroundImage: `
                            linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
