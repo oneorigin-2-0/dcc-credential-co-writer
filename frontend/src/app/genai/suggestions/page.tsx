@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle, Copy } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowLeft, CheckCircle, Copy, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
 import { StreamingStatus } from '@/components/genai/streaming-status';
@@ -157,6 +158,9 @@ export default function CredentialSuggestionsPage() {
     }
   };
 
+  // Get prompt_eval_count from the first card that has metrics
+  const promptEvalCount = suggestionCards.find(card => card.data?.metrics?.prompt_eval_count)?.data?.metrics?.prompt_eval_count;
+
   return (
     <main className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
@@ -194,6 +198,20 @@ export default function CredentialSuggestionsPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {promptEvalCount !== undefined && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="cursor-pointer">
+                                    <Info className="h-4 w-4 text-[#234467]" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Input Tokens: {promptEvalCount}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm" 

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardFooter} from '@/components/ui/card';
-import { CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CheckCircle, AlertCircle, Sparkles, Info } from 'lucide-react';
 import Lottie from 'lottie-react';
 import type { BadgeSuggestion } from '@/lib/types';
 
@@ -121,10 +122,24 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
           }`}>
             {getStatusIcon(status)}
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <CardDescription className="text-sm text-gray-700 font-medium font-body">
               {getStatusText(status)}
             </CardDescription>
+            {status === 'success' && data?.metrics?.eval_count !== undefined && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-pointer">
+                      <Info className="h-3.5 w-3.5 text-green-600" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Response Token: {data.metrics.eval_count}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </div>
       </CardHeader>

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { streamingApiClient, StreamingApiClient, type StreamingResponse } from '@/lib/api';
-import type { BadgeSuggestion } from '@/lib/api';
+import type { BadgeSuggestion } from '@/lib/types';
 
 interface SuggestionCard {
   id: number;
@@ -77,6 +77,9 @@ export function useStreamingSuggestionGenerator() {
               const rawFinalData = responses[cardId];
               
               if (rawFinalData) {
+                // Extract metrics if present
+                const metrics = rawFinalData.metrics;
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -87,6 +90,7 @@ export function useStreamingSuggestionGenerator() {
                     description: achievement.description,
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
+                    metrics: metrics,
                   };
                 } else {
                   // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
@@ -95,6 +99,7 @@ export function useStreamingSuggestionGenerator() {
                     description: rawFinalData.badge_description,
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
+                    metrics: metrics,
                   };
                 }
                 
@@ -268,6 +273,9 @@ export function useStreamingSuggestionGenerator() {
                     console.error('Failed to store final response in localStorage:', error);
                   }
                   
+                  // Extract metrics if present
+                  const metrics = badgeData.metrics;
+                  
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
                   if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
@@ -278,6 +286,7 @@ export function useStreamingSuggestionGenerator() {
                       description: achievement.description,
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: achievement.image?.id || undefined,
+                      metrics: metrics,
                     };
                   }
                   
