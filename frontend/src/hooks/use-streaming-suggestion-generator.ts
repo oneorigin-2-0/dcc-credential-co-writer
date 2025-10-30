@@ -213,8 +213,8 @@ export function useStreamingSuggestionGenerator() {
               }
 
               toast({
-                title: `Suggestion ${cardId} Generated!`,
-                description: 'A new credential suggestion is ready.',
+                title: `${response.mappedSuggestion?.title || 'Credential'} Generated!`,
+                description: 'Your new credential suggestion is ready for review.',
               });
             }
             break;
@@ -320,8 +320,8 @@ export function useStreamingSuggestionGenerator() {
                   }
 
                   toast({
-                    title: `Suggestion ${cardId} Generated!`,
-                    description: 'A new credential suggestion is ready.'
+                    title: `${suggestion?.title || 'Credential'} Generated!`,
+                    description: 'Your new credential suggestion is ready for review.'
                   });
                 } catch (parseError) {
                   console.error('Failed to parse final JSON:', parseError);
@@ -359,8 +359,8 @@ export function useStreamingSuggestionGenerator() {
             
             toast({
               variant: 'destructive',
-              title: `Suggestion ${cardId} Failed`,
-              description: `Streaming error: ${response.error}`,
+              title: 'Generation Failed',
+              description: `Unable to generate credential: ${response.error}`,
             });
             break;
             
@@ -381,7 +381,7 @@ export function useStreamingSuggestionGenerator() {
             
             toast({
               variant: 'destructive',
-              title: `Suggestion ${cardId} Failed`,
+              title: 'Generation Failed',
               description: response.error || 'An error occurred during generation.',
             });
             break;
@@ -415,8 +415,8 @@ export function useStreamingSuggestionGenerator() {
 
       toast({
         variant: 'destructive',
-        title: `Suggestion ${cardId} Failed`,
-        description: `Failed to generate this credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: 'Generation Failed',
+        description: `Failed to generate credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   }, [toast]);
