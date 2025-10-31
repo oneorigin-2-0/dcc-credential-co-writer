@@ -2,6 +2,8 @@
  * Centralized API configuration and utilities
  */
 
+import type { BadgeSuggestion } from '@/lib/types';
+
 // Environment configuration
 export const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1',
@@ -16,14 +18,6 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
-}
-
-// Badge suggestion types
-export interface BadgeSuggestion {
-  title: string;
-  description: string;
-  criteria: string;
-  image?: string;
 }
 
 export interface BadgeGenerationResult {
@@ -234,6 +228,10 @@ export class StreamingApiClient {
                 } else if (parsed.type === 'final' && parsed.content) {
                   // Final response with complete badge data
                   const finalData = parsed.content;
+                  
+                  // Extract metrics if present
+                  const metrics = parsed.metrics || finalData.metrics;
+                  
                   let suggestion;
                   
                   if (finalData.credentialSubject && finalData.credentialSubject.achievement) {
@@ -250,6 +248,7 @@ export class StreamingApiClient {
                       description: achievement.description,
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: imageSrc,
+                      metrics: metrics,
                     };
                   } else {
                     // Fallback to legacy format
@@ -265,6 +264,7 @@ export class StreamingApiClient {
                       description: finalData.badge_description || finalData.description,
                       criteria: finalData.criteria?.narrative || finalData.criteria || finalData.description,
                       image: sanitizedLegacyImage,
+                      metrics: metrics,
                     };
                   }
                   

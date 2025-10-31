@@ -14,6 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -22,14 +23,13 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Paperclip, X, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, Paperclip, X, FileText, Edit, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 import Lottie from 'lottie-react';
 
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-
-import { Header } from '@/components/layout/header';
 import { FileParser } from '@/lib/file-parser';
 
 const badgeFormSchema = z.object({
@@ -56,6 +56,19 @@ export default function GenAIPage() {
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [isLaiserEnabled, setIsLaiserEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
+  const [editingFiles, setEditingFiles] = useState<Set<number>>(new Set());
+  const [editContent, setEditContent] = useState<{ [key: number]: string }>({});
+  const [consentChecked, setConsentChecked] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Trigger entrance animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Load Lottie animation data
   useEffect(() => {
@@ -129,6 +142,46 @@ export default function GenAIPage() {
 
   const removeFile = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+    setExpandedFiles(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+  };
+
+  const startEdit = (index: number, content: string) => {
+    setEditContent(prev => ({ ...prev, [index]: content }));
+    setEditingFiles(prev => new Set(prev).add(index));
+  };
+
+  const saveEditedContent = (index: number) => {
+    const editedContent = editContent[index];
+    if (editedContent) {
+      setAttachedFiles(prev => prev.map((file, i) => 
+        i === index 
+          ? { ...file, content: editedContent }
+          : file
+      ));
+      setEditingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+      delete editContent[index];
+      toast({
+        title: 'Content Updated',
+        description: 'File content has been successfully updated.',
+      });
+    }
+  };
+
+  const cancelEdit = (index: number) => {
+    delete editContent[index];
+    setEditingFiles(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -210,12 +263,15 @@ export default function GenAIPage() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
-      <main className="flex-1 container mx-auto p-4 md:p-8">
+    <main className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto p-4 md:p-8">
         <Button
           variant="outline"
-          className="mb-6"
+          className={`mb-6 transition-all duration-500 ${
+            isVisible 
+              ? 'opacity-100 translate-x-0' 
+              : 'opacity-0 -translate-x-4'
+          }`}
           onClick={() => router.back()}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -223,7 +279,11 @@ export default function GenAIPage() {
         </Button>
 
         <div className="flex justify-center">
-          <div className="w-full max-w-4xl">
+          <div className={`w-full max-w-4xl transition-all duration-700 ${
+            isVisible 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-8'
+          }`}>
             <FormProvider {...form}>
               <Card className="border-0 shadow-xl bg-white">
                 <CardHeader className="pb-8">
@@ -246,7 +306,7 @@ export default function GenAIPage() {
                             <div className="relative">
                               <Textarea
                                 placeholder="Specify a writing task..."
-                                className="min-h-[200px] text-base border-gray-200 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 resize-none text-gray-700 placeholder:text-gray-400"
+                                className="min-h-[200px] text-base border-gray-200 focus:border-[#429EA6] focus:ring-2 focus:ring-[#429EA6]/20 resize-none text-gray-700 placeholder:text-gray-400 transition-all duration-300"
                                 {...field}
                               />
                             </div>
@@ -259,42 +319,173 @@ export default function GenAIPage() {
 
                     {/* Display attached files */}
                     {attachedFiles.length > 0 && (
-                      <div className="mt-4 space-y-2">
+                      <div className="mt-4 space-y-3 animate-in fade-in-0 duration-500">
                         <label className="text-sm font-semibold text-gray-700">Attached Files:</label>
                         {attachedFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          <Collapsible 
+                            key={index} 
+                            open={expandedFiles.has(index)} 
+                            onOpenChange={(open) => {
+                              if (open) {
+                                setExpandedFiles(prev => new Set(prev).add(index));
+                              } else {
+                                setExpandedFiles(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(index);
+                                  return newSet;
+                                });
+                              }
+                            }}
+                            className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-[#429EA6] hover:shadow-md"
+                            style={{
+                              animation: `slideIn 0.3s ease-out ${index * 0.1}s both`
+                            }}
                           >
-                            <div className="flex items-center space-x-3">
-                              <FileText className="h-5 w-5 text-gray-500" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {formatFileSize(file.size)}
-                                  {file.wordCount && ` • ${file.wordCount} words`}
-                                </p>
+                            <div className="flex items-center justify-between p-3">
+                              <CollapsibleTrigger asChild>
+                                <div className="flex items-center space-x-3 flex-1 cursor-pointer transition-all duration-200">
+                                  <FileText className="h-5 w-5 text-[#429EA6] transition-transform duration-200 hover:scale-110" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                    <p className="text-xs text-gray-500 font-bold">
+                                      {formatFileSize(file.size)}
+                                      {file.wordCount && ` • ${file.wordCount} words`}
+                                    </p>
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              <div className="flex items-center space-x-2">
+                                {editingFiles.has(index) ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        cancelEdit(index);
+                                      }}
+                                      className="transition-all duration-200 hover:scale-105"
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        saveEditedContent(index);
+                                      }}
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 hover:scale-105"
+                                    >
+                                      <Save className="h-4 w-4 mr-1" />
+                                      Save
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    {expandedFiles.has(index) && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          startEdit(index, file.content);
+                                        }}
+                                        className="transition-all duration-200 hover:scale-105 hover:text-[#429EA6]"
+                                      >
+                                        <Edit className="h-4 w-4 mr-1 transition-transform duration-200 hover:rotate-12" />
+                                        Edit
+                                      </Button>
+                                    )}
+                                    <CollapsibleTrigger asChild>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="transition-all duration-200 hover:scale-105"
+                                      >
+                                        {expandedFiles.has(index) ? (
+                                          <>
+                                            <ChevronUp className="h-4 w-4 mr-1 transition-transform duration-300" />
+                                            Hide
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="h-4 w-4 mr-1 transition-transform duration-300" />
+                                            View
+                                          </>
+                                        )}
+                                      </Button>
+                                    </CollapsibleTrigger>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFile(index);
+                                      }}
+                                      className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 transition-all duration-200 hover:scale-105"
+                                    >
+                                      <X className="h-4 w-4 mr-1 transition-transform duration-200 hover:rotate-90" />
+                                      Remove
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFile(index)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                            
+                            {/* Expanded Content Section */}
+                            <CollapsibleContent className="px-4 pb-4 data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
+                                {editingFiles.has(index) && (
+                                  <Textarea
+                                    value={editContent[index] || file.content}
+                                    onChange={(e) => setEditContent(prev => ({ ...prev, [index]: e.target.value }))}
+                                    className="h-[300px] text-sm font-mono resize-none"
+                                    placeholder="Edit the parsed content..."
+                                  />
+                                )}
+                                {!editingFiles.has(index) && (
+                                  <div className="h-[300px] overflow-auto border rounded p-3 bg-white transition-all duration-300">
+                                    <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                                      {file.content}
+                                    </pre>
+                                  </div>
+                                )}
+                            </CollapsibleContent>
+                          </Collapsible>
                         ))}
                       </div>
                     )}
+
+                    {/* Disclaimer Checkbox */}
+                    <div className="mt-6 p-4 border rounded-lg transition-all duration-300 hover:shadow-md">
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="consent-checkbox"
+                          checked={consentChecked}
+                          onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
+                          className="mt-1 transition-all duration-200"
+                          style={{ borderColor: '#429EA6' }}
+                        />
+                        <label
+                          htmlFor="consent-checkbox"
+                          className="text-sm leading-relaxed cursor-pointer font-body select-none transition-colors duration-200 hover:text-[#234467]"
+                          style={{ color: '#40464c' }}
+                          onClick={() => setConsentChecked(!consentChecked)}
+                        >
+                          I acknowledge and consent to my input being securely utilized for model training and research purposes.
+                        </label>
+                      </div>
+                    </div>
 
                     <div className="flex items-center justify-between mt-6">
                       <Button
                         type="button"
                         variant="ghost"
-                        className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                        className="text-gray-600 hover:text-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isParsingFile}
                       >
@@ -305,7 +496,7 @@ export default function GenAIPage() {
                           </>
                         ) : (
                           <>
-                            <Paperclip className="mr-2 h-4 w-4" />
+                            <Paperclip className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:rotate-45" />
                             Attach
                           </>
                         )}
@@ -318,10 +509,11 @@ export default function GenAIPage() {
                             id="laiser-toggle"
                             checked={isLaiserEnabled}
                             onCheckedChange={setIsLaiserEnabled}
+                            className="transition-all duration-200"
                           />
                           <label
                             htmlFor="laiser-toggle"
-                            className="text-sm font-medium text-gray-700 cursor-pointer"
+                            className="text-sm font-medium text-gray-700 cursor-pointer transition-colors duration-200 hover:text-[#234467]"
                           >
                             Skills from LAiSER
                           </label>
@@ -329,8 +521,8 @@ export default function GenAIPage() {
 
                         <Button
                           onClick={handleGenerate}
-                          disabled={isParsingFile}
-                          className="bg-primary hover:bg-gradient-to-r hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out transform  shadow-lg hover:shadow-xl"
+                          disabled={isParsingFile || !consentChecked}
+                          className="bg-primary hover:bg-gradient-to-r hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {animationData && (
                             <div className="w-5 h-5">
@@ -361,7 +553,7 @@ export default function GenAIPage() {
             </FormProvider>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

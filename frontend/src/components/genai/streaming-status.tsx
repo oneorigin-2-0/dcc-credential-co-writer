@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface StreamingStatusProps {
@@ -9,8 +10,29 @@ interface StreamingStatusProps {
 }
 
 export function StreamingStatus({ isGenerating, completedCount, totalCount }: StreamingStatusProps) {
-  if (!isGenerating && completedCount === totalCount) {
-    return null; // Hide if all completed and not generating
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [shouldRender, setShouldRender] = useState(true);
+
+  useEffect(() => {
+    // Start fade-out when generation is complete
+    if (!isGenerating && completedCount === totalCount) {
+      setIsFadingOut(true);
+      
+      // Remove from DOM after fade completes
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 500); // Match transition duration
+      
+      return () => clearTimeout(timer);
+    } else {
+      // Reset states when generating starts again
+      setIsFadingOut(false);
+      setShouldRender(true);
+    }
+  }, [isGenerating, completedCount, totalCount]);
+
+  if (!shouldRender) {
+    return null;
   }
 
   const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -23,7 +45,13 @@ export function StreamingStatus({ isGenerating, completedCount, totalCount }: St
   };
 
   return (
-    <Card className="mt-8 mb-8 border-[#429EA6] shadow-lg overflow-hidden relative">
+    <Card 
+      className={`mb-8 border-[#429EA6] shadow-lg overflow-hidden relative transition-all duration-500 ${
+        isFadingOut 
+          ? 'opacity-0 translate-y-[-10px]' 
+          : 'opacity-100 translate-y-0'
+      }`}
+    >
       {/* Base gradient background */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#DDD78D]/20 to-[#429EA6]/10"></div>
       

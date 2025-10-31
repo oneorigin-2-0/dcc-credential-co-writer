@@ -12,7 +12,6 @@ import {
     CardFooter,
 } from '@/components/ui/card';
 import { ArrowLeft, Edit, CheckCircle, Save, X, Copy, FileDown, RefreshCw, Loader2 } from 'lucide-react';
-import { Header } from '@/components/layout/header';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -266,9 +265,8 @@ function ResultsContent() {
 
     if (isLoading) {
         return (
-            <div className="flex flex-col min-h-screen bg-gray-50">
-                <Header />
-                <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+            <div className="bg-gray-50">
+                <main className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                         <p className="text-gray-600 font-body">Loading results...</p>
@@ -280,9 +278,8 @@ function ResultsContent() {
 
     if (!badgeResults || !badgeResults.data || badgeResults.data.length === 0) {
         return (
-            <div className="flex flex-col min-h-screen bg-gray-50">
-                <Header />
-                <main className="flex-1 container mx-auto p-4 md:p-8">
+            <div className="bg-gray-50">
+                <main className="container mx-auto p-4 md:p-8">
                     <Button
                         variant="outline"
                         className="mb-6"
@@ -320,9 +317,8 @@ function ResultsContent() {
     // Add null check for currentSuggestion
     if (!currentSuggestion) {
         return (
-            <div className="flex flex-col min-h-screen bg-gray-50">
-                <Header />
-                <main className="flex-1 container mx-auto p-4 md:p-8">
+            <div className="bg-gray-50">
+                <main className="container mx-auto p-4 md:p-8">
                     <Button
                         variant="outline"
                         className="mb-6"
@@ -341,9 +337,8 @@ function ResultsContent() {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
-            <Header />
-            <main className="flex-1 container mx-auto p-4 md:p-8">
+        <div className="bg-gray-50">
+            <main className="container mx-auto p-4 md:p-8">
                 <Button
                     variant="outline"
                     className="mb-6"
@@ -651,9 +646,8 @@ function ResultsContent() {
 export default function ResultsPage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-col min-h-screen bg-gray-50">
-                <Header />
-                <main className="flex-1 container mx-auto p-4 md:p-8 flex items-center justify-center">
+            <div className="bg-gray-50">
+                <main className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                         <p className="text-gray-600 font-body">Loading results...</p>
