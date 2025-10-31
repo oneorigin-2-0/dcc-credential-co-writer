@@ -3,9 +3,11 @@
 @tailwind utilities;
 
 /* DCC Brand Typography - Default body font */
-body {
+html, body {
   font-family: "Roboto", sans-serif;
   font-weight: 300; /* Roboto Light as per DCC guidelines */
+  height: auto;
+  min-height: 100%;
 }
 
 @layer base {
@@ -120,5 +122,44 @@ body {
   .text-body {
     font-family: var(--font-body);
     font-weight: 300;
+  }
+  
+  /* Collapsible animations */
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
+  }
+  
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  
+  .animate-collapsible-down {
+    animation: collapsible-down 0.2s ease-out;
+  }
+  
+  .animate-collapsible-up {
+    animation: collapsible-up 0.2s ease-out;
+  }
+
+  /* Slide in animation for file attachments */
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

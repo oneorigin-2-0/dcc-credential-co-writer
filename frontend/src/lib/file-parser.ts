@@ -26,7 +26,9 @@ export class FileParser {
     const pdfjsLib = await import("pdfjs-dist");
 
     if (!workerInitialized) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      // Use the worker from the public directory (served locally)
+      // This avoids CORS and CDN issues
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
       workerInitialized = true;
     }
 

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { streamingApiClient, StreamingApiClient, type StreamingResponse } from '@/lib/api';
-import type { BadgeSuggestion } from '@/lib/api';
+import type { BadgeSuggestion } from '@/lib/types';
 
 interface SuggestionCard {
   id: number;
@@ -32,6 +32,7 @@ export function useStreamingSuggestionGenerator() {
   ]);
   const [allCompleted, setAllCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false); // Track fresh completions only
 
   // Restore generation state from localStorage on page load
   useEffect(() => {
@@ -58,9 +59,8 @@ export function useStreamingSuggestionGenerator() {
             })
           );
           
-          // If we have stored suggestions, mark generation as complete
+          // If we have stored suggestions, just restore them (don't show completion alert)
           setIsGenerating(false);
-          setAllCompleted(true);
           return; // Exit early if we found suggestions
         }
       }
@@ -77,6 +77,9 @@ export function useStreamingSuggestionGenerator() {
               const rawFinalData = responses[cardId];
               
               if (rawFinalData) {
+                // Extract metrics if present
+                const metrics = rawFinalData.metrics;
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -87,6 +90,7 @@ export function useStreamingSuggestionGenerator() {
                     description: achievement.description,
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
+                    metrics: metrics,
                   };
                 } else {
                   // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
@@ -95,6 +99,7 @@ export function useStreamingSuggestionGenerator() {
                     description: rawFinalData.badge_description,
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
+                    metrics: metrics,
                   };
                 }
                 
@@ -109,9 +114,8 @@ export function useStreamingSuggestionGenerator() {
             })
           );
           
-          // If we have final responses, mark generation as complete
+          // If we have final responses, just restore them (don't show completion alert)
           setIsGenerating(false);
-          setAllCompleted(true);
         }
       }
     } catch (error) {
@@ -119,18 +123,21 @@ export function useStreamingSuggestionGenerator() {
     }
   }, []);
 
-  // Function to check if all cards are completed and update allCompleted state
-  const checkAllCompleted = useCallback(() => {
-    const allCardsCompleted = suggestionCards.every(card => card.data || card.error);
-    const hasAnyErrors = suggestionCards.some(card => card.error);
+  // Check if all suggestions are complete whenever cards change
+  // Only trigger completion alert for fresh generations (not page reloads)
+  useEffect(() => {
+    const allHaveData = suggestionCards.every(card => card.data !== null);
+    const hasErrors = suggestionCards.some(card => card.error !== null);
+    const wasGenerating = isGenerating;
     
-    // Only set allCompleted to true if all cards are done AND none have errors
-    if (allCardsCompleted && !hasAnyErrors) {
+    if (allHaveData && !hasErrors && !isGenerating && justCompleted) {
       setAllCompleted(true);
-    } else {
+    } else if (isGenerating) {
+      // Reset states when generation starts
       setAllCompleted(false);
+      setJustCompleted(false);
     }
-  }, [suggestionCards]);
+  }, [suggestionCards, isGenerating, justCompleted]);
 
   const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string) => {
     try {
@@ -206,8 +213,8 @@ export function useStreamingSuggestionGenerator() {
               }
 
               toast({
-                title: `Suggestion ${cardId} Generated!`,
-                description: 'A new credential suggestion is ready.',
+                title: `${response.mappedSuggestion?.title || 'Credential'} Generated!`,
+                description: 'Your new credential suggestion is ready for review.',
               });
             }
             break;
@@ -266,6 +273,9 @@ export function useStreamingSuggestionGenerator() {
                     console.error('Failed to store final response in localStorage:', error);
                   }
                   
+                  // Extract metrics if present
+                  const metrics = badgeData.metrics;
+                  
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
                   if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
@@ -276,6 +286,7 @@ export function useStreamingSuggestionGenerator() {
                       description: achievement.description,
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: achievement.image?.id || undefined,
+                      metrics: metrics,
                     };
                   }
                   
@@ -309,12 +320,9 @@ export function useStreamingSuggestionGenerator() {
                   }
 
                   toast({
-                    title: `Suggestion ${cardId} Generated!`,
-                    description: 'A new credential suggestion is ready.'
+                    title: `${suggestion?.title || 'Credential'} Generated!`,
+                    description: 'Your new credential suggestion is ready for review.'
                   });
-
-                  // Check if all cards are completed
-                  setTimeout(() => checkAllCompleted(), 100);
                 } catch (parseError) {
                   console.error('Failed to parse final JSON:', parseError);
                   setSuggestionCards(prev => 
@@ -351,8 +359,8 @@ export function useStreamingSuggestionGenerator() {
             
             toast({
               variant: 'destructive',
-              title: `Suggestion ${cardId} Failed`,
-              description: `Streaming error: ${response.error}`,
+              title: 'Generation Failed',
+              description: `Unable to generate credential: ${response.error}`,
             });
             break;
             
@@ -373,12 +381,9 @@ export function useStreamingSuggestionGenerator() {
             
             toast({
               variant: 'destructive',
-              title: `Suggestion ${cardId} Failed`,
+              title: 'Generation Failed',
               description: response.error || 'An error occurred during generation.',
             });
-            
-            // Check if all cards are completed
-            setTimeout(() => checkAllCompleted(), 100);
             break;
             
           case 'complete':
@@ -410,14 +415,11 @@ export function useStreamingSuggestionGenerator() {
 
       toast({
         variant: 'destructive',
-        title: `Suggestion ${cardId} Failed`,
-        description: `Failed to generate this credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: 'Generation Failed',
+        description: `Failed to generate credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
-      
-      // Check if all cards are completed
-      setTimeout(() => checkAllCompleted(), 100);
     }
-  }, [toast, checkAllCompleted]);
+  }, [toast]);
 
   const generateAllSuggestionsStream = useCallback(async (originalContent: string) => {
     if (!originalContent) {
@@ -431,6 +433,7 @@ export function useStreamingSuggestionGenerator() {
 
     setIsGenerating(true);
     setAllCompleted(false);
+    setJustCompleted(false); // Reset flag for new generation
     
     // Store generation state in localStorage
     try {
@@ -465,6 +468,8 @@ export function useStreamingSuggestionGenerator() {
     // Note: Suggestions are saved to localStorage individually as they complete
     // (see 'final' and 'data' case handlers above). No bulk save needed here.
 
+    // Mark as just completed (for fresh generation alert)
+    setJustCompleted(true);
     setIsGenerating(false);
     
     // Clear generation state from localStorage

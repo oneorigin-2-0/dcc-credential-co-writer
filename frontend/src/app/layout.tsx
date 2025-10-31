@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Roboto, Roboto_Serif, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { Header } from '@/components/layout/header';
 
 // DCC Brand Fonts - Roboto family
 const roboto = Roboto({
@@ -43,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <body className={`${roboto.variable} ${robotoSerif.variable} ${robotoMono.variable} ${robotoBody.variable} font-website antialiased`}>
+        <Header />
         {children}
         <Toaster />
       </body>
