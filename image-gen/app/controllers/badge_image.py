@@ -30,11 +30,25 @@ async def generate_badge(request: BadgeRequest):
         logger.info("Received badge generation request")
 
         request_dict = request.model_dump()
-        result = await badge_service.generate_badge(request_dict)
 
-        # Add the input layers to the response config
-        result.config = {
+        # Extract scale_factor from either root level or canvas
+        if "canvas" in request_dict and "scale_factor" in request_dict["canvas"]:
+            scale_factor = request_dict["canvas"]["scale_factor"]
+        else:
+            scale_factor = request_dict.get("scale_factor", 2.0)
+
+        # Build config with scale_factor in canvas
+        config = {
+            "canvas": {"scale_factor": scale_factor},
             "layers": request_dict.get("layers", [])
+        }
+
+        result = await badge_service.generate_badge(config)
+
+        # Add only scale_factor and layers to response (no canvas dimensions)
+        result.config = {
+            "scale_factor": scale_factor,
+            "layers": config["layers"]
         }
 
         logger.info("Badge generated successfully")
@@ -71,15 +85,19 @@ async def generate_badge_with_text(request: TextOverlayBadgeRequest):
             seed=request.seed
         )
 
-        # Step 2: Render badge image
+        # Step 2: Render badge image with scale_factor
         badge_request = {
+            "canvas": {"scale_factor": request.scale_factor},
             "layers": config["layers"]
         }
 
         result = await badge_service.generate_badge(badge_request)
 
-        # Step 3: Add config to response
-        result.config = config
+        # Step 3: Add only scale_factor and layers to response
+        result.config = {
+            "scale_factor": request.scale_factor,
+            "layers": config["layers"]
+        }
 
         logger.info(f"Text overlay badge generated successfully: {request.short_title}")
         return result
@@ -113,15 +131,19 @@ async def generate_badge_with_icon(request: IconBasedBadgeRequest):
             seed=request.seed
         )
 
-        # Step 2: Render badge image
+        # Step 2: Render badge image with scale_factor
         badge_request = {
+            "canvas": {"scale_factor": request.scale_factor},
             "layers": config["layers"]
         }
 
         result = await badge_service.generate_badge(badge_request)
 
-        # Step 3: Add config to response
-        result.config = config
+        # Step 3: Add only scale_factor and layers to response
+        result.config = {
+            "scale_factor": request.scale_factor,
+            "layers": config["layers"]
+        }
 
         logger.info(f"Icon-based badge generated successfully with icon: {request.icon_name}")
         return result
@@ -185,15 +207,25 @@ async def generate_badge_with_logo(
         if not logo_replaced:
             logger.warning("No LogoLayer or ImageLayer found in config to replace")
 
-        # Step 4: Generate badge
+        # Step 4: Generate badge with scale_factor from config
+        # Extract scale_factor from canvas if provided, or from root level, default to 2.0
+        if "canvas" in config_dict and "scale_factor" in config_dict["canvas"]:
+            scale_factor = config_dict["canvas"]["scale_factor"]
+        else:
+            scale_factor = config_dict.get("scale_factor", 2.0)
+
         badge_request = {
+            "canvas": {"scale_factor": scale_factor},
             "layers": layers
         }
 
         result = await badge_service.generate_badge(badge_request)
 
-        # Step 5: Add updated config to response
-        result.config = config_dict
+        # Step 5: Add only scale_factor and layers to response
+        result.config = {
+            "scale_factor": scale_factor,
+            "layers": layers
+        }
 
         logger.info("Badge with custom logo generated successfully")
         return result

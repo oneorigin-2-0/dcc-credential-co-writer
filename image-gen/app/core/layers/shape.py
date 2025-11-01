@@ -14,25 +14,26 @@ class ShapeLayer(Layer):
         self.fill = spec.get("fill", {"mode":"solid","color":"#FFFFFF"})  # "transparent" allowed
         self.border = spec.get("border", {"color": None, "width": 0})
         self.params = spec.get("params", {})
+        self.scale_factor = float(spec.get("scale_factor", 1.0))
     
     def _mask(self, size):
         W, H = size
         s = self.shape
         if s == "hexagon":
-            r = int(self.params.get("radius", min(W,H)//2 - 20))
+            r = int(self.params.get("radius", min(W,H)//2 - 20) * self.scale_factor)
             cx, cy = W//2, H//2
             ang = math.pi/3
             pts = [(cx + r*math.cos(i*ang), cy + r*math.sin(i*ang)) for i in range(6)]
             return polygon_mask(size, pts)
         if s == "circle":
             #return circle_mask(size, int(self.params.get("margin", 50)))
-            radius = int(self.params.get("radius", min(W,H)//2 - 50))
+            radius = int(self.params.get("radius", min(W,H)//2 - 50) * self.scale_factor)
             margin = max(0, (min(W,H)//2) - radius)
             return circle_mask(size, margin)
         if s == "shield":
-            margin = int(self.params.get("margin", 56))
-            r      = int(self.params.get("corner_radius", 56))
-            tip_h  = int(self.params.get("tip_height", 110))
+            margin = int(self.params.get("margin", 56) * self.scale_factor)
+            r      = int(self.params.get("corner_radius", 56) * self.scale_factor)
+            tip_h  = int(self.params.get("tip_height", 110) * self.scale_factor)
             rect, tip = shield_points(W,H,margin,r,tip_h)
             m = Image.new("L", size, 0); d = ImageDraw.Draw(m)
             d.rounded_rectangle(rect, radius=r, fill=255)
@@ -40,17 +41,17 @@ class ShapeLayer(Layer):
             return m
         if s == "rounded_rect":
             # Use width, height, radius instead of rect coordinates
-            width = int(self.params.get("width", 450))
-            height = int(self.params.get("height", 450))
-            radius = int(self.params.get("radius", 50))
-            
+            width = int(self.params.get("width", 450) * self.scale_factor)
+            height = int(self.params.get("height", 450) * self.scale_factor)
+            radius = int(self.params.get("radius", 50) * self.scale_factor)
+
             # Center the rectangle on canvas
             cx, cy = W//2, H//2
             x1 = cx - width//2
             y1 = cy - height//2
             x2 = cx + width//2
             y2 = cy + height//2
-            
+
             rect = [x1, y1, x2, y2]
             return rounded_rect_mask(size, rect, radius)
         raise ValueError(f"Unknown shape: {s}")
@@ -74,41 +75,41 @@ class ShapeLayer(Layer):
             tmp.paste(fill_img, (0,0), m)
             canvas.alpha_composite(tmp)
         # Border
-        col = self.border.get("color"); bw = int(self.border.get("width", 0))
+        col = self.border.get("color"); bw = int(self.border.get("width", 0) * self.scale_factor)
         if col and bw > 0:
             bd = Image.new("RGBA", (W,H), (0,0,0,0))
             d  = ImageDraw.Draw(bd)
             s = self.shape
             if s == "hexagon":
-                r = int(self.params.get("radius", min(W,H)//2 - 20))
+                r = int(self.params.get("radius", min(W,H)//2 - 20) * self.scale_factor)
                 cx, cy = W//2, H//2; ang = math.pi/3
                 pts = [(cx + r*math.cos(i*ang), cy + r*math.sin(i*ang)) for i in range(6)]
                 d.polygon(pts, outline=col, width=bw)
             elif s == "circle":
                 #margin = int(self.params.get("margin", 50))
-                radius = int(self.params.get("radius", min(W,H)//2 - 50))
+                radius = int(self.params.get("radius", min(W,H)//2 - 50) * self.scale_factor)
                 margin = max(0, (min(W,H)//2) - radius)
                 d.ellipse([margin, margin, W-margin, H-margin], outline=col, width=bw)
             elif s == "shield":
-                margin = int(self.params.get("margin", 56))
-                r      = int(self.params.get("corner_radius", 56))
-                tip_h  = int(self.params.get("tip_height", 110))
+                margin = int(self.params.get("margin", 56) * self.scale_factor)
+                r      = int(self.params.get("corner_radius", 56) * self.scale_factor)
+                tip_h  = int(self.params.get("tip_height", 110) * self.scale_factor)
                 rect, tip = shield_points(W,H,margin,r,tip_h)
                 d.rounded_rectangle(rect, radius=r, outline=col, width=bw)
                 d.line(tip + [tip[0]], fill=col, width=bw, joint="curve")
             elif s == "rounded_rect":
                 # Use width, height, radius instead of rect coordinates
-                width = int(self.params.get("width", 450))
-                height = int(self.params.get("height", 450))
-                radius = int(self.params.get("radius", 50))
-                
+                width = int(self.params.get("width", 450) * self.scale_factor)
+                height = int(self.params.get("height", 450) * self.scale_factor)
+                radius = int(self.params.get("radius", 50) * self.scale_factor)
+
                 # Center the rectangle on canvas
                 cx, cy = W//2, H//2
                 x1 = cx - width//2
                 y1 = cy - height//2
                 x2 = cx + width//2
                 y2 = cy + height//2
-                
+
                 rect = [x1, y1, x2, y2]
                 d.rounded_rectangle(rect, radius=radius, outline=col, width=bw)
             canvas.alpha_composite(bd)

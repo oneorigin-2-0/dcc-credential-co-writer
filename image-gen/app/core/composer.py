@@ -8,9 +8,10 @@ from app.core.utils.geometry import get_shape_bounds
 
 
 class Composer:
-    def __init__(self, width, height, bg=(0,0,0,0)):
+    def __init__(self, width, height, bg=(0,0,0,0), scale_factor=1.0):
         self.W, self.H = int(width), int(height)
         self.bg = bg
+        self.scale_factor = float(scale_factor)
         self.layers = []
         self.shape_bounds = None
         self.shape_spec = None
@@ -28,7 +29,8 @@ class Composer:
                     "shape": layer.shape,
                     "params": layer.params
                 }
-                self.shape_bounds = get_shape_bounds(self.shape_spec, self.W, self.H)
+                # Pass scale_factor to ensure bounds match scaled shape dimensions
+                self.shape_bounds = get_shape_bounds(self.shape_spec, self.W, self.H, self.scale_factor)
                 break
     
     def _update_dynamic_positions(self):
@@ -71,9 +73,10 @@ class Composer:
         
         # Track which dynamic text layers we've encountered
         text_layer_count = 0
-        
+
         # Second pass: Update all other layer positions
-        for layer in self.layers:
+        # Sort by z-index to ensure consistent ordering
+        for layer in sorted(self.layers, key=lambda L: L.z):
             if isinstance(layer, LogoLayer):
                 if layer.pos.get("y") == "dynamic":
                     # Position logo at the top of content area (logo_y is already the top position)
@@ -128,22 +131,26 @@ class Composer:
 
 def render_from_spec(spec):
     """spec: dict or JSON string with keys:
-       - canvas: {bg, scale_factor} (width and height are fixed at 600)
+       - canvas: {bg, scale_factor} (width and height are fixed at 600, scaled by scale_factor)
        - layers: [ {type: "...", ...}, ... ]
     """
     if isinstance(spec, str):
         spec = json.loads(spec)
     canvas = spec.get("canvas", {})
-    # Hardcode width and height to 600
-    W = 600
-    H = 600
+    # Extract scale_factor (default 1.0)
+    scale_factor = float(canvas.get("scale_factor", 1.0))
+    # Base dimensions are 600x600, scaled by scale_factor
+    W = int(600 * scale_factor)
+    H = int(600 * scale_factor)
     bg = canvas.get("bg", "white")
-    comp = Composer(W, H, bg=(255,255,255,0) if bg=="transparent" else bg)
+    comp = Composer(W, H, bg=(255,255,255,0) if bg=="transparent" else bg, scale_factor=scale_factor)
 
     for layer_spec in spec.get("layers", []):
         t = layer_spec.get("type")
         cls = LAYER_REGISTRY.get(t)
         if not cls:
             raise ValueError(f"Unknown layer type: {t}")
-        comp.add(cls(layer_spec))
+        # Add scale_factor to layer_spec so layers can access it
+        layer_spec_with_scale = {**layer_spec, "scale_factor": scale_factor}
+        comp.add(cls(layer_spec_with_scale))
     return comp.render()

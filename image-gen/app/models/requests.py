@@ -3,11 +3,19 @@ Request models for API endpoints
 """
 
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 class BadgeRequest(BaseModel):
     """Badge generation request model (canvas dimensions are fixed at 600x600)"""
     layers: List[Dict[str, Any]] = Field(description="Array of layer configurations")
+    scale_factor: float = Field(default=2.0, description="Scale factor for rendering (1.0-3.0, default 2.0)")
+
+    @field_validator('scale_factor')
+    @classmethod
+    def validate_scale_factor(cls, v):
+        if not (1.0 <= v <= 3.0):
+            raise ValueError('scale_factor must be between 1.0 and 3.0')
+        return v
 
     class Config:
         json_schema_extra = {
@@ -45,7 +53,8 @@ class BadgeRequest(BaseModel):
                         },
                         "z": 30
                     }
-                ]
+                ],
+                "scale_factor": 2.0
             }
         }
 
@@ -56,6 +65,14 @@ class TextOverlayBadgeRequest(BaseModel):
     achievement_phrase: str = Field(description="Achievement phrase or motto")
     colors: Optional[Dict[str, str]] = Field(default=None, description="Brand colors (primary, secondary, tertiary)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
+    scale_factor: float = Field(default=2.0, description="Scale factor for rendering (1.0-3.0, default 2.0)")
+
+    @field_validator('scale_factor')
+    @classmethod
+    def validate_scale_factor(cls, v):
+        if not (1.0 <= v <= 3.0):
+            raise ValueError('scale_factor must be between 1.0 and 3.0')
+        return v
 
     class Config:
         json_schema_extra = {
@@ -76,6 +93,14 @@ class IconBasedBadgeRequest(BaseModel):
     icon_name: str = Field(description="Icon filename (e.g., 'atom.png', 'trophy.png')")
     colors: Optional[Dict[str, str]] = Field(default=None, description="Brand colors (primary, secondary, tertiary)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
+    scale_factor: float = Field(default=2.0, description="Scale factor for rendering (1.0-3.0, default 2.0)")
+
+    @field_validator('scale_factor')
+    @classmethod
+    def validate_scale_factor(cls, v):
+        if not (1.0 <= v <= 3.0):
+            raise ValueError('scale_factor must be between 1.0 and 3.0')
+        return v
 
     class Config:
         json_schema_extra = {

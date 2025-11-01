@@ -1,15 +1,23 @@
 import math
 
 
-def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height):
-    """Calculate the horizontal width of a shape at a given Y position"""
+def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height, scale_factor=1.0):
+    """Calculate the horizontal width of a shape at a given Y position
+
+    Args:
+        shape_spec: Shape specification dict
+        y_position: Y coordinate to check
+        canvas_width: Canvas width (already scaled)
+        canvas_height: Canvas height (already scaled)
+        scale_factor: Scale factor to apply to shape params
+    """
     shape = shape_spec.get("shape", "hexagon")
     params = shape_spec.get("params", {})
     cx = canvas_width // 2
     cy = canvas_height // 2
-    
+
     if shape == "hexagon":
-        radius = int(params.get("radius", min(canvas_width, canvas_height)//2 - 20))
+        radius = int(params.get("radius", min(canvas_width, canvas_height)//2 - 20) * scale_factor)
         # Hexagon with flat sides has vertices at 60-degree intervals
         # Calculate the X bounds at the given Y position
         ang = math.pi/3  # 60 degrees
@@ -38,9 +46,9 @@ def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height):
         return cx - radius, cx + radius  # Fallback to full width
     
     elif shape == "circle":
-        margin = int(params.get("margin", 50))
+        margin = int(params.get("margin", 50) * scale_factor)
         radius = min(canvas_width, canvas_height)//2 - margin
-        
+
         # Calculate circle intersection at Y
         dy = abs(y_position - cy)
         if dy <= radius:
@@ -48,17 +56,17 @@ def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height):
             dx = math.sqrt(radius**2 - dy**2)
             return cx - dx, cx + dx
         return cx, cx  # Outside circle, no width
-    
+
     elif shape == "shield":
-        margin = int(params.get("margin", 56))
+        margin = int(params.get("margin", 56) * scale_factor)
         left = margin
         right = canvas_width - margin
         return left, right  # Shield has straight sides in our implementation
-    
+
     elif shape == "rounded_rect":
         # Match ShapeLayer implementation - use width, height, radius parameters
-        width = int(params.get("width", 450))
-        height = int(params.get("height", 450))
+        width = int(params.get("width", 450) * scale_factor)
+        height = int(params.get("height", 450) * scale_factor)
 
         # Center the rectangle on canvas (same as ShapeLayer)
         x1 = cx - width//2
@@ -76,13 +84,20 @@ def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height):
     return margin, canvas_width - margin
 
 
-def get_shape_bounds(shape_spec, canvas_width, canvas_height):
-    """Calculate the bounding box of a shape layer"""
+def get_shape_bounds(shape_spec, canvas_width, canvas_height, scale_factor=1.0):
+    """Calculate the bounding box of a shape layer
+
+    Args:
+        shape_spec: Shape specification dict
+        canvas_width: Canvas width (already scaled)
+        canvas_height: Canvas height (already scaled)
+        scale_factor: Scale factor to apply to shape params
+    """
     shape = shape_spec.get("shape", "hexagon")
     params = shape_spec.get("params", {})
-    
+
     if shape == "hexagon":
-        radius = int(params.get("radius", min(canvas_width, canvas_height)//2 - 20))
+        radius = int(params.get("radius", min(canvas_width, canvas_height)//2 - 20) * scale_factor)
         cx, cy = canvas_width//2, canvas_height//2
         # Calculate actual hexagon points to get real Y bounds
         # Hexagon with flat top/bottom has points at angles 0°, 60°, 120°, 180°, 240°, 300°
@@ -95,9 +110,9 @@ def get_shape_bounds(shape_spec, canvas_width, canvas_height):
         bottom = max(y_coords)  # Actual bottom Y of hexagon
         
         return {"top": top, "bottom": bottom, "center_x": cx, "center_y": cy, "radius": radius}
-    
+
     elif shape == "circle":
-        margin = int(params.get("margin", 50))
+        margin = int(params.get("margin", 50) * scale_factor)
         radius = min(canvas_width, canvas_height)//2 - margin
         cx, cy = canvas_width//2, canvas_height//2
         # Calculate actual circle bounds (just like we do for hexagon)
@@ -106,17 +121,17 @@ def get_shape_bounds(shape_spec, canvas_width, canvas_height):
         return {"top": top, "bottom": bottom, "center_x": cx, "center_y": cy, "radius": radius}
     
     elif shape == "shield":
-        margin = int(params.get("margin", 56))
-        tip_height = int(params.get("tip_height", 110))
+        margin = int(params.get("margin", 56) * scale_factor)
+        tip_height = int(params.get("tip_height", 110) * scale_factor)
         top = margin
         bottom = canvas_height - margin
         cx = canvas_width//2
         return {"top": top, "bottom": bottom, "center_x": cx, "center_y": (top + bottom)//2, "radius": min(canvas_width, canvas_height)//2 - margin}
-    
+
     elif shape == "rounded_rect":
         # Match ShapeLayer implementation - use width, height, radius parameters
-        width = int(params.get("width", 450))
-        height = int(params.get("height", 450))
+        width = int(params.get("width", 450) * scale_factor)
+        height = int(params.get("height", 450) * scale_factor)
 
         # Center the rectangle on canvas (same as ShapeLayer)
         cx = canvas_width//2

@@ -6,7 +6,7 @@ from app.core.utils.geometry import get_shape_width_at_y
 
 
 class TextLayer(Layer):
-    
+
     def __init__(self, spec):
         super().__init__(spec)
         self.text = spec.get("text", "")
@@ -14,6 +14,7 @@ class TextLayer(Layer):
         self.color = spec.get("color", "#000000")
         self.align = spec.get("align", {"x":"center","y":"center"})
         self.wrap  = spec.get("wrap", {"dynamic": True, "max_width": None, "line_gap": 6})
+        self.scale_factor = float(spec.get("scale_factor", 1.0))
         self.composer: Optional[Any] = None  # Will be set during rendering if dynamic wrap is needed
         # optional: "anchor" if you want to change; we'll draw left-top for wrapped blocks
     
@@ -33,7 +34,9 @@ class TextLayer(Layer):
     
     def render(self, canvas):
         d = ImageDraw.Draw(canvas)
-        f = load_font(self.font.get("path"), self.font.get("size"))
+        # Scale font size
+        scaled_font_size = int(self.font.get("size") * self.scale_factor)
+        f = load_font(self.font.get("path"), scaled_font_size)
         
         # Calculate dynamic max_width if enabled
         max_w = self.wrap.get("max_width")
@@ -41,25 +44,27 @@ class TextLayer(Layer):
             # Calculate text Y position first (without wrapping)
             temp_lines = self._wrap_lines(d, f, None)  # No wrapping for initial calculation
             temp_w = max(int(d.textlength(ln, font=f)) for ln in temp_lines) if temp_lines else 0
-            temp_h = 0; gap = int(self.wrap.get("line_gap", 6))
+            temp_h = 0; gap = int(self.wrap.get("line_gap", 6) * self.scale_factor)
             for ln in temp_lines:
                 bbox = f.getbbox(ln); temp_h += (bbox[3] - bbox[1]) + gap
             if temp_h > 0: temp_h -= gap
-            
+
             # Get text Y position
             _, text_y = resolve_align(self.align, temp_w, temp_h, canvas.width, canvas.height)
-            
+
             # Calculate shape width at text Y position
             if self.composer.shape_spec:
-                left_x, right_x = get_shape_width_at_y(self.composer.shape_spec, text_y, canvas.width, canvas.height)
-                
-                # Set max_width with some padding (20px from each side)
-                padding = 40
-                max_w = max(100, right_x - left_x - padding)  # Minimum 100px width
-        
+                left_x, right_x = get_shape_width_at_y(
+                    self.composer.shape_spec, text_y, canvas.width, canvas.height, self.scale_factor
+                )
+
+                # Set max_width with some padding (scale padding too)
+                padding = int(40 * self.scale_factor)
+                max_w = max(int(100 * self.scale_factor), right_x - left_x - padding)  # Minimum 100px width
+
         lines = self._wrap_lines(d, f, max_w)
         w = max(int(d.textlength(ln, font=f)) for ln in lines) if lines else 0
-        h = 0; gap = int(self.wrap.get("line_gap", 6))
+        h = 0; gap = int(self.wrap.get("line_gap", 6) * self.scale_factor)
         for ln in lines:
             bbox = f.getbbox(ln); h += (bbox[3] - bbox[1]) + gap
         if h>0: h -= gap
