@@ -1619,16 +1619,6 @@ export default function BadgeEditorPage() {
                 </div>
               </div>
             </div>
-            
-            {/* Loading Indicator */}
-            {isGeneratingImage && (
-              <div className="bg-gray-50 border-t border-gray-200 p-4">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                  <div className="w-4 h-4 border-2 border-[#429EA6] border-t-transparent rounded-full animate-spin"></div>
-                  <span>Generating...</span>
-                </div>
-              </div>
-            )}
           </DialogContent>
         </Dialog>
       </main>
