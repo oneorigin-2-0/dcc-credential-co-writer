@@ -8,12 +8,12 @@ from app.core.utils.text import resolve_align
 class ImageLayer(Layer):
     def __init__(self, spec):
         super().__init__(spec)
-        
+
         # Get project root (go up from app/core/layers to project root)
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
         self.path = os.path.join(project_root, spec.get("path"))
-        
+
         # Support both simple numeric size and object format
         if isinstance(spec.get("size"), (int, float)):
             # If size is a number, use it as width for proportional scaling
@@ -25,7 +25,7 @@ class ImageLayer(Layer):
             }
         else:
             self.size = spec.get("size", {})
-        
+
         # Support direct y positioning
         if "y" in spec:
             self.pos = {
@@ -34,21 +34,25 @@ class ImageLayer(Layer):
             }
         else:
             self.pos = spec.get("position", {"x":"center","y":"center"})
-        
+
         self.opacity = float(spec.get("opacity", 1.0))
+        self.scale_factor = float(spec.get("scale_factor", 1.0))
     
     def render(self, canvas):
         if not (self.path and os.path.exists(self.path)): return
         img = Image.open(self.path).convert("RGBA")
-        
+
         # Handle dynamic sizing with aspect ratio preservation
         if self.size.get("dynamic", False) or self.size.get("max_width"):
             img = self._resize_dynamic(img, canvas)
         else:
-            # Original static sizing logic
+            # Original static sizing logic with scale factor
             w, h = self.size.get("width"), self.size.get("height")
             if w or h:
                 ow, oh = img.size
+                # Scale dimensions
+                w = int(w * self.scale_factor) if w else None
+                h = int(h * self.scale_factor) if h else None
                 if w and h: img = img.resize((int(w), int(h)), Resampling.LANCZOS)
                 elif w:     img = img.resize((int(w), int(oh*(w/ow))), Resampling.LANCZOS)
                 else:       img = img.resize((int(ow*(h/oh)), int(h)), Resampling.LANCZOS)
@@ -66,31 +70,31 @@ class ImageLayer(Layer):
         # Check if this is an icon path
         is_icon = "icons" in self.path.lower()
 
-        # Get maximum dimensions from config
+        # Get maximum dimensions from config and scale them
         # For icons with dynamic: true, default to 190x190 instead of 280x120
         if is_icon and self.size.get("dynamic") and "max_width" not in self.size:
-            max_width = self.size.get("max_width", 190)
-            max_height = self.size.get("max_height", 190)
+            max_width = int(self.size.get("max_width", 190) * self.scale_factor)
+            max_height = int(self.size.get("max_height", 190) * self.scale_factor)
         else:
-            max_width = self.size.get("max_width", 280)
-            max_height = self.size.get("max_height", 120)
-        
+            max_width = int(self.size.get("max_width", 280) * self.scale_factor)
+            max_height = int(self.size.get("max_height", 120) * self.scale_factor)
+
         # Calculate scaling factors
         width_ratio = max_width / original_width
         height_ratio = max_height / original_height
-        
+
         # Use the smaller ratio to maintain aspect ratio
         ratio = min(width_ratio, height_ratio)
-        
+
         # Ensure we don't upscale too much
         if ratio > 1.0:
             max_upscale = self.size.get("max_upscale", 2.0)
             ratio = min(ratio, max_upscale)
-        
+
         # Calculate new dimensions
         new_width = int(original_width * ratio)
         new_height = int(original_height * ratio)
-        
+
         # Resize the image
         return img.resize((new_width, new_height), Resampling.LANCZOS)
     
@@ -106,25 +110,25 @@ class ImageLayer(Layer):
                 # Check if this is an icon path
                 is_icon = "icons" in self.path.lower()
 
-                # Get maximum dimensions with icon-specific defaults
+                # Get maximum dimensions with icon-specific defaults and scale them
                 if is_icon and self.size.get("dynamic") and "max_width" not in self.size:
-                    max_width = self.size.get("max_width", 190)
-                    max_height = self.size.get("max_height", 190)
+                    max_width = int(self.size.get("max_width", 190) * self.scale_factor)
+                    max_height = int(self.size.get("max_height", 190) * self.scale_factor)
                 else:
-                    max_width = self.size.get("max_width", 280)
-                    max_height = self.size.get("max_height", 120)
-                
+                    max_width = int(self.size.get("max_width", 280) * self.scale_factor)
+                    max_height = int(self.size.get("max_height", 120) * self.scale_factor)
+
                 width_ratio = max_width / original_width
                 height_ratio = max_height / original_height
                 ratio = min(width_ratio, height_ratio)
-                
+
                 if ratio > 1.0:
                     max_upscale = self.size.get("max_upscale", 2.0)
                     ratio = min(ratio, max_upscale)
-                
+
                 return int(original_width * ratio), int(original_height * ratio)
         except:
-            return self.size.get("max_width", 280), self.size.get("max_height", 120)
+            return int(self.size.get("max_width", 280) * self.scale_factor), int(self.size.get("max_height", 120) * self.scale_factor)
 
 
 class LogoLayer(ImageLayer):

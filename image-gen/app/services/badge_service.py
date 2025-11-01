@@ -38,13 +38,17 @@ class BadgeService:
             config["canvas"]["width"] = 600
             config["canvas"]["height"] = 600
 
-            # Add default background layer
-            config["layers"].insert(0, {
-                "type": "BackgroundLayer",
-                "mode": "solid",
-                "color": "#FFFFFF00",
-                "z": 0
-            })
+            # Preserve scale_factor if already set, otherwise it will be extracted from canvas config in render_from_spec
+
+            # Add default background layer only if one doesn't exist
+            has_background = any(layer.get("type") == "BackgroundLayer" for layer in config.get("layers", []))
+            if not has_background:
+                config["layers"].insert(0, {
+                    "type": "BackgroundLayer",
+                    "mode": "solid",
+                    "color": "#FFFFFF00",
+                    "z": 0
+                })
 
             # Generate badge using composer
             image = render_from_spec(config)
