@@ -44,6 +44,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <body className={`${roboto.variable} ${robotoSerif.variable} ${robotoMono.variable} ${robotoBody.variable} font-website antialiased`}>
+        {/* Skip Links for Accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#234467] focus:text-white focus:rounded-md focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <Header />
         {children}
         <Toaster />

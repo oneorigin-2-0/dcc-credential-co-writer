@@ -215,10 +215,12 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
 
          {/* User Prompt Input */}
          <div className="space-y-2">
-           <label className="text-sm font-medium text-gray-700">
+           <Label htmlFor="user-prompt" className="text-[#40464c] font-subhead font-medium text-sm">
              User Prompt
-           </label>
+           </Label>
            <Textarea
+             id="user-prompt"
+             aria-label="Custom instructions for badge generation"
              placeholder="Enter custom instructions for badge generation..."
              className="min-h-[80px] resize-none border-gray-300 focus:border-[#429EA6] focus:ring-[#429EA6]"
              value={userPrompt}

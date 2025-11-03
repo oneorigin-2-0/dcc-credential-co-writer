@@ -686,7 +686,7 @@ export default function BadgeEditorPage() {
   }
 
   return (
-      <main className="container mx-auto bg-gray-50 p-4 md:p-8">
+      <main id="main-content" className="container mx-auto bg-gray-50 p-4 md:p-8">
         <Button
           variant="outline"
           className="mb-6"
@@ -1463,7 +1463,7 @@ export default function BadgeEditorPage() {
                     {generatedImage ? (
                       <img 
                         src={generatedImage} 
-                        alt="Generated Badge" 
+                        alt={badgeSuggestion?.title ? `${badgeSuggestion.title} generated badge image` : "Generated badge image"} 
                         className="max-w-full max-h-full object-contain relative z-10"
                       />
                     ) : (

@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardFooter} from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { CheckCircle, AlertCircle, Sparkles, Info } from 'lucide-react';
+import { CheckCircle, AlertCircle, Sparkles, Info, Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import Lottie from 'lottie-react';
 import type { BadgeSuggestion } from '@/lib/types';
 
@@ -23,12 +24,14 @@ interface SuggestionCardProps {
   rawStreamingContent?: string;
   isStreamingComplete?: boolean;
   onClick: () => void;
+  isMobile?: boolean;
 }
 
-export function SuggestionCard({ id, data, loading, error, progress, streamingText, streamingContent, rawStreamingContent, isStreamingComplete, onClick }: SuggestionCardProps) {
+export function SuggestionCard({ id, data, loading, error, progress, streamingText, streamingContent, rawStreamingContent, isStreamingComplete, onClick, isMobile = false }: SuggestionCardProps) {
   const preRef = useRef<HTMLPreElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [animationData, setAnimationData] = useState(null);
+  const { toast } = useToast();
 
   // Load Lottie animation data
   useEffect(() => {
@@ -95,7 +98,55 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
   const status = getStatus();
   const isCurrentlyStreaming = rawStreamingContent && !isStreamingComplete;
-  const isClickable = (status === 'success' || status === 'error') && !loading && !isCurrentlyStreaming;
+  // Disable clicking on mobile/tablet - only enable on desktop
+  const isClickable = !isMobile && (status === 'success' || status === 'error') && !loading && !isCurrentlyStreaming;
+
+  // Generate badge JSON for copying
+  const generateBadgeJSON = () => {
+    if (!data) return null;
+    
+    return {
+      "achievement": {
+        "name": data.title,
+        "description": data.description,
+        "criteria": {
+          "narrative": data.criteria
+        },
+        "image": {
+          "id": data.image || "",
+          "type": "Image"
+        }
+      }
+    };
+  };
+
+  const handleCopyJSON = async () => {
+    const badgeJSON = generateBadgeJSON();
+    if (!badgeJSON) {
+      toast({
+        variant: 'destructive',
+        title: 'No Data',
+        description: 'Cannot copy: Badge data is not available.',
+      });
+      return;
+    }
+    
+    const jsonString = JSON.stringify(badgeJSON, null, 2);
+    
+    try {
+      await navigator.clipboard.writeText(jsonString);
+      toast({
+        title: 'Copied!',
+        description: 'Badge JSON has been copied to clipboard.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Copy Failed',
+        description: 'Failed to copy JSON to clipboard.',
+      });
+    }
+  };
 
   return (
     <Card
@@ -105,11 +156,11 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
           : 'opacity-0 translate-y-4'
       } ${
         isClickable 
-          ? 'cursor-pointer hover:shadow-xl border-2 border-transparent hover:border-[#429EA6] bg-gradient-to-br from-white to-gray-50' 
+          ? 'cursor-pointer lg:hover:shadow-xl border-2 border-transparent lg:hover:border-[#429EA6] bg-gradient-to-br from-white to-gray-50' 
           : 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-transparent'
       } ${status === 'error' ? 'from-red-50 to-red-100 border-red-200' : ''} ${
         status === 'loading' ? 'from-blue-50 to-indigo-50 border-blue-200' : ''
-      } ${status === 'error' && isClickable ? 'hover:border-red-400' : ''}`}
+      } ${status === 'error' && isClickable ? 'lg:hover:border-red-400' : ''}`}
       onClick={isClickable ? onClick : undefined}
     >
       <CardHeader className="pb-3 pt-4">
@@ -243,7 +294,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 <div className="absolute inset-0 bg-gradient-to-br from-[#429EA6]/20 to-[#234467]/20 rounded-lg blur-xl"></div>
                 <img
                   src={data.image}
-                  alt="Badge preview"
+                  alt={`${data.title} badge preview image`}
                   className="relative w-40 h-40 object-contain rounded-lg border-2 border-white shadow-xl bg-white"
                 />
               </div>
@@ -275,21 +326,37 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
         )}
       </CardContent>
       
-      {/* Footer - only show for clickable cards */}
-      {isClickable && (
+      {/* Footer - show different content for mobile vs desktop */}
+      {(isClickable || (isMobile && status === 'success' && data)) && (
         <CardFooter className="pt-2 pb-4 mt-auto">
           <div className="w-full">
-            <div className={`text-center py-2 px-4 rounded-lg ${
-              status === 'error' 
-                ? 'bg-red-100 border border-red-300' 
-                : 'bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 border border-[#429EA6]/30'
-            }`}>
-              <p className={`text-xs font-semibold font-body ${
-                status === 'error' ? 'text-red-600' : 'text-[#234467]'
+            {isMobile && status === 'success' && data ? (
+              /* Mobile: Show copy button */
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyJSON();
+                }}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2 border-[#429EA6] text-[#429EA6] hover:bg-[#429EA6] hover:text-white transition-all duration-200"
+              >
+                <Copy className="h-4 w-4" />
+                Copy JSON
+              </Button>
+            ) : isClickable ? (
+              /* Desktop: Show click to edit message */
+              <div className={`text-center py-2 px-4 rounded-lg ${
+                status === 'error' 
+                  ? 'bg-red-100 border border-red-300' 
+                  : 'bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 border border-[#429EA6]/30'
               }`}>
-                ✨ Click to edit and customise
-              </p>
-            </div>
+                <p className={`text-xs font-semibold font-body ${
+                  status === 'error' ? 'text-red-600' : 'text-[#234467]'
+                }`}>
+                  ✨ Click to edit and customise
+                </p>
+              </div>
+            ) : null}
           </div>
         </CardFooter>
       )}
