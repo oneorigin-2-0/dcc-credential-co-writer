@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { RefreshCw, Loader2, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RefreshCw, Loader2, Info } from 'lucide-react';
 
 interface BadgeConfigurationProps {
   onRegenerate?: () => void;
@@ -33,7 +34,6 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
   const [criterionTemplate, setCriterionTemplate] = useState('Task-Oriented');
   const [institution, setInstitution] = useState('');
   const [instituteUrl, setInstituteUrl] = useState('');
-  const [showUrlHelp, setShowUrlHelp] = useState(false);
 
   // Map UI values to API format
   const mapToApiFormat = (uiValue: string, type: 'style' | 'tone' | 'level' | 'criterion') => {
@@ -184,24 +184,18 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
             <Label htmlFor="institute-url" className="text-[#40464c] font-subhead font-medium text-sm">
               Institute URL
             </Label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowUrlHelp(!showUrlHelp)}
-                className="text-[#429EA6] hover:text-[#234467] transition-colors"
-                aria-label="Help"
-              >
-                <HelpCircle className="h-4 w-4" />
-              </button>
-              {showUrlHelp && (
-                <div className="absolute left-0 bottom-full mb-2 z-10">
-                  <div className="bg-[#234467] text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                    The colors for the badge image will be derived from the colors present in the URL.
-                    <div className="absolute left-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#234467]"></div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-pointer">
+                    <Info className="h-4 w-4 text-[#429EA6]" />
                   </div>
-                </div>
-              )}
-            </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">The colors for the badge image will be derived from the colors present in the URL.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <Input
             id="institute-url"
