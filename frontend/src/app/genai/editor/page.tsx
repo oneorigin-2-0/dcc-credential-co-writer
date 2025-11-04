@@ -107,12 +107,18 @@ export default function BadgeEditorPage() {
         const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
         const cardIds = Object.keys(finalResponses);
         
-        // Look for raw data that matches this suggestion
-        for (const cardId of cardIds) {
-          if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
-            setCurrentCardId(cardId);
-            setAvailableCards(cardIds);
-            break;
+        // Use the card ID directly if available
+        if (parsedSuggestion.cardId && finalResponses[parsedSuggestion.cardId]) {
+          setCurrentCardId(parsedSuggestion.cardId.toString());
+          setAvailableCards(cardIds);
+        } else {
+          // Fallback: Look for raw data that matches this suggestion by name (backwards compatibility)
+          for (const cardId of cardIds) {
+            if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
+              setCurrentCardId(cardId);
+              setAvailableCards(cardIds);
+              break;
+            }
           }
         }
       } catch (error) {

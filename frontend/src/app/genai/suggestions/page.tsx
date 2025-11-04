@@ -151,8 +151,12 @@ export default function CredentialSuggestionsPage() {
       image: undefined
     };
 
-    // Store the selected suggestion and navigate to editor
-    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionData));
+    // Store the selected suggestion with card ID and navigate to editor
+    const suggestionWithId = {
+      ...suggestionData,
+      cardId: card.id
+    };
+    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionWithId));
 
     // Navigate to badge suggestion editor
     handleNavigation('/genai/editor');
