@@ -1186,13 +1186,18 @@ export default function BadgeEditorPage() {
                   {editedImageConfig?.layers?.map((layer: any, index: number) => {
                     const layerType = layer.type;
                     const isActive = accordionStates.layers[index];
-                    
+
+                    // Don't render BackgroundLayer
+                    if (layerType === 'BackgroundLayer') {
+                      return null;
+                    }
+
                     return (
                       <button
-                        key={index} 
+                        key={index}
                         className={`w-full p-3 mb-2 text-left rounded-lg border transition-all duration-200 ${
-                          isActive 
-                            ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md' 
+                          isActive
+                            ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md'
                             : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5'
                         }`}
                         onClick={() => toggleAccordion('layer', index)}
@@ -1228,12 +1233,12 @@ export default function BadgeEditorPage() {
                           return (
                             <div className="space-y-4">
                             {/* BackgroundLayer */}
-                            {layerType === 'BackgroundLayer' && (
+                            {/* {layerType === 'BackgroundLayer' && (
                               <>
                                 <div>
                                   <label className="block text-xs font-medium text-gray-600 mb-1">Mode</label>
-                                  <select 
-                                    value={layer.mode || 'solid'} 
+                                  <select
+                                    value={layer.mode || 'solid'}
                                     onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.mode`, e.target.value)}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                   >
@@ -1244,22 +1249,22 @@ export default function BadgeEditorPage() {
                                 <div>
                                   <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
                                   <div className="flex items-center space-x-2">
-                                    <input 
-                                      type="color" 
-                                      value={layer.color || '#FFFFFF'} 
+                                    <input
+                                      type="color"
+                                      value={layer.color || '#FFFFFF'}
                                       onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
                                       className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                     />
-                                    <input 
-                                      type="text" 
-                                      value={layer.color || '#FFFFFF'} 
+                                    <input
+                                      type="text"
+                                      value={layer.color || '#FFFFFF'}
                                       onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
                                       className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                     />
                                   </div>
                                 </div>
                               </>
-                            )}
+                            )} */}
                               
                             {/* ShapeLayer */}
                             {layerType === 'ShapeLayer' && (
@@ -1353,14 +1358,16 @@ export default function BadgeEditorPage() {
                                               />
                                             </div>
                                           </div>
-                                          <div className="flex items-center space-x-2">
-                                            <input 
-                                              type="checkbox" 
-                                              checked={layer.fill.vertical || true} 
-                                              onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.vertical`, e.target.checked)}
-                                              className="rounded" 
-                                            />
-                                            <label className="text-xs text-gray-600">Vertical Gradient</label>
+                                          <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Gradient Direction</label>
+                                            <select
+                                              value={layer.fill.vertical ? 'vertical' : 'horizontal'}
+                                              onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.vertical`, e.target.value === 'vertical')}
+                                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            >
+                                              <option value="vertical">Vertical</option>
+                                              <option value="horizontal">Horizontal</option>
+                                            </select>
                                           </div>
                                         </>
                                       ) : (
@@ -1538,7 +1545,33 @@ export default function BadgeEditorPage() {
                                   )}
                                 </>
                               )}
-                              
+
+                              {/* ImageLayer */}
+                              {layerType === 'ImageLayer' && (
+                                <>
+                                  {layer.size !== undefined && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Size *</label>
+                                      <div className="space-y-2">
+                                        <input
+                                          type="range"
+                                          min="50"
+                                          max="500"
+                                          value={typeof layer.size === 'object' ? 400 : layer.size}
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size`, parseInt(e.target.value))}
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
+                                        />
+                                        <div className="flex justify-between items-center text-xs">
+                                          <span className="text-gray-500">50px</span>
+                                          <span className="text-sm font-medium text-gray-700">{typeof layer.size === 'object' ? 400 : layer.size}px</span>
+                                          <span className="text-gray-500">500px</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+
                               {/* TextLayer */}
                               {layerType === 'TextLayer' && (
                                 <>
@@ -1614,7 +1647,8 @@ export default function BadgeEditorPage() {
                                       </div>
                                     </div>
                                   )}
-                                  {layer.wrap && layer.wrap.line_gap && (
+                                  {/* Line Gap */}
+                                  {/* {layer.wrap && layer.wrap.line_gap && (
                                     <div>
                                       <label className="block text-xs font-medium text-gray-600 mb-1">Line Gap</label>
                                       <input
@@ -1624,7 +1658,7 @@ export default function BadgeEditorPage() {
                                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                       />
                                     </div>
-                                  )}
+                                  )} */}
                                 </>
                               )}
                               
