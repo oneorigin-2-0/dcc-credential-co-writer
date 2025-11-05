@@ -195,11 +195,38 @@ export default function BadgeEditorPage() {
 
   const handleEditImage = async () => {
     // Get image config from finalResponses if available
-    const originalConfig = currentCardId ?
+    let originalConfig = currentCardId ?
       JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig || null :
       null;
+
+    // Process config to ensure default values for all shapes
+    if (originalConfig) {
+      const configWithDefaults = JSON.parse(JSON.stringify(originalConfig));
+      if (configWithDefaults.layers) {
+        configWithDefaults.layers.forEach((layer: any) => {
+          if (layer.shape === 'rounded_rect') {
+            if (!layer.params) {
+              layer.params = {};
+            }
+            // Always set radius to 50 for rounded_rect
+            layer.params.radius = 50;
+            // Set width and height to 450 if not already set
+            layer.params.width = layer.params.width || 450;
+            layer.params.height = layer.params.height || 450;
+          } else if (layer.shape === 'hexagon' || layer.shape === 'circle') {
+            if (!layer.params) {
+              layer.params = {};
+            }
+            // Always set radius to 250 for hexagon and circle
+            layer.params.radius = 250;
+          }
+        });
+      }
+      // Use the processed config as the source of truth
+      originalConfig = configWithDefaults;
+    }
+
     setModalImageConfig(originalConfig);
-    // Create a deep copy for editing
     setEditedImageConfig(originalConfig ? JSON.parse(JSON.stringify(originalConfig)) : null);
     setGeneratedImage(null);
     setIsImageEditModalOpen(true);
@@ -1239,9 +1266,36 @@ export default function BadgeEditorPage() {
                               <>
                                 <div>
                                   <label className="block text-xs font-medium text-gray-600 mb-1">Shape *</label>
-                                  <select 
-                                    value={layer.shape || ''} 
-                                    onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.shape`, e.target.value)}
+                                  <select
+                                    value={layer.shape || ''}
+                                    onChange={(e) => {
+                                      const newShape = e.target.value;
+
+                                      // Create a deep copy of the config
+                                      const updatedConfig = JSON.parse(JSON.stringify(editedImageConfig));
+
+                                      // Update the shape
+                                      updatedConfig.layers[activeLayerIndex].shape = newShape;
+
+                                      // Set default params based on shape type
+                                      if (newShape === 'rounded_rect') {
+                                        if (!updatedConfig.layers[activeLayerIndex].params) {
+                                          updatedConfig.layers[activeLayerIndex].params = {};
+                                        }
+                                        updatedConfig.layers[activeLayerIndex].params.radius = 50;
+                                        updatedConfig.layers[activeLayerIndex].params.width = updatedConfig.layers[activeLayerIndex].params.width || 450;
+                                        updatedConfig.layers[activeLayerIndex].params.height = updatedConfig.layers[activeLayerIndex].params.height || 450;
+                                      } else if (newShape === 'hexagon' || newShape === 'circle') {
+                                        if (!updatedConfig.layers[activeLayerIndex].params) {
+                                          updatedConfig.layers[activeLayerIndex].params = {};
+                                        }
+                                        updatedConfig.layers[activeLayerIndex].params.radius = 250;
+                                      }
+
+                                      // Update state and generate image
+                                      setEditedImageConfig(updatedConfig);
+                                      generateImage(updatedConfig);
+                                    }}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                   >
                                     <option value="hexagon">Hexagon</option>
@@ -1364,34 +1418,36 @@ export default function BadgeEditorPage() {
                                   
                                   {layer.params && (
                                     <>
-                                      {layer.params.radius && (
+                                      {(layer.shape === 'hexagon' || layer.shape === 'circle' || layer.shape === 'rounded_rect') && (
                                         <div>
-                                          <label className="block text-xs font-medium text-gray-600 mb-1">Radius</label>
-                                          <input 
-                                            type="number" 
-                                            value={layer.params.radius} 
+                                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {layer.shape === 'rounded_rect' ? 'Corner Radius' : 'Size'}
+                                          </label>
+                                          <input
+                                            type="number"
+                                            value={layer.params?.radius || (layer.shape === 'rounded_rect' ? 50 : 250)}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.radius`, parseInt(e.target.value))}
                                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                           />
                                         </div>
                                       )}
-                                      {layer.params.width && (
+                                      {layer.shape === 'rounded_rect' && (
                                         <div>
                                           <label className="block text-xs font-medium text-gray-600 mb-1">Width</label>
-                                          <input 
-                                            type="number" 
-                                            value={layer.params.width} 
+                                          <input
+                                            type="number"
+                                            value={layer.params?.width || 450}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.width`, parseInt(e.target.value))}
                                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                           />
                                         </div>
                                       )}
-                                      {layer.params.height && (
+                                      {layer.shape === 'rounded_rect' && (
                                         <div>
                                           <label className="block text-xs font-medium text-gray-600 mb-1">Height</label>
-                                          <input 
-                                            type="number" 
-                                            value={layer.params.height} 
+                                          <input
+                                            type="number"
+                                            value={layer.params?.height || 450}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.height`, parseInt(e.target.value))}
                                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
                                           />
@@ -1440,42 +1496,45 @@ export default function BadgeEditorPage() {
                                     )}
                                     <p className="text-xs text-gray-500 mt-1">Supported: PNG, SVG (max 5MB)</p>
                                   </div>
-                                  {layer.size && (
+                                  {layer.size !== undefined && (
                                     <div>
                                       <label className="block text-xs font-medium text-gray-600 mb-1">Size *</label>
-                                      <div className="flex items-center space-x-2">
-                                        <input 
-                                          type="checkbox" 
-                                          checked={layer.size.dynamic || true} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size.dynamic`, e.target.checked)}
-                                          className="rounded" 
+                                      <div className="space-y-2">
+                                        <input
+                                          type="range"
+                                          min="50"
+                                          max="1000"
+                                          value={typeof layer.size === 'object' ? 400 : layer.size}
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size`, parseInt(e.target.value))}
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
                                         />
-                                        <label className="text-xs text-gray-600">Dynamic Size</label>
+                                        <div className="flex justify-between items-center text-xs">
+                                          <span className="text-gray-500">50px</span>
+                                          <span className="text-sm font-medium text-gray-700">{typeof layer.size === 'object' ? 400 : layer.size}px</span>
+                                          <span className="text-gray-500">1000px</span>
+                                        </div>
                                       </div>
                                     </div>
                                   )}
                                   {layer.position && (
-                                    <>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">X Position</label>
-                                        <input 
-                                          type="text" 
-                                          value={layer.position.x || 'center'} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.x`, e.target.value)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Y Position *</label>
+                                      <div className="space-y-2">
+                                        <input
+                                          type="range"
+                                          min="50"
+                                          max="550"
+                                          value={layer.position.y || 300}
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.y`, parseInt(e.target.value))}
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
                                         />
+                                        <div className="flex justify-between items-center text-xs">
+                                          <span className="text-gray-500">50</span>
+                                          <span className="text-sm font-medium text-gray-700">{layer.position.y || 300}</span>
+                                          <span className="text-gray-500">550</span>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">Y Position *</label>
-                                        <input 
-                                          type="text" 
-                                          value={layer.position.y || 'dynamic'} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.y`, e.target.value)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Range: 50-550</p>
-                                      </div>
-                                    </>
+                                    </div>
                                   )}
                                 </>
                               )}
@@ -1496,12 +1555,16 @@ export default function BadgeEditorPage() {
                                     <>
                                       <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">Font Path</label>
-                                        <input 
-                                          type="text" 
-                                          value={layer.font.path || ''} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.path`, e.target.value)}
+                                        <select
+                                          value={layer.font.path?.replace('assets/fonts/', '').replace('.ttf', '') || 'Arial'}
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.path`, `assets/fonts/${e.target.value}.ttf`)}
                                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
-                                        />
+                                        >
+                                          <option value="Arial">Arial</option>
+                                          <option value="ArialBold">Arial Bold</option>
+                                          <option value="OpenSans">Open Sans</option>
+                                          <option value="Roboto">Roboto</option>
+                                        </select>
                                       </div>
                                       <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">Font Size *</label>
@@ -1532,51 +1595,35 @@ export default function BadgeEditorPage() {
                                     </div>
                                   </div>
                                   {layer.align && (
-                                    <>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">X Align</label>
-                                        <input 
-                                          type="text" 
-                                          value={layer.align.x || 'center'} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.x`, e.target.value)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Y Align *</label>
+                                      <div className="space-y-2">
+                                        <input
+                                          type="range"
+                                          min="150"
+                                          max="850"
+                                          value={layer.align.y || 500}
+                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.y`, parseInt(e.target.value))}
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
                                         />
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">Y Align *</label>
-                                        <input 
-                                          type="text" 
-                                          value={layer.align.y || 'dynamic'} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.y`, e.target.value)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Range: 50-550</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {layer.wrap && (
-                                    <>
-                                      <div className="flex items-center space-x-2">
-                                        <input 
-                                          type="checkbox" 
-                                          checked={layer.wrap.dynamic || false} 
-                                          onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.dynamic`, e.target.checked)}
-                                          className="rounded" 
-                                        />
-                                        <label className="text-xs text-gray-600">Dynamic Wrap</label>
-                                      </div>
-                                      {layer.wrap.line_gap && (
-                                        <div>
-                                          <label className="block text-xs font-medium text-gray-600 mb-1">Line Gap</label>
-                                          <input 
-                                            type="number" 
-                                            value={layer.wrap.line_gap} 
-                                            onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.line_gap`, parseInt(e.target.value))}
-                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
-                                          />
+                                        <div className="flex justify-between items-center text-xs">
+                                          <span className="text-gray-500">150</span>
+                                          <span className="text-sm font-medium text-gray-700">{layer.align.y || 500}</span>
+                                          <span className="text-gray-500">850</span>
                                         </div>
-                                      )}
-                                    </>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {layer.wrap && layer.wrap.line_gap && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Line Gap</label>
+                                      <input
+                                        type="number"
+                                        value={layer.wrap.line_gap}
+                                        onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.line_gap`, parseInt(e.target.value))}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                      />
+                                    </div>
                                   )}
                                 </>
                               )}
