@@ -1192,6 +1192,22 @@ export default function BadgeEditorPage() {
                       return null;
                     }
 
+                    // Get display name for layer
+                    let displayName = layerType;
+                    if (layerType === 'ShapeLayer') {
+                      displayName = 'Shape';
+                    } else if (layerType === 'LogoLayer') {
+                      displayName = 'Logo';
+                    } else if (layerType === 'ImageLayer') {
+                      displayName = 'Image';
+                    } else if (layerType === 'TextLayer') {
+                      // Count how many TextLayers appear before this one
+                      const textLayerCount = editedImageConfig.layers
+                        .slice(0, index)
+                        .filter((l: any) => l.type === 'TextLayer').length + 1;
+                      displayName = `Text ${textLayerCount}`;
+                    }
+
                     return (
                       <button
                         key={index}
@@ -1203,7 +1219,7 @@ export default function BadgeEditorPage() {
                         onClick={() => toggleAccordion('layer', index)}
                       >
                         <span className="text-sm font-medium">
-                          {layerType}
+                          {displayName}
                         </span>
                       </button>
                     );
