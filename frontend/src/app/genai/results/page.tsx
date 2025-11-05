@@ -578,7 +578,7 @@ function ResultsContent() {
                                             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                                 <img
                                                     src={currentSuggestion.image}
-                                                    alt="Generated badge"
+                                                    alt={`${currentSuggestion.title} badge image`}
                                                     className="w-32 h-32 object-contain rounded-lg border border-gray-300"
                                                 />
                                             </div>

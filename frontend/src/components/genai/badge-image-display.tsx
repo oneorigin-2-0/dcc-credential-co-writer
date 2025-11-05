@@ -26,7 +26,7 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
           <div className="flex justify-center items-center p-3 rounded-lg border-2 border-[#429EA6]/20">
             <img
               src={imageUrl}
-              alt="Badge preview"
+              alt="Badge image preview for credential"
               className="w-50 h-50 object-contain rounded-lg shadow-lg"
             />
           </div>

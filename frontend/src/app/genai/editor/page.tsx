@@ -11,7 +11,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { ArrowLeft, Edit, Save, X, Copy, FileDown, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Save, X, Copy, FileDown, RefreshCw, Loader2, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -71,6 +71,8 @@ export default function BadgeEditorPage() {
     canvas: true,
     layers: {}
   });
+  const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
+  const [logoFileName, setLogoFileName] = useState<string>('');
 
   // Auto-hide streaming status after completion
   useEffect(() => {
@@ -105,12 +107,18 @@ export default function BadgeEditorPage() {
         const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
         const cardIds = Object.keys(finalResponses);
         
-        // Look for raw data that matches this suggestion
-        for (const cardId of cardIds) {
-          if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
-            setCurrentCardId(cardId);
-            setAvailableCards(cardIds);
-            break;
+        // Use the card ID directly if available
+        if (parsedSuggestion.cardId && finalResponses[parsedSuggestion.cardId]) {
+          setCurrentCardId(parsedSuggestion.cardId.toString());
+          setAvailableCards(cardIds);
+        } else {
+          // Fallback: Look for raw data that matches this suggestion by name (backwards compatibility)
+          for (const cardId of cardIds) {
+            if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
+              setCurrentCardId(cardId);
+              setAvailableCards(cardIds);
+              break;
+            }
           }
         }
       } catch (error) {
@@ -185,10 +193,10 @@ export default function BadgeEditorPage() {
     setUserPrompt(prompt);
   }, []);
 
-  const handleEditImage = () => {
+  const handleEditImage = async () => {
     // Get image config from finalResponses if available
-    const originalConfig = currentCardId ? 
-      JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig || null : 
+    const originalConfig = currentCardId ?
+      JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig || null :
       null;
     setModalImageConfig(originalConfig);
     // Create a deep copy for editing
@@ -196,9 +204,32 @@ export default function BadgeEditorPage() {
     setGeneratedImage(null);
     setIsImageEditModalOpen(true);
 
-    // Generate initial image immediately (no debounce for first load)
+    let restoredLogoFile: File | null = null;
+
+    // Restore uploaded logo if it exists in config
+    if (originalConfig?.logoBase64 && originalConfig?.logoFileName) {
+      try {
+        // Convert base64 to File object
+        const response = await fetch(originalConfig.logoBase64);
+        const blob = await response.blob();
+        const file = new File([blob], originalConfig.logoFileName, {
+          type: originalConfig.logoFileType || 'image/png'
+        });
+        setUploadedLogo(file);
+        setLogoFileName(originalConfig.logoFileName);
+        restoredLogoFile = file; // Store the restored file to pass to generateImage
+      } catch (error) {
+        console.error('Failed to restore logo from config:', error);
+      }
+    } else {
+      // Clear logo state if no logo in config
+      setUploadedLogo(null);
+      setLogoFileName('');
+    }
+
+    // Generate initial image immediately with restored logo file (if exists)
     if (originalConfig) {
-      generateImage(originalConfig);
+      generateImage(originalConfig, restoredLogoFile);
     }
   };
 
@@ -292,22 +323,40 @@ export default function BadgeEditorPage() {
     });
   };
 
-  const generateImage = async (config?: any) => {
+  const generateImage = async (config?: any, logo?: File | null) => {
     const configToUse = config || editedImageConfig;
     if (!configToUse) return;
-    
+
     setIsGeneratingImage(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/badge/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(configToUse),
-      });
-      
+      let response;
+
+      // Use the logo parameter if provided, otherwise fall back to uploadedLogo state
+      const logoToUse = logo !== undefined ? logo : uploadedLogo;
+
+      // If logo is uploaded, use FormData API
+      if (logoToUse) {
+        const formData = new FormData();
+        formData.append('logo', logoToUse);
+        formData.append('config', JSON.stringify(configToUse));
+
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/badge/generate-with-logo`, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Use regular JSON API
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/badge/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(configToUse),
+        });
+      }
+
       const result = await response.json();
-      
+
       if (result.success && result.data?.base64) {
         setGeneratedImage(result.data.base64);
       } else {
@@ -326,13 +375,86 @@ export default function BadgeEditorPage() {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
-    
+
     // Set new timer
     const newTimer = setTimeout(() => {
       generateImage(config);
-    }, 1500);
-    
+    }, 500);
+
     setDebounceTimer(newTimer);
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/svg+xml'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid File Type',
+        description: 'Please upload a PNG or SVG file only.',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        variant: 'destructive',
+        title: 'File Too Large',
+        description: 'Please upload a file smaller than 5MB.',
+      });
+      return;
+    }
+
+    // Store the file and its name
+    setUploadedLogo(file);
+    setLogoFileName(file.name);
+
+    // Convert file to base64 synchronously (wait for it to complete)
+    const base64String = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
+    // Update config with base64 (this completes before generateImage is called)
+    setEditedImageConfig((prev: any) => ({
+      ...prev,
+      logoBase64: base64String,
+      logoFileName: file.name,
+      logoFileType: file.type
+    }));
+
+    toast({
+      title: 'Logo Uploaded',
+      description: `${file.name} has been uploaded successfully.`,
+    });
+
+    // Trigger immediate image generation with the uploaded logo
+    generateImage(editedImageConfig, file);
+  };
+
+  const handleRemoveLogo = () => {
+    setUploadedLogo(null);
+    setLogoFileName('');
+
+    // Remove logo data from config
+    setEditedImageConfig((prev: any) => {
+      const { logoBase64, logoFileName, logoFileType, ...rest } = prev || {};
+      return rest;
+    });
+
+    toast({
+      title: 'Logo Removed',
+      description: 'The logo has been removed.',
+    });
+
+    // Trigger immediate image regeneration without logo
+    generateImage(editedImageConfig, null);
   };
 
   const switchToCard = (cardId: string) => {
@@ -686,7 +808,7 @@ export default function BadgeEditorPage() {
   }
 
   return (
-      <main className="container mx-auto bg-gray-50 p-4 md:p-8">
+      <main id="main-content" className="container mx-auto bg-gray-50 p-4 md:p-8">
         <Button
           variant="outline"
           className="mb-6"
@@ -1284,13 +1406,39 @@ export default function BadgeEditorPage() {
                               {layerType === 'LogoLayer' && (
                                 <>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Path</label>
-                                    <input 
-                                      type="text" 
-                                      value={layer.path || ''} 
-                                      onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.path`, e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Upload Logo</label>
+                                    <input
+                                      type="file"
+                                      id="logo-upload-input"
+                                      accept=".png,.svg"
+                                      onChange={handleLogoUpload}
+                                      className="hidden"
                                     />
+                                    {!logoFileName ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => document.getElementById('logo-upload-input')?.click()}
+                                        className="w-full px-3 py-2 text-sm border border-[#429EA6] text-[#429EA6] rounded hover:bg-[#429EA6] hover:text-white transition-colors flex items-center justify-center gap-2"
+                                      >
+                                        <Upload className="h-4 w-4" />
+                                        Choose Logo File
+                                      </button>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded bg-gray-50 text-gray-700 truncate">
+                                          {logoFileName}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={handleRemoveLogo}
+                                          className="px-2 py-2 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
+                                          title="Remove logo"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">Supported: PNG, SVG (max 5MB)</p>
                                   </div>
                                   {layer.size && (
                                     <div>
@@ -1463,7 +1611,7 @@ export default function BadgeEditorPage() {
                     {generatedImage ? (
                       <img 
                         src={generatedImage} 
-                        alt="Generated Badge" 
+                        alt={badgeSuggestion?.title ? `${badgeSuggestion.title} generated badge image` : "Generated badge image"} 
                         className="max-w-full max-h-full object-contain relative z-10"
                       />
                     ) : (
@@ -1477,16 +1625,6 @@ export default function BadgeEditorPage() {
                 </div>
               </div>
             </div>
-            
-            {/* Loading Indicator */}
-            {isGeneratingImage && (
-              <div className="bg-gray-50 border-t border-gray-200 p-4">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                  <div className="w-4 h-4 border-2 border-[#429EA6] border-t-transparent rounded-full animate-spin"></div>
-                  <span>Generating...</span>
-                </div>
-              </div>
-            )}
           </DialogContent>
         </Dialog>
       </main>

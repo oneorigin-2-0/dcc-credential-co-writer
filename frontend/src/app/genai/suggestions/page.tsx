@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, CheckCircle, Copy, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
 import { StreamingStatus } from '@/components/genai/streaming-status';
 import { useStreamingSuggestionGenerator } from '@/hooks/use-streaming-suggestion-generator';
@@ -123,7 +124,15 @@ export default function CredentialSuggestionsPage() {
     }
   }, [allCompleted]);
 
+  // Detect mobile/tablet - disable card clicking on mobile
+  const isMobile = useIsMobile();
+
   const handleCardClick = (card: any) => {
+    // Disable navigation on mobile/tablet
+    if (isMobile) {
+      return;
+    }
+
     // Allow clicking on cards even if they failed or don't have data
     if (!card.data && !card.error) {
       toast({
@@ -142,8 +151,12 @@ export default function CredentialSuggestionsPage() {
       image: undefined
     };
 
-    // Store the selected suggestion and navigate to editor
-    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionData));
+    // Store the selected suggestion with card ID and navigate to editor
+    const suggestionWithId = {
+      ...suggestionData,
+      cardId: card.id
+    };
+    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionWithId));
 
     // Navigate to badge suggestion editor
     handleNavigation('/genai/editor');
@@ -162,22 +175,23 @@ export default function CredentialSuggestionsPage() {
   const promptEvalCount = suggestionCards.find(card => card.data?.metrics?.prompt_eval_count)?.data?.metrics?.prompt_eval_count;
 
   return (
-    <main className="bg-gray-50 min-h-screen">
+    <main id="main-content" className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="outline"
-            onClick={() => handleNavigation('/genai')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Generator
-          </Button>
-
-          <h1 className="text-3xl font-bold text-gray-900">
-            Credential Suggestions
-          </h1>
-
-          <div className="w-[140px]"></div> {/* Spacer for alignment */}
+        <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => handleNavigation('/genai')}
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Back to Generator</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Credential Suggestions
+            </h1>
+          </div>
         </div>
 
         <div className="flex justify-center">
@@ -185,8 +199,8 @@ export default function CredentialSuggestionsPage() {
 
             {/* Two-column layout */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left: Original Content (sticky) */}
-              <div className="md:col-span-4">
+              {/* Left: Original Content (sticky) - Hidden on mobile/tablet */}
+              <div className="hidden lg:block md:col-span-4">
                 <div className="sticky top-4">
                   <Card className="border-0 bg-gradient-to-br from-[#429EA6]/15 via-[#429EA6]/10 to-blue-50/50 shadow-xl">
                     <CardContent className="p-4">
@@ -237,7 +251,7 @@ export default function CredentialSuggestionsPage() {
               </div>
 
               {/* Right: Status + Suggestions */}
-              <div className="md:col-span-8">
+              <div className="md:col-span-8 lg:col-span-8">
 
                 {/* Success Alert - Shows when all suggestions are complete (auto-hides after 5s) */}
                 {showCompletionAlert && (
@@ -276,7 +290,7 @@ export default function CredentialSuggestionsPage() {
                 )}
 
                 {/* Show message when no cards are visible yet */}
-                {suggestionCards.filter(card => card.streamingStarted).length === 0 && isGenerating && (
+                {suggestionCards.filter(card => card.streamingStarted && !card.error).length === 0 && isGenerating && (
                   <div className="flex flex-col items-center py-12 space-y-6 mb-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#429EA6]"></div>
                     <div className="text-center">
@@ -288,11 +302,11 @@ export default function CredentialSuggestionsPage() {
                   </div>
                 )}
 
-                {/* Suggestion Cards - Only render columns when cards exist */}
-                {suggestionCards.filter(card => card.streamingStarted).length > 0 && (
+                {/* Suggestion Cards - Only render columns when cards exist, exclude failed ones */}
+                {suggestionCards.filter(card => card.streamingStarted && !card.error).length > 0 && (
                   <div className="columns-1 md:columns-2 gap-6">
                     {suggestionCards
-                      .filter(card => card.streamingStarted)
+                      .filter(card => card.streamingStarted && !card.error)
                       .map((card) => (
                         <div key={card.id} className="break-inside-avoid mb-6">
                           <SuggestionCard
@@ -306,6 +320,7 @@ export default function CredentialSuggestionsPage() {
                             rawStreamingContent={card.rawStreamingContent}
                             isStreamingComplete={card.isStreamingComplete}
                             onClick={() => handleCardClick(card)}
+                            isMobile={isMobile}
                           />
                         </div>
                       ))}
