@@ -293,7 +293,7 @@ export default function GenAIPage() {
             <FormProvider {...form}>
               <Card className="border-0 shadow-xl bg-white">
                 <CardHeader className="pb-8">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                  <h1 className="text-3xl font-bold font-headline text-gray-900 mb-3">
                     Create a New Credential with AI
                   </h1>
                   <CardDescription className="text-lg text-gray-600 leading-relaxed">
@@ -535,7 +535,7 @@ export default function GenAIPage() {
                         <Button
                           onClick={handleGenerate}
                           disabled={isParsingFile || !consentChecked}
-                          className="bg-primary hover:bg-gradient-to-r hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          className="bg-primary text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {animationData && (
                             <div className="w-5 h-5">
