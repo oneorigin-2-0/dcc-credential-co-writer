@@ -7,7 +7,7 @@ export default function LandingPage() {
       <main id="main-content" className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
         <div className="w-full max-w-4xl text-center">
           <div>
-            <h1 className="text-3xl font-headline font-black">Forge Your Recognition</h1>
+            <h1 className="text-3xl font-headline font-black">Craft Your Recognition</h1>
             <p className="text-muted-foreground mt-2 font-body">
               Instantly craft beautiful, verifiable digital badges with the power of AI.
             </p>

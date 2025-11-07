@@ -177,21 +177,19 @@ export default function CredentialSuggestionsPage() {
   return (
     <main id="main-content" className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
-        <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => handleNavigation('/genai')}
-              className="flex-shrink-0"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Back to Generator</span>
-              <span className="sm:hidden">Back</span>
-            </Button>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Credential Suggestions
-            </h1>
-          </div>
+        <div className="relative flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-center">
+          <Button
+            variant="outline"
+            onClick={() => handleNavigation('/genai')}
+            className="flex-shrink-0 md:absolute md:left-0"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Back to Generator</span>
+            <span className="sm:hidden">Back</span>
+          </Button>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">
+            Credential Suggestions
+          </h1>
         </div>
 
         <div className="flex justify-center">
