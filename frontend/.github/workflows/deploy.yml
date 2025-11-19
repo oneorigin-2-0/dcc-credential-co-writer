@@ -1,17 +1,15 @@
 name: Deploy to S3 and CloudFront
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feature/**'
-  pull_request:
-    branches:
-      - main
-      - develop
-      - 'feature/**'
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Select branch to deploy'
+        required: true
+        type: choice
+        options:
+          - main
+          - develop
 
 jobs:
   deploy:
@@ -20,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
