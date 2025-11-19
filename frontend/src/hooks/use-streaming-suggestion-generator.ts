@@ -139,7 +139,7 @@ export function useStreamingSuggestionGenerator() {
     }
   }, [suggestionCards, isGenerating, justCompleted]);
 
-  const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string) => {
+  const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string, enableSkillExtraction: boolean = false) => {
     try {
       
       // Set loading state (but don't mark as streaming started yet)
@@ -151,7 +151,9 @@ export function useStreamingSuggestionGenerator() {
         )
       );
 
-      const stream = new StreamingApiClient().generateSuggestionsStream(content);
+      // Prepare additional parameters for the API
+      const additionalParams = enableSkillExtraction ? { enable_skill_extraction: true } : {};
+      const stream = new StreamingApiClient().generateSuggestionsStream(content, additionalParams);
       
       for await (const response of stream) {
         
@@ -431,6 +433,15 @@ export function useStreamingSuggestionGenerator() {
       return;
     }
 
+    // Get LAiSER flag from localStorage
+    let enableSkillExtraction = false;
+    try {
+      const laiserEnabled = localStorage.getItem('isLaiserEnabled');
+      enableSkillExtraction = laiserEnabled === 'true';
+    } catch (error) {
+      console.error('Error reading LAiSER flag from localStorage:', error);
+    }
+
     setIsGenerating(true);
     setAllCompleted(false);
     setJustCompleted(false); // Reset flag for new generation
@@ -455,10 +466,10 @@ export function useStreamingSuggestionGenerator() {
     // Generate all 4 suggestions in TRUE PARALLEL (no delays)
     
     // Create all promises immediately - they start executing right away
-    const promise1 = generateSingleSuggestionStream(1, originalContent);
-    const promise2 = generateSingleSuggestionStream(2, originalContent);
-    const promise3 = generateSingleSuggestionStream(3, originalContent);
-    const promise4 = generateSingleSuggestionStream(4, originalContent);
+    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction);
+    const promise2 = generateSingleSuggestionStream(2, originalContent, enableSkillExtraction);
+    const promise3 = generateSingleSuggestionStream(3, originalContent, enableSkillExtraction);
+    const promise4 = generateSingleSuggestionStream(4, originalContent, enableSkillExtraction);
     
     
     // Wait for all streams to complete
