@@ -13,6 +13,17 @@ export interface BadgeMetrics {
   eval_duration?: number;
 }
 
+// Skill object from LAiSER
+export interface SkillObject {
+  Description?: string;
+  'Raw Skill'?: string;
+  'Knowledge Required'?: string[];
+  'Task Abilities'?: string[];
+  'Skill Tag'?: string;
+  'Correlation Coefficient'?: number;
+  URI?: string;
+}
+
 // Badge suggestion item type
 export interface BadgeSuggestion {
   title: string;
@@ -20,6 +31,7 @@ export interface BadgeSuggestion {
   criteria: string;
   image?: string;
   metrics?: BadgeMetrics;
+  skills?: SkillObject[]; // Full skill objects from LAiSER with all fields
 }
 
 // Badge generation result type - API returns array of suggestions

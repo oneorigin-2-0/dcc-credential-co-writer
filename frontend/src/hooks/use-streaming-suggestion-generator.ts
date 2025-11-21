@@ -80,6 +80,22 @@ export function useStreamingSuggestionGenerator() {
                 // Extract metrics if present
                 const metrics = rawFinalData.metrics;
                 
+                // Extract skills from the response - get full skill objects
+                // Check multiple possible locations: top level, credentialSubject, or achievement
+                const extractSkills = (data: any): any[] | undefined => {
+                  const skillsArray = data?.skills || 
+                                     data?.credentialSubject?.skills || 
+                                     data?.credentialSubject?.achievement?.skills;
+                  if (skillsArray && Array.isArray(skillsArray)) {
+                    // Store full skill objects
+                    const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                    return skills.length > 0 ? skills : undefined;
+                  }
+                  return undefined;
+                };
+                
+                const skills = extractSkills(rawFinalData);
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -91,6 +107,7 @@ export function useStreamingSuggestionGenerator() {
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
                     metrics: metrics,
+                    skills: skills,
                   };
                 } else {
                   // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
@@ -100,6 +117,7 @@ export function useStreamingSuggestionGenerator() {
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
                     metrics: metrics,
+                    skills: skills,
                   };
                 }
                 
@@ -172,6 +190,11 @@ export function useStreamingSuggestionGenerator() {
             // Handle final response (type: "final")
             
             if (response.data && response.mappedSuggestion) {
+              console.log(`[Hook] Card ${cardId} - Final response received`);
+              console.log(`[Hook] response.data:`, response.data);
+              console.log(`[Hook] response.mappedSuggestion:`, response.mappedSuggestion);
+              console.log(`[Hook] response.mappedSuggestion.skills:`, response.mappedSuggestion?.skills);
+              
               // Store raw final response data in localStorage
               try {
                 // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
@@ -278,6 +301,26 @@ export function useStreamingSuggestionGenerator() {
                   // Extract metrics if present
                   const metrics = badgeData.metrics;
                   
+                  // Extract skills from the response - get full skill objects
+                  // Check multiple possible locations: top level, credentialSubject, or achievement
+                  const extractSkills = (data: any): any[] | undefined => {
+                    console.log(`[Hook Token] Card ${cardId} - Extracting skills from badgeData:`, data);
+                    const skillsArray = data?.skills || 
+                                       data?.credentialSubject?.skills || 
+                                       data?.credentialSubject?.achievement?.skills;
+                    console.log(`[Hook Token] Card ${cardId} - Found skillsArray:`, skillsArray);
+                    if (skillsArray && Array.isArray(skillsArray)) {
+                      // Store full skill objects
+                      const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                      console.log(`[Hook Token] Card ${cardId} - Extracted skills objects:`, skills);
+                      return skills.length > 0 ? skills : undefined;
+                    }
+                    return undefined;
+                  };
+                  
+                  const skills = extractSkills(badgeData);
+                  console.log(`[Hook Token] Card ${cardId} - Final skills result:`, skills);
+                  
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
                   if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
@@ -289,7 +332,9 @@ export function useStreamingSuggestionGenerator() {
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: achievement.image?.id || undefined,
                       metrics: metrics,
+                      skills: skills,
                     };
+                    console.log(`[Hook Token] Card ${cardId} - Created suggestion with skills:`, suggestion);
                   }
                   
           
