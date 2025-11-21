@@ -344,7 +344,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                       <Badge
                         key={index}
                         variant="secondary"
-                        className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 hover:from-[#429EA6]/20 hover:to-[#234467]/20 transition-all duration-200"
+                        className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 cursor-default hover:from-[#429EA6]/10 hover:to-[#234467]/10 hover:bg-transparent pointer-events-none"
                       >
                         {rawSkill}
                       </Badge>

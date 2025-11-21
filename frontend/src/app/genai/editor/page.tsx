@@ -66,6 +66,8 @@ export default function BadgeEditorPage() {
   const [streamingError, setStreamingError] = useState<string | null>(null);
   const [streamingComplete, setStreamingComplete] = useState(false);
   const [isImageEditModalOpen, setIsImageEditModalOpen] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<any | null>(null);
+  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
   const [modalImageConfig, setModalImageConfig] = useState<any>(null);
   const [editedImageConfig, setEditedImageConfig] = useState<any>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -698,6 +700,11 @@ export default function BadgeEditorPage() {
     }
   };
 
+  const handleSkillClick = (skill: any) => {
+    setSelectedSkill(skill);
+    setIsSkillModalOpen(true);
+  };
+
   const handleEditField = (field: string, currentValue: string) => {
     setEditingField(field);
     setEditValues(prev => ({ ...prev, [field]: currentValue }));
@@ -1079,6 +1086,39 @@ export default function BadgeEditorPage() {
                   )}
                 </div>
 
+                {/* Skills Section - Inside Badge Editor */}
+                {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
+                  <div className="mt-6">
+                    <Accordion type="single" collapsible>
+                      <AccordionItem value="skills" className="border-[#429EA6] bg-gray-50 rounded-lg">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <div className="flex items-center justify-between w-full pr-4">
+                            <h3 className="text-base font-bold text-gray-900">Skills from LAiSER</h3>
+                            <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
+                              {badgeSuggestion.skills.length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {badgeSuggestion.skills.map((skillObj, index) => (
+                              skillObj['Raw Skill'] && (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSkillClick(skillObj)}
+                                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border border-[#429EA6]/30 text-xs font-semibold hover:from-[#429EA6]/20 hover:to-[#234467]/20 hover:border-[#429EA6]/50 transition-all cursor-pointer"
+                                >
+                                  {skillObj['Raw Skill']}
+                                </button>
+                              )
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                )}
+
               </CardContent>
 
               <CardFooter className="px-8 pb-8 flex justify-end">
@@ -1132,93 +1172,76 @@ export default function BadgeEditorPage() {
             </Card>
             )}
 
-            {/* Skills Section - Expandable Accordion */}
-            {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
-              <Accordion type="single" collapsible className="mt-6">
-                <AccordionItem value="skills" className="border-[#429EA6] bg-white rounded-lg shadow-lg">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <h3 className="text-lg font-bold text-gray-900">Skills from LAiSER</h3>
-                      <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
-                        {badgeSuggestion.skills.length}
+            {/* Skill Details Modal */}
+            <Dialog open={isSkillModalOpen} onOpenChange={setIsSkillModalOpen}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    {selectedSkill?.['Raw Skill'] || 'Skill Details'}
+                  </DialogTitle>
+                  {selectedSkill?.URI && (
+                    <DialogDescription>
+                      <a
+                        href={selectedSkill.URI}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                      >
+                        View URI →
+                      </a>
+                    </DialogDescription>
+                  )}
+                </DialogHeader>
+
+                <div className="space-y-6 mt-4">
+                  {/* Description */}
+                  {selectedSkill?.Description && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Description</h4>
+                      <p className="text-sm text-gray-600 leading-relaxed">{selectedSkill.Description}</p>
+                    </div>
+                  )}
+
+                  {/* Knowledge Required */}
+                  {selectedSkill?.['Knowledge Required'] && Array.isArray(selectedSkill['Knowledge Required']) && selectedSkill['Knowledge Required'].length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Knowledge Required</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSkill['Knowledge Required'].map((item: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Task Abilities */}
+                  {selectedSkill?.['Task Abilities'] && Array.isArray(selectedSkill['Task Abilities']) && selectedSkill['Task Abilities'].length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Task Abilities</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSkill['Task Abilities'].map((item: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skill Tag */}
+                  {selectedSkill?.['Skill Tag'] && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Skill Tag</h4>
+                      <Badge variant="secondary" className="text-sm py-1 px-3">
+                        {selectedSkill['Skill Tag']}
                       </Badge>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      {badgeSuggestion.skills.map((skillObj, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#429EA6] transition-colors">
-                          <div className="space-y-3">
-                            {/* Raw Skill - Header */}
-                            {skillObj['Raw Skill'] && (
-                              <div className="flex items-start justify-between gap-2">
-                                <Badge variant="secondary" className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 text-sm font-semibold">
-                                  {skillObj['Raw Skill']}
-                                </Badge>
-                                {skillObj.URI && (
-                                  <a
-                                    href={skillObj.URI}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-[#429EA6] hover:underline flex-shrink-0"
-                                    title={skillObj.URI}
-                                  >
-                                    View URI
-                                  </a>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Description */}
-                            {skillObj.Description && (
-                              <p className="text-sm text-gray-600 leading-relaxed">{skillObj.Description}</p>
-                            )}
-
-                            {/* Knowledge Required */}
-                            {skillObj['Knowledge Required'] && Array.isArray(skillObj['Knowledge Required']) && skillObj['Knowledge Required'].length > 0 && (
-                              <div>
-                                <span className="text-xs font-medium text-gray-700">Knowledge Required:</span>
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                  {skillObj['Knowledge Required'].map((item: string, idx: number) => (
-                                    <Badge key={idx} variant="outline" className="text-xs py-0.5 px-2">
-                                      {item}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Task Abilities */}
-                            {skillObj['Task Abilities'] && Array.isArray(skillObj['Task Abilities']) && skillObj['Task Abilities'].length > 0 && (
-                              <div>
-                                <span className="text-xs font-medium text-gray-700">Task Abilities:</span>
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                  {skillObj['Task Abilities'].map((item: string, idx: number) => (
-                                    <Badge key={idx} variant="outline" className="text-xs py-0.5 px-2">
-                                      {item}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Skill Tag */}
-                            {skillObj['Skill Tag'] && (
-                              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                                <span className="text-xs text-gray-500">Tag:</span>
-                                <Badge variant="outline" className="text-xs py-0.5 px-2">
-                                  {skillObj['Skill Tag']}
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Column 3: Badge Image Display */}
