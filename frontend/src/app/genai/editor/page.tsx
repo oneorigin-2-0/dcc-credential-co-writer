@@ -27,6 +27,12 @@ import { BadgeConfiguration } from '@/components/genai/badge-configuration';
 import { BadgeImageDisplay } from '@/components/genai/badge-image-display';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { StreamingApiClient } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
 
@@ -1125,6 +1131,94 @@ export default function BadgeEditorPage() {
               </CardFooter>
             </Card>
             )}
+
+            {/* Skills Section - Expandable Accordion */}
+            {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
+              <Accordion type="single" collapsible className="mt-6">
+                <AccordionItem value="skills" className="border-[#429EA6] bg-white rounded-lg shadow-lg">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <h3 className="text-lg font-bold text-gray-900">Skills from LAiSER</h3>
+                      <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
+                        {badgeSuggestion.skills.length}
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      {badgeSuggestion.skills.map((skillObj, index) => (
+                        <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-[#429EA6] transition-colors">
+                          <div className="space-y-3">
+                            {/* Raw Skill - Header */}
+                            {skillObj['Raw Skill'] && (
+                              <div className="flex items-start justify-between gap-2">
+                                <Badge variant="secondary" className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 text-sm font-semibold">
+                                  {skillObj['Raw Skill']}
+                                </Badge>
+                                {skillObj.URI && (
+                                  <a
+                                    href={skillObj.URI}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-[#429EA6] hover:underline flex-shrink-0"
+                                    title={skillObj.URI}
+                                  >
+                                    View URI
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Description */}
+                            {skillObj.Description && (
+                              <p className="text-sm text-gray-600 leading-relaxed">{skillObj.Description}</p>
+                            )}
+
+                            {/* Knowledge Required */}
+                            {skillObj['Knowledge Required'] && Array.isArray(skillObj['Knowledge Required']) && skillObj['Knowledge Required'].length > 0 && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-700">Knowledge Required:</span>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {skillObj['Knowledge Required'].map((item: string, idx: number) => (
+                                    <Badge key={idx} variant="outline" className="text-xs py-0.5 px-2">
+                                      {item}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Task Abilities */}
+                            {skillObj['Task Abilities'] && Array.isArray(skillObj['Task Abilities']) && skillObj['Task Abilities'].length > 0 && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-700">Task Abilities:</span>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {skillObj['Task Abilities'].map((item: string, idx: number) => (
+                                    <Badge key={idx} variant="outline" className="text-xs py-0.5 px-2">
+                                      {item}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Skill Tag */}
+                            {skillObj['Skill Tag'] && (
+                              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                                <span className="text-xs text-gray-500">Tag:</span>
+                                <Badge variant="outline" className="text-xs py-0.5 px-2">
+                                  {skillObj['Skill Tag']}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
           </div>
 
           {/* Column 3: Badge Image Display */}
@@ -1134,93 +1228,6 @@ export default function BadgeEditorPage() {
               imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
               onEditImage={handleEditImage}
             />
-            
-            {/* Skills Section - Below Badge Image Preview */}
-            {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
-              <Card className="mt-6 border-[#429EA6] shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold text-gray-900">Skills from LAiSER</CardTitle>
-                </CardHeader>
-                <CardContent className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-                  <div className="space-y-2">
-                    {badgeSuggestion.skills.map((skillObj, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="space-y-2">
-                        {/* Raw Skill - Header */}
-                        {skillObj['Raw Skill'] && (
-                          <div className="flex items-start justify-between gap-2">
-                            <Badge variant="secondary" className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 text-xs font-semibold">
-                              {skillObj['Raw Skill']}
-                            </Badge>
-                            {skillObj.URI && (
-                              <a 
-                                href={skillObj.URI} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-[#429EA6] hover:underline flex-shrink-0"
-                                title={skillObj.URI}
-                              >
-                                View URI
-                              </a>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Description - Compact */}
-                        {skillObj.Description && (
-                          <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{skillObj.Description}</p>
-                        )}
-                        
-                        {/* Knowledge Required & Task Abilities - Inline */}
-                        {((skillObj['Knowledge Required'] && Array.isArray(skillObj['Knowledge Required']) && skillObj['Knowledge Required'].length > 0) || 
-                          (skillObj['Task Abilities'] && Array.isArray(skillObj['Task Abilities']) && skillObj['Task Abilities'].length > 0)) && (
-                          <div className="flex flex-wrap gap-1.5 text-xs">
-                            {skillObj['Knowledge Required'] && Array.isArray(skillObj['Knowledge Required']) && skillObj['Knowledge Required'].length > 0 && (
-                              <>
-                                <span className="text-gray-500 font-medium">Knowledge:</span>
-                                {skillObj['Knowledge Required'].slice(0, 3).map((item: string, idx: number) => (
-                                  <Badge key={idx} variant="outline" className="text-xs py-0 px-1.5">
-                                    {item}
-                                  </Badge>
-                                ))}
-                                {skillObj['Knowledge Required'].length > 3 && (
-                                  <span className="text-gray-400">+{skillObj['Knowledge Required'].length - 3}</span>
-                                )}
-                              </>
-                            )}
-                            {skillObj['Task Abilities'] && Array.isArray(skillObj['Task Abilities']) && skillObj['Task Abilities'].length > 0 && (
-                              <>
-                                {skillObj['Knowledge Required'] && Array.isArray(skillObj['Knowledge Required']) && skillObj['Knowledge Required'].length > 0 && <span className="text-gray-300">•</span>}
-                                <span className="text-gray-500 font-medium">Tasks:</span>
-                                {skillObj['Task Abilities'].slice(0, 3).map((item: string, idx: number) => (
-                                  <Badge key={idx} variant="outline" className="text-xs py-0 px-1.5">
-                                    {item}
-                                  </Badge>
-                                ))}
-                                {skillObj['Task Abilities'].length > 3 && (
-                                  <span className="text-gray-400">+{skillObj['Task Abilities'].length - 3}</span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Skill Tag - Small badge */}
-                        {skillObj['Skill Tag'] && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-500">Tag:</span>
-                            <Badge variant="outline" className="text-xs py-0 px-1.5">
-                              {skillObj['Skill Tag']}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
