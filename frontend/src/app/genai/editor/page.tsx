@@ -1102,13 +1102,13 @@ export default function BadgeEditorPage() {
                         <AccordionContent className="px-4 pb-4">
                           <div className="flex flex-wrap gap-2 mt-2">
                             {badgeSuggestion.skills.map((skillObj, index) => (
-                              skillObj['Raw Skill'] && (
+                              skillObj.targetName && (
                                 <button
                                   key={index}
                                   onClick={() => handleSkillClick(skillObj)}
                                   className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border border-[#429EA6]/30 text-xs font-semibold hover:from-[#429EA6]/20 hover:to-[#234467]/20 hover:border-[#429EA6]/50 transition-all cursor-pointer"
                                 >
-                                  {skillObj['Raw Skill']}
+                                  {skillObj.targetName}
                                 </button>
                               )
                             ))}
@@ -1177,17 +1177,17 @@ export default function BadgeEditorPage() {
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-gray-900">
-                    {selectedSkill?.['Raw Skill'] || 'Skill Details'}
+                    {selectedSkill?.targetName || 'Skill Details'}
                   </DialogTitle>
-                  {selectedSkill?.URI && (
+                  {selectedSkill?.targetUrl && (
                     <DialogDescription>
                       <a
-                        href={selectedSkill.URI}
+                        href={selectedSkill.targetUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#429EA6] hover:underline inline-flex items-center gap-1"
                       >
-                        View URI →
+                        View URL →
                       </a>
                     </DialogDescription>
                   )}
@@ -1195,10 +1195,10 @@ export default function BadgeEditorPage() {
 
                 <div className="space-y-6 mt-4">
                   {/* Description */}
-                  {selectedSkill?.Description && (
+                  {selectedSkill?.targetDescription && (
                     <div>
                       <h4 className="text-sm font-semibold text-gray-700 mb-2">Description</h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">{selectedSkill.Description}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">{selectedSkill.targetDescription}</p>
                     </div>
                   )}
 

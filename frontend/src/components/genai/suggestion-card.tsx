@@ -339,14 +339,14 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {data.skills.map((skillObj, index) => {
-                    const rawSkill = skillObj?.['Raw Skill'];
-                    return rawSkill ? (
+                    const targetName = skillObj?.targetName;
+                    return targetName ? (
                       <Badge
                         key={index}
                         variant="secondary"
                         className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 cursor-default hover:from-[#429EA6]/10 hover:to-[#234467]/10 hover:bg-transparent pointer-events-none"
                       >
-                        {rawSkill}
+                        {targetName}
                       </Badge>
                     ) : null;
                   })}
