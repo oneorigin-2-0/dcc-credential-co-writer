@@ -796,18 +796,33 @@ export default function BadgeEditorPage() {
   const generateBadgeJSON = () => {
     // Use selectedBadgeSuggestion to generate JSON
     if (!badgeSuggestion) return null;
-    
+
+    const achievement: any = {
+      "name": badgeSuggestion.title,
+      "description": badgeSuggestion.description,
+      "criteria": {
+        "narrative": badgeSuggestion.criteria
+      },
+      "image": {
+        "id": badgeSuggestion.image || "",
+        "type": "Image"
+      }
+    };
+
+    // Add alignment array if skills exist
+    if (badgeSuggestion.skills && badgeSuggestion.skills.length > 0) {
+      achievement.alignment = badgeSuggestion.skills.map((skill: any) => ({
+        type: skill.type || "Alignment",
+        targetType: skill.targetType || "ESCO:Skill",
+        targetName: skill.targetName,
+        targetDescription: skill.targetDescription,
+        targetUrl: skill.targetUrl
+      }));
+    }
+
     return {
-      "achievement": {
-        "name": badgeSuggestion.title,
-        "description": badgeSuggestion.description,
-        "criteria": {
-          "narrative": badgeSuggestion.criteria
-        },
-        "image": {
-          "id": badgeSuggestion.image || "",
-          "type": "Image"
-        }
+      "credentialSubject": {
+        "achievement": achievement
       }
     };
   };
@@ -1140,14 +1155,14 @@ export default function BadgeEditorPage() {
                         Copy or export the badge JSON structure below.
                       </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4">
                       <div className="bg-gray-50 rounded-lg p-4 border">
                         <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto">
                           {JSON.stringify(generateBadgeJSON(), null, 2)}
                         </pre>
                       </div>
-                      
+
                       <div className="flex gap-3">
                         <Button
                           variant="outline"
