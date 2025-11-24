@@ -1143,7 +1143,7 @@ export default function BadgeEditorPage() {
                       className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsModalOpen(true)}
                     >
-                      Generate Badge
+                      Generate JSON
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
