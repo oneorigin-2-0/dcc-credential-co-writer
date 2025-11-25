@@ -1146,40 +1146,45 @@ export default function BadgeEditorPage() {
                       Generate JSON
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl font-bold text-gray-900">
-                        Badge JSON
-                      </DialogTitle>
-                      <DialogDescription className="text-gray-600">
-                        Copy or export the badge JSON structure below.
-                      </DialogDescription>
-                    </DialogHeader>
+                  <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                    {/* Fixed Header */}
+                    <div className="flex-shrink-0 -mx-6 -mt-6 px-6 py-4 border-b bg-white">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-gray-900">
+                          Badge JSON
+                        </DialogTitle>
+                        {/* <DialogDescription className="text-gray-600">
+                          Copy or export the badge JSON structure below.
+                        </DialogDescription> */}
+                      </DialogHeader>
+                    </div>
 
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 rounded-lg p-4 border">
-                        <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto">
+                    {/* Scrollable JSON Content */}
+                    <div className="flex-1 overflow-auto -mx-6 px-6 py-4 min-h-0">
+                      <div className="bg-gray-50 rounded-lg p-4 border overflow-auto">
+                        <pre className="text-sm font-mono text-gray-800 whitespace-pre">
                           {JSON.stringify(generateBadgeJSON(), null, 2)}
                         </pre>
                       </div>
+                    </div>
 
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={handleCopyJSON}
-                          className="flex items-center gap-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy JSON
-                        </Button>
-                        <Button
-                          onClick={handleExportJSON}
-                          className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                        >
-                          <FileDown className="h-4 w-4" />
-                          Export JSON
-                        </Button>
-                      </div>
+                    {/* Fixed Footer */}
+                    <div className="flex-shrink-0 -mx-6 -mb-6 px-6 py-4 border-t bg-white flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleCopyJSON}
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy JSON
+                      </Button>
+                      <Button
+                        onClick={handleExportJSON}
+                        className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                      >
+                        <FileDown className="h-4 w-4" />
+                        Export JSON
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -1292,7 +1297,7 @@ export default function BadgeEditorPage() {
                     Customize your badge image settings and configuration.
                   </DialogDescription>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 pr-8">
                   <Button
                     onClick={handleApplyImageChanges}
                     disabled={!generatedImage}
