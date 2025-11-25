@@ -334,7 +334,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             {/* Skills Card - Only show if skills exist */}
             {data.skills && data.skills.length > 0 && (
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
-                <label className="text-xs font-bold text-[#429EA6] uppercase tracking-wide mb-3 block font-subhead">
+                <label className="text-xs font-bold text-[#429EA6] tracking-wide mb-3 block font-subhead">
                   Skills from LAiSER
                 </label>
                 <div className="flex flex-wrap gap-2">
