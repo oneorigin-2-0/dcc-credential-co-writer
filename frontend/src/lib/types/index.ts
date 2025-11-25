@@ -15,13 +15,15 @@ export interface BadgeMetrics {
 
 // Skill object from LAiSER
 export interface SkillObject {
-  Description?: string;
-  'Raw Skill'?: string;
+  targetName: string;  
+  targetDescription?: string;  
+  targetUrl: string; 
+  targetType?: string; 
+  type?: string;
   'Knowledge Required'?: string[];
   'Task Abilities'?: string[];
   'Skill Tag'?: string;
   'Correlation Coefficient'?: number;
-  URI?: string;
 }
 
 // Badge suggestion item type

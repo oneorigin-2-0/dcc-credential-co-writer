@@ -1104,14 +1104,14 @@ export default function BadgeEditorPage() {
                 {/* Skills Section - Inside Badge Editor */}
                 {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
                   <div className="mt-6">
-                    <Accordion type="single" collapsible>
+                    <Accordion type="single" collapsible defaultValue="skills">
                       <AccordionItem value="skills" className="border-[#429EA6] bg-gray-50 rounded-lg">
                         <AccordionTrigger className="px-4 py-3 hover:no-underline">
                           <div className="flex items-center justify-between w-full pr-4">
                             <h3 className="text-base font-bold text-gray-900">Skills from LAiSER</h3>
-                            <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
+                            {/* <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
                               {badgeSuggestion.skills.length}
-                            </Badge>
+                            </Badge> */}
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-4 pb-4">
