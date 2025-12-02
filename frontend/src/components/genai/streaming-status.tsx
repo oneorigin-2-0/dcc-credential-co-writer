@@ -73,7 +73,7 @@ export function StreamingStatus({ isGenerating, completedCount, totalCount }: St
       
       <CardHeader className="relative z-10">
         <CardTitle className="text-[#234467] font-headline font-bold text-xl">
-          Crafting Your Credential Suggestions
+          Crafting Your Credential Suggestion
         </CardTitle>
         <CardDescription className="text-[#40464c] font-body text-base">
           {getStatusMessage()}

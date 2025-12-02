@@ -26,9 +26,6 @@ export function useStreamingSuggestionGenerator() {
   const { toast } = useToast();
   const [suggestionCards, setSuggestionCards] = useState<SuggestionCard[]>([
     { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 2, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 3, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 4, data: null, loading: false, error: null, streamingStarted: false },
   ]);
   const [allCompleted, setAllCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -503,23 +500,13 @@ export function useStreamingSuggestionGenerator() {
     // Reset all cards to initial state
     setSuggestionCards([
       { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 2, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 3, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 4, data: null, loading: false, error: null, streamingStarted: false },
     ]);
 
-    // Generate all 4 suggestions in TRUE PARALLEL (no delays)
-    
-    // Create all promises immediately - they start executing right away
+    // Generate single suggestion
     const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction);
-    const promise2 = generateSingleSuggestionStream(2, originalContent, enableSkillExtraction);
-    const promise3 = generateSingleSuggestionStream(3, originalContent, enableSkillExtraction);
-    const promise4 = generateSingleSuggestionStream(4, originalContent, enableSkillExtraction);
-    
-    
-    // Wait for all streams to complete
-    await Promise.allSettled([promise1, promise2, promise3, promise4]);
-    // await Promise.allSettled([promise1]);
+
+    // Wait for stream to complete
+    await Promise.allSettled([promise1]);
 
     // Note: Suggestions are saved to localStorage individually as they complete
     // (see 'final' and 'data' case handlers above). No bulk save needed here.

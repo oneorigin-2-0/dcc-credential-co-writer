@@ -265,11 +265,11 @@ export default function CredentialSuggestionsPage() {
                         <div className="flex items-center justify-center mb-3">
                           <CheckCircle className="h-8 w-8 text-green-500 mr-2" />
                           <h3 className="text-lg font-semibold text-green-800">
-                            All Suggestions Generated!
+                            Suggestion Generated!
                           </h3>
                         </div>
                         <p className="text-green-700 text-sm text-center">
-                          Click on any suggestion card below to edit and customize your credential.
+                          Click on the suggestion card below to edit and customize your credential.
                         </p>
                       </CardContent>
                     </Card>
@@ -300,13 +300,13 @@ export default function CredentialSuggestionsPage() {
                   </div>
                 )}
 
-                {/* Suggestion Cards - Only render columns when cards exist, exclude failed ones */}
+                {/* Suggestion Cards - Only render when cards exist, exclude failed ones */}
                 {suggestionCards.filter(card => card.streamingStarted && !card.error).length > 0 && (
-                  <div className="columns-1 md:columns-2 gap-6">
+                  <div>
                     {suggestionCards
                       .filter(card => card.streamingStarted && !card.error)
                       .map((card) => (
-                        <div key={card.id} className="break-inside-avoid mb-6">
+                        <div key={card.id} className="w-full">
                           <SuggestionCard
                             id={card.id}
                             data={card.data}
