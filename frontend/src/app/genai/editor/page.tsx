@@ -229,6 +229,23 @@ export default function BadgeEditorPage() {
     if (storedContent) {
       setOriginalContent(storedContent);
     }
+
+    // Get badge configuration from localStorage (from genai page)
+    const storedBadgeConfig = localStorage.getItem('badgeConfig');
+    if (storedBadgeConfig) {
+      try {
+        const config = JSON.parse(storedBadgeConfig);
+        setBadgeConfiguration(config);
+      } catch (error) {
+        console.error('Error parsing stored badge config:', error);
+      }
+    }
+
+    // Get user prompt from localStorage (from genai page)
+    const storedUserPrompt = localStorage.getItem('userPrompt');
+    if (storedUserPrompt) {
+      setUserPrompt(storedUserPrompt);
+    }
   }, []); // Empty dependency array since this should only run once on mount
 
   const handleConfigurationChange = useCallback((config: any) => {
@@ -895,12 +912,13 @@ export default function BadgeEditorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
           {/* Column 1: Configuration */}
           <div className="lg:col-span-3">
-            <BadgeConfiguration 
+            <BadgeConfiguration
               onRegenerate={handleRegenerate}
               isRegenerating={isRegenerating}
               onConfigurationChange={handleConfigurationChange}
               userPrompt={userPrompt}
               onUserPromptChange={handleUserPromptChange}
+              initialConfig={badgeConfiguration}
             />
           </div>
 

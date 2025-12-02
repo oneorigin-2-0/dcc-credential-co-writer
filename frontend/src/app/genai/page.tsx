@@ -25,8 +25,9 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Paperclip, X, FileText, Edit, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Paperclip, X, FileText, Edit, Save, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { BadgeConfiguration } from '@/components/genai/badge-configuration';
 
 import Lottie from 'lottie-react';
 
@@ -63,6 +64,9 @@ export default function GenAIPage() {
   const [editContent, setEditContent] = useState<{ [key: number]: string }>({});
   const [consentChecked, setConsentChecked] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
+  const [badgeConfig, setBadgeConfig] = useState<any>(null);
+  const [userPrompt, setUserPrompt] = useState('');
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   // Trigger entrance animation
   useEffect(() => {
@@ -243,6 +247,12 @@ export default function GenAIPage() {
         localStorage.setItem('originalContent', combinedContent);
         localStorage.setItem('generationStarted', 'true');
         localStorage.setItem('isLaiserEnabled', isLaiserEnabled.toString());
+        if (badgeConfig) {
+          localStorage.setItem('badgeConfig', JSON.stringify(badgeConfig));
+        }
+        if (userPrompt) {
+          localStorage.setItem('userPrompt', userPrompt);
+        }
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
       }
@@ -287,8 +297,8 @@ export default function GenAIPage() {
 
         <div className="flex justify-center">
           <div className={`w-full max-w-4xl transition-all duration-700 ${
-            isVisible 
-              ? 'opacity-100 translate-y-0' 
+            isVisible
+              ? 'opacity-100 translate-y-0'
               : 'opacity-0 translate-y-8'
           }`}>
             <FormProvider {...form}>
@@ -309,9 +319,32 @@ export default function GenAIPage() {
                       name="content"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel htmlFor="content-textarea" className="text-base font-semibold text-gray-900 mb-2">
-                            Content
-                          </FormLabel>
+                          <div className="flex items-center justify-between mb-2">
+                            <FormLabel htmlFor="content-textarea" className="text-base font-semibold text-gray-900">
+                              Content
+                            </FormLabel>
+                            {/* Attach button - Hidden on mobile/tablet */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="hidden lg:flex text-gray-600 hover:text-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isParsingFile || attachedFiles.length > 0}
+                            >
+                              {isParsingFile ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Paperclip className="mr-2 h-4 w-4" />
+                                  Attach
+                                </>
+                              )}
+                            </Button>
+                          </div>
                           <FormControl>
                             <div className="relative">
                               <Textarea
@@ -334,9 +367,9 @@ export default function GenAIPage() {
                       <div className="hidden lg:block mt-4 space-y-3 animate-in fade-in-0 duration-500">
                         <label className="text-sm font-semibold text-gray-700">Attached Files:</label>
                         {attachedFiles.map((file, index) => (
-                          <Collapsible 
-                            key={index} 
-                            open={expandedFiles.has(index)} 
+                          <Collapsible
+                            key={index}
+                            open={expandedFiles.has(index)}
                             onOpenChange={(open) => {
                               if (open) {
                                 setExpandedFiles(prev => new Set(prev).add(index));
@@ -448,7 +481,7 @@ export default function GenAIPage() {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Expanded Content Section */}
                             <CollapsibleContent className="px-4 pb-4 data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                                 {editingFiles.has(index) && (
@@ -472,6 +505,40 @@ export default function GenAIPage() {
                       </div>
                     )}
 
+                    {/* Badge Configuration - Collapsible */}
+                    <div className="mt-6">
+                      <Collapsible
+                        open={isConfigOpen}
+                        onOpenChange={setIsConfigOpen}
+                        className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#429EA6] hover:shadow-md"
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between p-3 cursor-pointer">
+                            <div className="flex items-center space-x-3">
+                              <Settings className="h-5 w-5 text-[#429EA6]" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Badge Configuration</p>
+                                <p className="text-xs text-gray-500">Customize style, tone, and level</p>
+                              </div>
+                            </div>
+                            {isConfigOpen ? (
+                              <ChevronUp className="h-5 w-5 text-gray-500" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                            )}
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="px-4 pb-4">
+                          <BadgeConfiguration
+                            onConfigurationChange={setBadgeConfig}
+                            userPrompt={userPrompt}
+                            onUserPromptChange={setUserPrompt}
+                            variant="inline"
+                          />
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+
                     {/* Disclaimer Checkbox */}
                     <div className="mt-6 p-4 border rounded-lg transition-all duration-300 hover:shadow-md">
                       <div className="flex items-start space-x-3">
@@ -493,29 +560,7 @@ export default function GenAIPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-6">
-                      {/* Attach button - Hidden on mobile/tablet */}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="hidden lg:flex text-gray-600 hover:text-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isParsingFile || attachedFiles.length > 0}
-                      >
-                        {isParsingFile ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Paperclip className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:rotate-45" />
-                            Attach
-                          </>
-                        )}
-                      </Button>
-                      <div className="lg:hidden"></div> {/* Spacer for mobile */}
-
+                    <div className="flex items-center justify-end mt-6">
                       <div className="flex items-center space-x-4">
                         {/* Skills from LAiSER Toggle */}
                         <div className="flex items-center space-x-2">
@@ -563,7 +608,6 @@ export default function GenAIPage() {
                   </form>
                 </CardContent>
               </Card>
-
             </FormProvider>
           </div>
         </div>
