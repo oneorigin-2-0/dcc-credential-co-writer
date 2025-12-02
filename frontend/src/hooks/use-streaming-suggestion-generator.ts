@@ -80,6 +80,22 @@ export function useStreamingSuggestionGenerator() {
                 // Extract metrics if present
                 const metrics = rawFinalData.metrics;
                 
+                // Extract skills from the response - get full skill objects
+                // Check multiple possible locations: top level, credentialSubject, or achievement
+                const extractSkills = (data: any): any[] | undefined => {
+                  const skillsArray = data?.skills || 
+                                     data?.credentialSubject?.skills || 
+                                     data?.credentialSubject?.achievement?.skills;
+                  if (skillsArray && Array.isArray(skillsArray)) {
+                    // Store full skill objects
+                    const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                    return skills.length > 0 ? skills : undefined;
+                  }
+                  return undefined;
+                };
+                
+                const skills = extractSkills(rawFinalData);
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -91,6 +107,7 @@ export function useStreamingSuggestionGenerator() {
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
                     metrics: metrics,
+                    skills: skills,
                   };
                 } else {
                   // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
@@ -100,6 +117,7 @@ export function useStreamingSuggestionGenerator() {
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
                     metrics: metrics,
+                    skills: skills,
                   };
                 }
                 
@@ -139,7 +157,7 @@ export function useStreamingSuggestionGenerator() {
     }
   }, [suggestionCards, isGenerating, justCompleted]);
 
-  const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string) => {
+  const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string, enableSkillExtraction: boolean = false) => {
     try {
       
       // Set loading state (but don't mark as streaming started yet)
@@ -151,7 +169,9 @@ export function useStreamingSuggestionGenerator() {
         )
       );
 
-      const stream = new StreamingApiClient().generateSuggestionsStream(content);
+      // Prepare additional parameters for the API
+      const additionalParams = enableSkillExtraction ? { enable_skill_extraction: true } : {};
+      const stream = new StreamingApiClient().generateSuggestionsStream(content, additionalParams);
       
       for await (const response of stream) {
         
@@ -170,6 +190,11 @@ export function useStreamingSuggestionGenerator() {
             // Handle final response (type: "final")
             
             if (response.data && response.mappedSuggestion) {
+              console.log(`[Hook] Card ${cardId} - Final response received`);
+              console.log(`[Hook] response.data:`, response.data);
+              console.log(`[Hook] response.mappedSuggestion:`, response.mappedSuggestion);
+              console.log(`[Hook] response.mappedSuggestion.skills:`, response.mappedSuggestion?.skills);
+              
               // Store raw final response data in localStorage
               try {
                 // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
@@ -276,6 +301,26 @@ export function useStreamingSuggestionGenerator() {
                   // Extract metrics if present
                   const metrics = badgeData.metrics;
                   
+                  // Extract skills from the response - get full skill objects
+                  // Check multiple possible locations: top level, credentialSubject, or achievement
+                  const extractSkills = (data: any): any[] | undefined => {
+                    console.log(`[Hook Token] Card ${cardId} - Extracting skills from badgeData:`, data);
+                    const skillsArray = data?.skills || 
+                                       data?.credentialSubject?.skills || 
+                                       data?.credentialSubject?.achievement?.skills;
+                    console.log(`[Hook Token] Card ${cardId} - Found skillsArray:`, skillsArray);
+                    if (skillsArray && Array.isArray(skillsArray)) {
+                      // Store full skill objects
+                      const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                      console.log(`[Hook Token] Card ${cardId} - Extracted skills objects:`, skills);
+                      return skills.length > 0 ? skills : undefined;
+                    }
+                    return undefined;
+                  };
+                  
+                  const skills = extractSkills(badgeData);
+                  console.log(`[Hook Token] Card ${cardId} - Final skills result:`, skills);
+                  
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
                   if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
@@ -287,7 +332,9 @@ export function useStreamingSuggestionGenerator() {
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: achievement.image?.id || undefined,
                       metrics: metrics,
+                      skills: skills,
                     };
+                    console.log(`[Hook Token] Card ${cardId} - Created suggestion with skills:`, suggestion);
                   }
                   
           
@@ -431,6 +478,15 @@ export function useStreamingSuggestionGenerator() {
       return;
     }
 
+    // Get LAiSER flag from localStorage
+    let enableSkillExtraction = false;
+    try {
+      const laiserEnabled = localStorage.getItem('isLaiserEnabled');
+      enableSkillExtraction = laiserEnabled === 'true';
+    } catch (error) {
+      console.error('Error reading LAiSER flag from localStorage:', error);
+    }
+
     setIsGenerating(true);
     setAllCompleted(false);
     setJustCompleted(false); // Reset flag for new generation
@@ -455,10 +511,10 @@ export function useStreamingSuggestionGenerator() {
     // Generate all 4 suggestions in TRUE PARALLEL (no delays)
     
     // Create all promises immediately - they start executing right away
-    const promise1 = generateSingleSuggestionStream(1, originalContent);
-    const promise2 = generateSingleSuggestionStream(2, originalContent);
-    const promise3 = generateSingleSuggestionStream(3, originalContent);
-    const promise4 = generateSingleSuggestionStream(4, originalContent);
+    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction);
+    const promise2 = generateSingleSuggestionStream(2, originalContent, enableSkillExtraction);
+    const promise3 = generateSingleSuggestionStream(3, originalContent, enableSkillExtraction);
+    const promise4 = generateSingleSuggestionStream(4, originalContent, enableSkillExtraction);
     
     
     // Wait for all streams to complete

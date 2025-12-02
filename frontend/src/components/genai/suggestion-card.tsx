@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CheckCircle, AlertCircle, Sparkles, Info, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Lottie from 'lottie-react';
+import { Badge } from '@/components/ui/badge';
 import type { BadgeSuggestion } from '@/lib/types';
 
 interface SuggestionCardProps {
@@ -288,6 +289,13 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
         {status === 'success' && data && (
           <div className="space-y-4">
+            {/* Debug: Log skills data */}
+            {(() => {
+              console.log('[SuggestionCard] Card', id, '- data.skills:', data.skills);
+              console.log('[SuggestionCard] Card', id, '- full data:', data);
+              return null;
+            })()}
+            
             {/* Badge Image with Gradient Background */}
             <div className="flex justify-center mb-4">
               <div className="relative">
@@ -322,6 +330,29 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                 {data.criteria}
               </p>
             </div>
+            
+            {/* Skills Card - Only show if skills exist */}
+            {data.skills && data.skills.length > 0 && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
+                <label className="text-xs font-bold text-[#429EA6] tracking-wide mb-3 block font-subhead">
+                  Skills from LAiSER
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {data.skills.map((skillObj, index) => {
+                    const targetName = skillObj?.targetName;
+                    return targetName ? (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 cursor-default hover:from-[#429EA6]/10 hover:to-[#234467]/10 hover:bg-transparent pointer-events-none"
+                      >
+                        {targetName}
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

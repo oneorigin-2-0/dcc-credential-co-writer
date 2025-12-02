@@ -242,6 +242,7 @@ export default function GenAIPage() {
       try {
         localStorage.setItem('originalContent', combinedContent);
         localStorage.setItem('generationStarted', 'true');
+        localStorage.setItem('isLaiserEnabled', isLaiserEnabled.toString());
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
       }
@@ -517,7 +518,7 @@ export default function GenAIPage() {
 
                       <div className="flex items-center space-x-4">
                         {/* Skills from LAiSER Toggle */}
-                        {/* <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                           <Switch
                             id="laiser-toggle"
                             checked={isLaiserEnabled}
@@ -530,7 +531,7 @@ export default function GenAIPage() {
                           >
                             Skills from LAiSER
                           </label>
-                        </div> */}
+                        </div>
 
                         <Button
                           onClick={handleGenerate}

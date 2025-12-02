@@ -26,6 +26,13 @@ import {
 import { BadgeConfiguration } from '@/components/genai/badge-configuration';
 import { BadgeImageDisplay } from '@/components/genai/badge-image-display';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { StreamingApiClient } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
 
@@ -59,6 +66,8 @@ export default function BadgeEditorPage() {
   const [streamingError, setStreamingError] = useState<string | null>(null);
   const [streamingComplete, setStreamingComplete] = useState(false);
   const [isImageEditModalOpen, setIsImageEditModalOpen] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<any | null>(null);
+  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
   const [modalImageConfig, setModalImageConfig] = useState<any>(null);
   const [editedImageConfig, setEditedImageConfig] = useState<any>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -96,34 +105,66 @@ export default function BadgeEditorPage() {
   }, [debounceTimer]);
 
   useEffect(() => {
+    // Helper function to extract skills from raw data
+    const extractSkills = (data: any): any[] | undefined => {
+      const skillsArray = data?.skills || 
+                         data?.credentialSubject?.skills || 
+                         data?.credentialSubject?.achievement?.skills;
+      if (skillsArray && Array.isArray(skillsArray)) {
+        // Store full skill objects
+        const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+        return skills.length > 0 ? skills : undefined;
+      }
+      return undefined;
+    };
+
     // Get selected badge suggestion from localStorage
     const storedSuggestion = localStorage.getItem('selectedBadgeSuggestion');
     if (storedSuggestion) {
       const parsedSuggestion = JSON.parse(storedSuggestion);
-      setBadgeSuggestion(parsedSuggestion);
       
-      // Try to find corresponding raw final data
+      // Try to find corresponding raw final data and extract skills
       try {
         const finalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
         const cardIds = Object.keys(finalResponses);
         
+        let rawFinalData = null;
+        let cardId = null;
+        
         // Use the card ID directly if available
         if (parsedSuggestion.cardId && finalResponses[parsedSuggestion.cardId]) {
-          setCurrentCardId(parsedSuggestion.cardId.toString());
+          cardId = parsedSuggestion.cardId.toString();
+          rawFinalData = finalResponses[parsedSuggestion.cardId];
+          setCurrentCardId(cardId);
           setAvailableCards(cardIds);
         } else {
           // Fallback: Look for raw data that matches this suggestion by name (backwards compatibility)
-          for (const cardId of cardIds) {
-            if (finalResponses[cardId] && finalResponses[cardId].credentialSubject?.achievement?.name === parsedSuggestion.title) {
+          for (const id of cardIds) {
+            if (finalResponses[id] && finalResponses[id].credentialSubject?.achievement?.name === parsedSuggestion.title) {
+              cardId = id;
+              rawFinalData = finalResponses[id];
               setCurrentCardId(cardId);
               setAvailableCards(cardIds);
               break;
             }
           }
         }
+        
+        // Extract skills from raw final data and merge with parsedSuggestion
+        if (rawFinalData) {
+          console.log('[Editor] Raw final data:', rawFinalData);
+          const skills = extractSkills(rawFinalData);
+          console.log('[Editor] Extracted skills:', skills);
+          if (skills) {
+            parsedSuggestion.skills = skills;
+            console.log('[Editor] Updated parsedSuggestion with skills:', parsedSuggestion);
+          }
+        }
       } catch (error) {
         console.error('Error loading raw final data for selectedBadgeSuggestion:', error);
       }
+      
+      setBadgeSuggestion(parsedSuggestion);
     } else {
       // Try to load from finalResponses if no selectedBadgeSuggestion
       try {
@@ -135,6 +176,9 @@ export default function BadgeEditorPage() {
           const firstCardId = cardIds[0];
           const rawFinalData = finalResponses[firstCardId];
           
+          // Extract skills
+          const skills = extractSkills(rawFinalData);
+          
           // Extract mapped suggestion from raw final data
           let mappedSuggestion;
           if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -145,6 +189,7 @@ export default function BadgeEditorPage() {
               description: achievement.description,
               criteria: achievement.criteria?.narrative || achievement.description,
               image: achievement.image?.id || undefined,
+              skills: skills,
             };
           } else {
             // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
@@ -153,6 +198,7 @@ export default function BadgeEditorPage() {
               description: rawFinalData.badge_description,
               criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
               image: undefined,
+              skills: skills,
             };
           }
           
@@ -654,6 +700,11 @@ export default function BadgeEditorPage() {
     }
   };
 
+  const handleSkillClick = (skill: any) => {
+    setSelectedSkill(skill);
+    setIsSkillModalOpen(true);
+  };
+
   const handleEditField = (field: string, currentValue: string) => {
     setEditingField(field);
     setEditValues(prev => ({ ...prev, [field]: currentValue }));
@@ -745,18 +796,33 @@ export default function BadgeEditorPage() {
   const generateBadgeJSON = () => {
     // Use selectedBadgeSuggestion to generate JSON
     if (!badgeSuggestion) return null;
-    
+
+    const achievement: any = {
+      "name": badgeSuggestion.title,
+      "description": badgeSuggestion.description,
+      "criteria": {
+        "narrative": badgeSuggestion.criteria
+      },
+      "image": {
+        "id": badgeSuggestion.image || "",
+        "type": "Image"
+      }
+    };
+
+    // Add alignment array if skills exist
+    if (badgeSuggestion.skills && badgeSuggestion.skills.length > 0) {
+      achievement.alignment = badgeSuggestion.skills.map((skill: any) => ({
+        type: skill.type || "Alignment",
+        targetType: skill.targetType || "ESCO:Skill",
+        targetName: skill.targetName,
+        targetDescription: skill.targetDescription,
+        targetUrl: skill.targetUrl
+      }));
+    }
+
     return {
-      "achievement": {
-        "name": badgeSuggestion.title,
-        "description": badgeSuggestion.description,
-        "criteria": {
-          "narrative": badgeSuggestion.criteria
-        },
-        "image": {
-          "id": badgeSuggestion.image || "",
-          "type": "Image"
-        }
+      "credentialSubject": {
+        "achievement": achievement
       }
     };
   };
@@ -805,48 +871,28 @@ export default function BadgeEditorPage() {
 
   if (!badgeSuggestion) {
     return (
-        <main className="container mx-auto bg-gray-50 p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading badge suggestion...</p>
-          </div>
-        </main>
-    );
-  }
-
-  // Add null check for badgeSuggestion
-  if (!badgeSuggestion) {
-    return (
-        <main className="container mx-auto bg-gray-50 p-4 md:p-8">
-          <Button
-            variant="outline"
-            className="mb-6"
-            onClick={() => router.push('/genai/suggestions')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Suggestions
-          </Button>
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Suggestion Available</h2>
-            <p className="text-gray-600">The selected suggestion could not be loaded.</p>
-          </div>
-        </main>
+      <main className="container mx-auto bg-gray-50 p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600 font-body">Loading badge suggestion...</p>
+        </div>
+      </main>
     );
   }
 
   return (
-      <main id="main-content" className="container mx-auto bg-gray-50 p-4 md:p-8">
-        <Button
-          variant="outline"
-          className="mb-6"
-          onClick={() => router.push('/genai/suggestions')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Suggestions
-        </Button>
+    <main id="main-content" className="container mx-auto bg-gray-50 p-4 md:p-8">
+      <Button
+        variant="outline"
+        className="mb-6"
+        onClick={() => router.push('/genai/suggestions')}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Suggestions
+      </Button>
 
-        {/* 3-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+      {/* 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
           {/* Column 1: Configuration */}
           <div className="lg:col-span-3">
             <BadgeConfiguration 
@@ -900,8 +946,8 @@ export default function BadgeEditorPage() {
                   }}
                 />
               )
-            ) : (
-              <Card className="border-[#429EA6] shadow-lg bg-white h-full">
+              ) : (
+              <Card className="border-[#429EA6] shadow-lg bg-white">
                 <CardHeader className="pb-8">
                   <div className="mb-3">
                     <CardTitle className="text-3xl font-bold text-gray-900">
@@ -1055,16 +1101,39 @@ export default function BadgeEditorPage() {
                   )}
                 </div>
 
-                {/* <div>
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Badge Image:</label>
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <img
-                      src={badgeSuggestion.image}
-                      alt="Generated badge"
-                      className="w-32 h-32 object-contain rounded-lg border border-gray-300"
-                    />
+                {/* Skills Section - Inside Badge Editor */}
+                {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
+                  <div className="mt-6">
+                    <Accordion type="single" collapsible defaultValue="skills">
+                      <AccordionItem value="skills" className="border-[#429EA6] bg-gray-50 rounded-lg">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <div className="flex items-center justify-between w-full pr-4">
+                            <h3 className="text-base font-bold text-gray-900">Skills from LAiSER</h3>
+                            {/* <Badge variant="secondary" className="bg-[#429EA6] text-white ml-2">
+                              {badgeSuggestion.skills.length}
+                            </Badge> */}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {badgeSuggestion.skills.map((skillObj, index) => (
+                              skillObj.targetName && (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSkillClick(skillObj)}
+                                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border border-[#429EA6]/30 text-xs font-semibold hover:from-[#429EA6]/20 hover:to-[#234467]/20 hover:border-[#429EA6]/50 transition-all cursor-pointer"
+                                >
+                                  {skillObj.targetName}
+                                </button>
+                              )
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
-                </div> */}
+                )}
+
               </CardContent>
 
               <CardFooter className="px-8 pb-8 flex justify-end">
@@ -1074,49 +1143,125 @@ export default function BadgeEditorPage() {
                       className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsModalOpen(true)}
                     >
-                      Generate Badge
+                      Generate JSON
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl font-bold text-gray-900">
-                        Badge JSON
-                      </DialogTitle>
-                      <DialogDescription className="text-gray-600">
-                        Copy or export the badge JSON structure below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 rounded-lg p-4 border">
-                        <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto">
+                  <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                    {/* Fixed Header */}
+                    <div className="flex-shrink-0 -mx-6 -mt-6 px-6 py-4 border-b bg-white">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-gray-900">
+                          Badge JSON
+                        </DialogTitle>
+                        {/* <DialogDescription className="text-gray-600">
+                          Copy or export the badge JSON structure below.
+                        </DialogDescription> */}
+                      </DialogHeader>
+                    </div>
+
+                    {/* Scrollable JSON Content */}
+                    <div className="flex-1 overflow-auto -mx-6 px-6 py-4 min-h-0">
+                      <div className="bg-gray-50 rounded-lg p-4 border overflow-auto">
+                        <pre className="text-sm font-mono text-gray-800 whitespace-pre">
                           {JSON.stringify(generateBadgeJSON(), null, 2)}
                         </pre>
                       </div>
-                      
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={handleCopyJSON}
-                          className="flex items-center gap-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy JSON
-                        </Button>
-                        <Button
-                          onClick={handleExportJSON}
-                          className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                        >
-                          <FileDown className="h-4 w-4" />
-                          Export JSON
-                        </Button>
-                      </div>
+                    </div>
+
+                    {/* Fixed Footer */}
+                    <div className="flex-shrink-0 -mx-6 -mb-6 px-6 py-4 border-t bg-white flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleCopyJSON}
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy JSON
+                      </Button>
+                      <Button
+                        onClick={handleExportJSON}
+                        className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                      >
+                        <FileDown className="h-4 w-4" />
+                        Export JSON
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </CardFooter>
             </Card>
             )}
+
+            {/* Skill Details Modal */}
+            <Dialog open={isSkillModalOpen} onOpenChange={setIsSkillModalOpen}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    {selectedSkill?.targetName || 'Skill Details'}
+                  </DialogTitle>
+                  {selectedSkill?.targetUrl && (
+                    <DialogDescription>
+                      <a
+                        href={selectedSkill.targetUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                      >
+                        View URL →
+                      </a>
+                    </DialogDescription>
+                  )}
+                </DialogHeader>
+
+                <div className="space-y-6 mt-4">
+                  {/* Description */}
+                  {selectedSkill?.targetDescription && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Description</h4>
+                      <p className="text-sm text-gray-600 leading-relaxed">{selectedSkill.targetDescription}</p>
+                    </div>
+                  )}
+
+                  {/* Knowledge Required */}
+                  {selectedSkill?.['Knowledge Required'] && Array.isArray(selectedSkill['Knowledge Required']) && selectedSkill['Knowledge Required'].length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Knowledge Required</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSkill['Knowledge Required'].map((item: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Task Abilities */}
+                  {selectedSkill?.['Task Abilities'] && Array.isArray(selectedSkill['Task Abilities']) && selectedSkill['Task Abilities'].length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Task Abilities</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSkill['Task Abilities'].map((item: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-sm py-1 px-3">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skill Tag */}
+                  {selectedSkill?.['Skill Tag'] && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Skill Tag</h4>
+                      <Badge variant="secondary" className="text-sm py-1 px-3">
+                        {selectedSkill['Skill Tag']}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Column 3: Badge Image Display */}
@@ -1129,7 +1274,7 @@ export default function BadgeEditorPage() {
           </div>
         </div>
 
-        {/* Image Edit Modal */}
+      {/* Image Edit Modal */}
         <Dialog open={isImageEditModalOpen} onOpenChange={(open) => {
           if (!open) {
             // When closing, don't auto-apply changes - let user decide
@@ -1152,7 +1297,7 @@ export default function BadgeEditorPage() {
                     Customize your badge image settings and configuration.
                   </DialogDescription>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 pr-8">
                   <Button
                     onClick={handleApplyImageChanges}
                     disabled={!generatedImage}
@@ -1722,8 +1867,8 @@ export default function BadgeEditorPage() {
                 </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </main>
+        </DialogContent>
+      </Dialog>
+    </main>
   );
 }

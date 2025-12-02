@@ -232,6 +232,31 @@ export class StreamingApiClient {
                   // Extract metrics if present
                   const metrics = parsed.metrics || finalData.metrics;
                   
+                  // Extract skills from the response - get full skill objects
+                  // Check multiple possible locations: parsed level, finalData level, credentialSubject, or achievement
+                  const extractSkills = (data: any): any[] | undefined => {
+                    if (!data) return undefined;
+                    
+                    // Check for skills array at various locations
+                    const skillsArray = data?.skills || 
+                                       data?.credentialSubject?.skills || 
+                                       data?.credentialSubject?.achievement?.skills;
+                    
+                    if (skillsArray && Array.isArray(skillsArray)) {
+                      console.log('[API] Found skills array:', skillsArray);
+                      // Store full skill objects
+                      const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                      console.log('[API] Extracted skills objects:', skills);
+                      return skills.length > 0 ? skills : undefined;
+                    }
+                    return undefined;
+                  };
+                  
+                  // Check parsed level first (skills might be at top level of parsed response)
+                  // Then check finalData (skills might be inside content)
+                  const skills = extractSkills(parsed) || extractSkills(finalData);
+                  console.log('[API] Final skills result:', skills);
+                  
                   let suggestion;
                   
                   if (finalData.credentialSubject && finalData.credentialSubject.achievement) {
@@ -249,6 +274,7 @@ export class StreamingApiClient {
                       criteria: achievement.criteria?.narrative || achievement.description,
                       image: imageSrc,
                       metrics: metrics,
+                      skills: skills,
                     };
                   } else {
                     // Fallback to legacy format
@@ -265,6 +291,7 @@ export class StreamingApiClient {
                       criteria: finalData.criteria?.narrative || finalData.criteria || finalData.description,
                       image: sanitizedLegacyImage,
                       metrics: metrics,
+                      skills: skills,
                     };
                   }
                   
