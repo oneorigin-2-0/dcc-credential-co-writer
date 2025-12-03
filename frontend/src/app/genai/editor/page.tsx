@@ -57,9 +57,9 @@ export default function BadgeEditorPage() {
     criterion_style: 'task-oriented',
     badge_level: 'not-specified',
     institution: '',
-    institution_url: '',
+    institute_url: '',
+    user_prompt: ''
   });
-  const [userPrompt, setUserPrompt] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingRawContent, setStreamingRawContent] = useState('');
@@ -240,20 +240,10 @@ export default function BadgeEditorPage() {
         console.error('Error parsing stored badge config:', error);
       }
     }
-
-    // Get user prompt from localStorage (from genai page)
-    const storedUserPrompt = localStorage.getItem('userPrompt');
-    if (storedUserPrompt) {
-      setUserPrompt(storedUserPrompt);
-    }
   }, []); // Empty dependency array since this should only run once on mount
 
   const handleConfigurationChange = useCallback((config: any) => {
     setBadgeConfiguration(config);
-  }, []);
-
-  const handleUserPromptChange = useCallback((prompt: string) => {
-    setUserPrompt(prompt);
   }, []);
 
   const handleEditImage = async () => {
@@ -602,7 +592,7 @@ export default function BadgeEditorPage() {
       
       for await (const response of apiClient.generateSuggestionsStream(originalContent, {
         regenerate: true,
-        custom_instructions: userPrompt,
+        custom_instructions: badgeConfiguration.user_prompt,
         ...badgeConfiguration,
       })) {
         
@@ -916,8 +906,6 @@ export default function BadgeEditorPage() {
               onRegenerate={handleRegenerate}
               isRegenerating={isRegenerating}
               onConfigurationChange={handleConfigurationChange}
-              userPrompt={userPrompt}
-              onUserPromptChange={handleUserPromptChange}
               initialConfig={badgeConfiguration}
             />
           </div>

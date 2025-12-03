@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Paperclip, X, FileText, Edit, Save, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { BadgeConfiguration } from '@/components/genai/badge-configuration';
+import { BadgeConfiguration, BadgeConfigurationData } from '@/components/genai/badge-configuration';
 
 import Lottie from 'lottie-react';
 
@@ -64,8 +64,15 @@ export default function GenAIPage() {
   const [editContent, setEditContent] = useState<{ [key: number]: string }>({});
   const [consentChecked, setConsentChecked] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
-  const [badgeConfig, setBadgeConfig] = useState<any>(null);
-  const [userPrompt, setUserPrompt] = useState('');
+  const [badgeConfig, setBadgeConfig] = useState<BadgeConfigurationData>({
+    badge_style: 'professional',
+    badge_tone: 'authoritative',
+    criterion_style: 'task-oriented',
+    badge_level: 'not-specified',
+    institution: '',
+    institute_url: '',
+    user_prompt: ''
+  });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   // Trigger entrance animation
@@ -74,6 +81,11 @@ export default function GenAIPage() {
       setIsVisible(true);
     }, 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Clear badge config from localStorage on mount (fresh start each visit)
+  useEffect(() => {
+    localStorage.removeItem('badgeConfig');
   }, []);
 
   // Load Lottie animation data
@@ -249,9 +261,6 @@ export default function GenAIPage() {
         localStorage.setItem('isLaiserEnabled', isLaiserEnabled.toString());
         if (badgeConfig) {
           localStorage.setItem('badgeConfig', JSON.stringify(badgeConfig));
-        }
-        if (userPrompt) {
-          localStorage.setItem('userPrompt', userPrompt);
         }
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
@@ -531,8 +540,6 @@ export default function GenAIPage() {
                         <CollapsibleContent className="px-4 pb-4">
                           <BadgeConfiguration
                             onConfigurationChange={setBadgeConfig}
-                            userPrompt={userPrompt}
-                            onUserPromptChange={setUserPrompt}
                             variant="inline"
                           />
                         </CollapsibleContent>
@@ -540,7 +547,7 @@ export default function GenAIPage() {
                     </div>
 
                     {/* Disclaimer Checkbox */}
-                    <div className="mt-6 p-4 border rounded-lg transition-all duration-300 hover:shadow-md">
+                    <div className="mt-6 p-4 border rounded-lg">
                       <div className="flex items-start space-x-3">
                         <Checkbox
                           id="consent-checkbox"
@@ -551,9 +558,8 @@ export default function GenAIPage() {
                         />
                         <label
                           htmlFor="consent-checkbox"
-                          className="text-sm leading-relaxed cursor-pointer font-body select-none transition-colors duration-200 hover:text-[#234467]"
+                          className="text-sm leading-relaxed font-body select-none"
                           style={{ color: '#40464c' }}
-                          onClick={() => setConsentChecked(!consentChecked)}
                         >
                           I acknowledge and consent to my input being securely utilized for model training and research purposes.
                         </label>

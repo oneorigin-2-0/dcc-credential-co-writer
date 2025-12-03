@@ -10,21 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RefreshCw, Loader2, Info } from 'lucide-react';
 
-interface BadgeConfigurationData {
+export interface BadgeConfigurationData {
   badge_style: string;
   badge_tone: string;
   criterion_style: string;
   badge_level: string;
   institution: string;
   institute_url?: string;
+  user_prompt?: string;
 }
 
 interface BadgeConfigurationProps {
   onRegenerate?: () => void;
   isRegenerating?: boolean;
   onConfigurationChange?: (config: BadgeConfigurationData) => void;
-  userPrompt?: string;
-  onUserPromptChange?: (prompt: string) => void;
   variant?: 'card' | 'inline';
   initialConfig?: BadgeConfigurationData;
 }
@@ -73,13 +72,14 @@ const getDefault = (type: 'style' | 'tone' | 'level' | 'criterion'): string => {
   return defaults[type];
 };
 
-export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurationChange, userPrompt, onUserPromptChange, variant = 'card', initialConfig }: BadgeConfigurationProps) {
+export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurationChange, variant = 'card', initialConfig }: BadgeConfigurationProps) {
   const [style, setStyle] = useState(() => mapFromApiFormat(initialConfig?.badge_style, 'style'));
   const [tone, setTone] = useState(() => mapFromApiFormat(initialConfig?.badge_tone, 'tone'));
   const [level, setLevel] = useState(() => mapFromApiFormat(initialConfig?.badge_level, 'level'));
   const [criterionTemplate, setCriterionTemplate] = useState(() => mapFromApiFormat(initialConfig?.criterion_style, 'criterion'));
   const [institution, setInstitution] = useState(initialConfig?.institution || '');
   const [instituteUrl, setInstituteUrl] = useState(initialConfig?.institute_url || '');
+  const [userPrompt, setUserPrompt] = useState(initialConfig?.user_prompt || '');
 
   // Map UI values to API format
   const mapToApiFormat = (uiValue: string, type: 'style' | 'tone' | 'level' | 'criterion') => {
@@ -122,11 +122,12 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
         criterion_style: mapToApiFormat(criterionTemplate, 'criterion'),
         badge_level: mapToApiFormat(level, 'level'),
         institution: institution,
-        institute_url: instituteUrl
+        institute_url: instituteUrl,
+        user_prompt: userPrompt
       };
       onConfigurationChange(config);
     }
-  }, [style, tone, level, criterionTemplate, institution, instituteUrl]); // Remove onConfigurationChange from dependencies
+  }, [style, tone, level, criterionTemplate, institution, instituteUrl, userPrompt]); // Remove onConfigurationChange from dependencies
 
   const isInline = variant === 'inline';
   const borderClass = isInline ? 'border-gray-200 focus:border-[#429EA6] focus:ring-[#429EA6]/20' : 'border-[#429EA6] focus:border-[#234467] focus:ring-[#234467]';
@@ -261,7 +262,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
           placeholder="Enter custom instructions for badge generation..."
           className={`min-h-[80px] resize-none ${isInline ? 'border-gray-200 focus:border-[#429EA6] focus:ring-[#429EA6]/20' : 'border-gray-300 focus:border-[#429EA6] focus:ring-[#429EA6]'}`}
           value={userPrompt}
-          onChange={(e) => onUserPromptChange?.(e.target.value)}
+          onChange={(e) => setUserPrompt(e.target.value)}
         />
       </div>
 
