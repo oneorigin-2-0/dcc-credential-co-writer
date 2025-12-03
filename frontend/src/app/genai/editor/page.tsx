@@ -60,6 +60,8 @@ export default function BadgeEditorPage() {
     institute_url: '',
     user_prompt: ''
   });
+  const [userPrompt, setUserPrompt] = useState('');
+  const [isLaiserEnabled, setIsLaiserEnabled] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingRawContent, setStreamingRawContent] = useState('');
@@ -239,6 +241,12 @@ export default function BadgeEditorPage() {
       } catch (error) {
         console.error('Error parsing stored badge config:', error);
       }
+    }
+
+    // Get isLaiserEnabled from localStorage
+    const storedLaiserEnabled = localStorage.getItem('isLaiserEnabled');
+    if (storedLaiserEnabled) {
+      setIsLaiserEnabled(storedLaiserEnabled === 'true');
     }
   }, []); // Empty dependency array since this should only run once on mount
 
@@ -593,6 +601,7 @@ export default function BadgeEditorPage() {
       for await (const response of apiClient.generateSuggestionsStream(originalContent, {
         regenerate: true,
         custom_instructions: badgeConfiguration.user_prompt,
+        enable_skill_extraction: isLaiserEnabled,
         ...badgeConfiguration,
       })) {
         
