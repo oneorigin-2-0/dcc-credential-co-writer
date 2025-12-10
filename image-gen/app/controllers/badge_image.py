@@ -3,7 +3,8 @@ Badge image generation controller
 """
 
 import json
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
+from typing import Optional
 from app.models.requests import BadgeRequest, TextOverlayBadgeRequest, IconBasedBadgeRequest
 from app.models.responses import BadgeResponse
 from app.services.badge_service import BadgeService
@@ -63,51 +64,115 @@ async def generate_badge(request: BadgeRequest):
 
 
 @router.post("/badge/generate-with-text", response_model=BadgeResponse)
-async def generate_badge_with_text(request: TextOverlayBadgeRequest):
+async def generate_badge_with_text(
+    request: Request,
+    short_title: Optional[str] = Form(None),
+    achievement_phrase: Optional[str] = Form(None),
+    institute: Optional[str] = Form(None),
+    colors: Optional[str] = Form(None),
+    seed: Optional[int] = Form(None),
+    scale_factor: Optional[float] = Form(2.0),
+    logo: Optional[UploadFile] = File(None)
+):
     """
     Generate a badge with text overlay - generates config and renders in one call
 
-    Args:
-        request: Text overlay badge request with title, institute, and achievement phrase
+    Accepts both:
+    - JSON body: {"short_title": "...", "achievement_phrase": "...", "colors": {...}}
+    - Multipart form-data: short_title, achievement_phrase, colors (JSON string), logo (optional file)
 
     Returns:
         BadgeResponse with base64 encoded image and configuration
     """
+    temp_logo_path = None
+
     try:
-        logger.info(f"Generating text overlay badge with Title: {request.short_title}, Achievement Phrase: {request.achievement_phrase}")
+        content_type = request.headers.get("content-type", "")
+
+        # Parse request based on content type
+        if "multipart/form-data" in content_type:
+            # Read logo bytes if provided
+            logo_bytes = None
+            if logo and logo.filename:
+                logo_bytes = await logo.read()
+
+            # Create request model from form data
+            if not short_title:
+                raise HTTPException(status_code=400, detail="short_title is required")
+
+            badge_request_data = TextOverlayBadgeRequest.from_form_data(
+                short_title=short_title,
+                achievement_phrase=achievement_phrase if achievement_phrase else "",
+                institute=institute if institute else "",
+                colors_json=colors if colors else None,
+                seed=seed if seed else None,
+                scale_factor=scale_factor if scale_factor else 2.0,
+                logo_bytes=logo_bytes if logo_bytes else None
+            )
+            logger.info(f"Generating text overlay badge (multipart) with Title: {badge_request_data.short_title}")
+        else:
+            # JSON body request
+            body = await request.json()
+            badge_request_data = TextOverlayBadgeRequest(**body)
+            logger.info(f"Generating text overlay badge (JSON) with Title: {badge_request_data.short_title}")
 
         # Step 1: Generate image config
         config = generate_text_overlay_config(
-            short_title=request.short_title,
-            institute=request.institute or "",
-            achievement_phrase=request.achievement_phrase,
-            colors=request.colors,
-            seed=request.seed
+            short_title=badge_request_data.short_title,
+            institute=badge_request_data.institute or "",
+            achievement_phrase=badge_request_data.achievement_phrase,
+            colors=badge_request_data.colors,
+            seed=badge_request_data.seed
         )
 
-        # Step 2: Render badge image with scale_factor
-        badge_request = {
-            "canvas": {"scale_factor": request.scale_factor},
+        # Step 2: Handle custom logo if provided
+        if badge_request_data.logo_bytes:
+            import tempfile
+            import os
+            # Save logo bytes to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+                tmp.write(badge_request_data.logo_bytes)
+                temp_logo_path = tmp.name
+
+            # Replace LogoLayer path in config
+            for layer in config.get("layers", []):
+                if layer.get("type") == "LogoLayer":
+                    layer["path"] = temp_logo_path
+                    logger.info("Replaced LogoLayer path with uploaded logo")
+                    break
+
+        # Step 3: Render badge image with scale_factor
+        badge_render_request = {
+            "canvas": {"scale_factor": badge_request_data.scale_factor},
             "layers": config["layers"]
         }
 
-        result = await badge_service.generate_badge(badge_request)
+        result = await badge_service.generate_badge(badge_render_request)
 
-        # Step 3: Add only scale_factor and layers to response
+        # Step 4: Add only scale_factor and layers to response
         result.config = {
-            "scale_factor": request.scale_factor,
+            "scale_factor": badge_request_data.scale_factor,
             "layers": config["layers"]
         }
 
-        logger.info(f"Text overlay badge generated successfully: {request.short_title}")
+        logger.info(f"Text overlay badge generated successfully: {badge_request_data.short_title}")
         return result
 
+    except HTTPException:
+        raise
     except ValueError as e:
         logger.error(f"Invalid configuration: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error generating text overlay badge: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
+
+    finally:
+        # Cleanup temp logo file
+        if temp_logo_path:
+            import os
+            if os.path.exists(temp_logo_path):
+                os.unlink(temp_logo_path)
 
 
 @router.post("/badge/generate-with-icon", response_model=BadgeResponse)
