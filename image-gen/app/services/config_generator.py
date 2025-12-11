@@ -136,6 +136,8 @@ def _generate_text_badge_layers(
     seed: Optional[int] = None,
     logo_path: str = "assets/logos/dcc_logo.png",
     institution_colors: Optional[dict] = None,
+    border_color: Optional[str] = None,
+    border_width: Optional[int] = None,
 ):
     """Generate text-based badge configuration following spec
 
@@ -144,6 +146,8 @@ def _generate_text_badge_layers(
         seed: Random seed for reproducibility
         logo_path: Path to logo image
         institution_colors: Dict with primary, secondary, tertiary colors from institution
+        border_color: Optional border color hex code (e.g., '#000000')
+        border_width: Optional border width in pixels (e.g., 6)
     """
     if seed is not None:
         random.seed(seed)
@@ -224,17 +228,17 @@ def _generate_text_badge_layers(
         "vertical": True,
     }
 
-    # Border disabled by default 
-    # if random.random() < 0.6:
-    #     border = {
-    #         "color": _pick_palette_color(neutrals + cool + warm),
-    #         "width": random.randint(1, 6),
-    #     }
-    # else:
-    border = {
-        "color": None,
-        "width": 0
-    }
+    # Apply custom border if provided, otherwise disabled by default
+    if border_color or border_width:
+        border = {
+            "color": border_color or "#000000",
+            "width": border_width or 6
+        }
+    else:
+        border = {
+            "color": None,
+            "width": 0
+        }
 
     # Shape-specific params per spec
     if shape == "hexagon":
@@ -490,6 +494,8 @@ def generate_text_overlay_config(
     institute: str = "",
     achievement_phrase: str = "",
     colors: Optional[dict] = None,
+    border_color: Optional[str] = None,
+    border_width: Optional[int] = None,
     seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with text overlay
@@ -499,6 +505,8 @@ def generate_text_overlay_config(
         institute: Institution/organization name (optional, defaults to empty string)
         achievement_phrase: Achievement phrase or motto (optional, defaults to empty string)
         colors: Optional brand colors (primary, secondary, tertiary)
+        border_color: Optional border color hex code (e.g., '#000000')
+        border_width: Optional border width in pixels (e.g., 6)
         seed: Optional random seed for reproducibility
 
     Returns:
@@ -517,7 +525,9 @@ def generate_text_overlay_config(
         meta=meta,
         seed=seed,
         logo_path="assets/logos/dcc_logo.png",
-        institution_colors=colors
+        institution_colors=colors,
+        border_color=border_color,
+        border_width=border_width
     )
 
     return config

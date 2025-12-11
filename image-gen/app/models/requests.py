@@ -64,6 +64,8 @@ class TextOverlayBadgeRequest(BaseModel):
     institute: Optional[str] = Field(default="", description="Institution/organization name (optional)")
     achievement_phrase: str = Field(default="", description="Achievement phrase or motto")
     colors: Optional[Dict[str, str]] = Field(default=None, description="Brand colors (primary, secondary, tertiary)")
+    border_color: Optional[str] = Field(default=None, description="Border color hex code (e.g., '#000000')")
+    border_width: Optional[int] = Field(default=None, description="Border width in pixels (e.g., 6)")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
     scale_factor: float = Field(default=2.0, description="Scale factor for rendering (1.0-3.0, default 2.0)")
     logo_bytes: Optional[bytes] = Field(default=None, exclude=True, description="Logo image bytes (set after reading UploadFile)")
@@ -82,6 +84,8 @@ class TextOverlayBadgeRequest(BaseModel):
         achievement_phrase: Optional[str] = "",
         institute: Optional[str] = "",
         colors_json: Optional[str] = None,
+        border_color: Optional[str] = None,
+        border_width: Optional[int] = None,
         seed: Optional[int] = None,
         scale_factor: Optional[float] = 2.0,
         logo_bytes: Optional[bytes] = None
@@ -100,6 +104,8 @@ class TextOverlayBadgeRequest(BaseModel):
             achievement_phrase=achievement_phrase or "",
             institute=institute or "",
             colors=parsed_colors,
+            border_color=border_color,
+            border_width=border_width,
             seed=seed,
             scale_factor=scale_factor or 2.0,
             logo_bytes=logo_bytes

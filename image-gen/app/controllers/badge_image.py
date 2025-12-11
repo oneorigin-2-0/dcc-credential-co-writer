@@ -70,6 +70,8 @@ async def generate_badge_with_text(
     achievement_phrase: Optional[str] = Form(None),
     institute: Optional[str] = Form(None),
     colors: Optional[str] = Form(None),
+    border_color: Optional[str] = Form(None),
+    border_width: Optional[int] = Form(None),
     seed: Optional[int] = Form(None),
     scale_factor: Optional[float] = Form(2.0),
     logo: Optional[UploadFile] = File(None)
@@ -105,6 +107,8 @@ async def generate_badge_with_text(
                 achievement_phrase=achievement_phrase if achievement_phrase else "",
                 institute=institute if institute else "",
                 colors_json=colors if colors else None,
+                border_color=border_color if border_color else None,
+                border_width=border_width if border_width else None,
                 seed=seed if seed else None,
                 scale_factor=scale_factor if scale_factor else 2.0,
                 logo_bytes=logo_bytes if logo_bytes else None
@@ -122,6 +126,8 @@ async def generate_badge_with_text(
             institute=badge_request_data.institute or "",
             achievement_phrase=badge_request_data.achievement_phrase,
             colors=badge_request_data.colors,
+            border_color=badge_request_data.border_color,
+            border_width=badge_request_data.border_width,
             seed=badge_request_data.seed
         )
 
