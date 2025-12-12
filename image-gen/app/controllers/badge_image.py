@@ -72,6 +72,7 @@ async def generate_badge_with_text(
     colors: Optional[str] = Form(None),
     border_color: Optional[str] = Form(None),
     border_width: Optional[int] = Form(None),
+    shape: Optional[str] = Form(None),
     seed: Optional[int] = Form(None),
     scale_factor: Optional[float] = Form(2.0),
     logo: Optional[UploadFile] = File(None)
@@ -109,6 +110,7 @@ async def generate_badge_with_text(
                 colors_json=colors if colors else None,
                 border_color=border_color if border_color else None,
                 border_width=border_width if border_width else None,
+                shape=shape if shape else None,
                 seed=seed if seed else None,
                 scale_factor=scale_factor if scale_factor else 2.0,
                 logo_bytes=logo_bytes if logo_bytes else None
@@ -128,6 +130,7 @@ async def generate_badge_with_text(
             colors=badge_request_data.colors,
             border_color=badge_request_data.border_color,
             border_width=badge_request_data.border_width,
+            shape=badge_request_data.shape,
             seed=badge_request_data.seed
         )
 

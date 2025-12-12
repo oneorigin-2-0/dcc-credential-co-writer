@@ -138,6 +138,7 @@ def _generate_text_badge_layers(
     institution_colors: Optional[dict] = None,
     border_color: Optional[str] = None,
     border_width: Optional[int] = None,
+    shape: Optional[str] = None,
 ):
     """Generate text-based badge configuration following spec
 
@@ -148,6 +149,7 @@ def _generate_text_badge_layers(
         institution_colors: Dict with primary, secondary, tertiary colors from institution
         border_color: Optional border color hex code (e.g., '#000000')
         border_width: Optional border width in pixels (e.g., 6)
+        shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
     """
     if seed is not None:
         random.seed(seed)
@@ -200,7 +202,12 @@ def _generate_text_badge_layers(
     }
 
     # Shape layer (z: 10-19)
-    shape = random.choice(["hexagon", "circle", "rounded_rect"])
+    # Use provided shape or random selection
+    valid_shapes = ["hexagon", "circle", "rounded_rect"]
+    if shape and shape in valid_shapes:
+        selected_shape = shape
+    else:
+        selected_shape = random.choice(valid_shapes)
 
     # Select gradient colors using curated schemes (if no institution colors)
     if not institution_colors:
@@ -241,9 +248,9 @@ def _generate_text_badge_layers(
         }
 
     # Shape-specific params per spec
-    if shape == "hexagon":
+    if selected_shape == "hexagon":
         params = {"radius": 250}
-    elif shape == "circle":
+    elif selected_shape == "circle":
         params = {"radius": 250}
     else:  # rounded_rect
         params = {
@@ -254,7 +261,7 @@ def _generate_text_badge_layers(
 
     shape_layer = {
         "type": "ShapeLayer",
-        "shape": shape,
+        "shape": selected_shape,
         "fill": fill,
         "border": border,
         "params": params,
@@ -496,6 +503,7 @@ def generate_text_overlay_config(
     colors: Optional[dict] = None,
     border_color: Optional[str] = None,
     border_width: Optional[int] = None,
+    shape: Optional[str] = None,
     seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with text overlay
@@ -507,6 +515,7 @@ def generate_text_overlay_config(
         colors: Optional brand colors (primary, secondary, tertiary)
         border_color: Optional border color hex code (e.g., '#000000')
         border_width: Optional border width in pixels (e.g., 6)
+        shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
         seed: Optional random seed for reproducibility
 
     Returns:
@@ -527,7 +536,8 @@ def generate_text_overlay_config(
         logo_path="assets/logos/dcc_logo.png",
         institution_colors=colors,
         border_color=border_color,
-        border_width=border_width
+        border_width=border_width,
+        shape=shape
     )
 
     return config
