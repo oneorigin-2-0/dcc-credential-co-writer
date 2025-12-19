@@ -21,6 +21,22 @@ class Settings(BaseSettings):
     CANVAS_WIDTH: int = 600
     CANVAS_HEIGHT: int = 600
 
+    # Asset paths
+    ASSETS_PATH: str = "assets/"
+    ICONS_PATH: str = "assets/icons/"
+    LOGOS_PATH: str = "assets/logos/"
+    FONTS_PATH: str = "assets/fonts/"
+
+    # Image generation defaults
+    DEFAULT_IMAGE_WIDTH: int = 400
+    DEFAULT_IMAGE_HEIGHT: int = 400
+    DEFAULT_BORDER_WIDTH: int = 6
+    DEFAULT_SHAPE: str = "hexagon"
+
+    # Icon matching settings
+    ICON_MATCHER_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    ICON_MATCHER_TOP_K: int = 3
+
     @property
     def CORS_ORIGINS(self) -> List[str]:
         """Parse CORS_ORIGINS from string"""

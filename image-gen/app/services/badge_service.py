@@ -58,24 +58,48 @@ class BadgeService:
 
             # Convert PIL Image to base64
             buffer = BytesIO()
-            image.save(buffer, format='PNG')
+            image.save(buffer, format='PNG', optimize=False)
             buffer.seek(0)
 
-            # Encode to base64
-            img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
+            # Get image bytes
+            img_bytes = buffer.getvalue()
+            
+            if not img_bytes:
+                raise ValueError("Failed to convert image to bytes")
+            
+            # Encode to base64 (ensure no newlines for JSON compatibility)
+            img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+            
+            # Validate base64 encoding
+            if not img_base64:
+                raise ValueError("Failed to encode image to base64")
+            
+            # Verify the base64 can be decoded back (sanity check)
+            try:
+                decoded_check = base64.b64decode(img_base64)
+                if len(decoded_check) != len(img_bytes):
+                    raise ValueError("Base64 encoding verification failed: size mismatch")
+            except Exception as e:
+                logger.warning(f"Base64 verification warning: {e}")
+            
+            # Create data URI with proper format (no newlines, proper format)
+            data_uri = f"data:image/png;base64,{img_base64}"
+            
+            # Log base64 info for debugging
+            logger.debug(f"Generated base64 image: {len(img_base64)} chars, data URI length: {len(data_uri)}")
+            
             generation_time = time.time() - start_time
 
             # Log successful generation
             log_badge_generation(config, success=True, generation_time=generation_time)
-            logger.info(f"Badge generated successfully in {generation_time:.3f}s")
+            logger.info(f"Badge generated successfully in {generation_time:.3f}s (base64 length: {len(img_base64)})")
 
             # Create response
             return BadgeResponse(
                 success=True,
                 message="Badge generated successfully",
                 data=BadgeData(
-                    base64=f"data:image/png;base64,{img_base64}"
+                    base64=data_uri
                     #filename="badge.png",
                     #mimeType="image/png"
                 ),
