@@ -335,20 +335,56 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             {data.skills && data.skills.length > 0 && (
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
                 <label className="text-xs font-bold text-[#429EA6] tracking-wide mb-3 block font-subhead">
-                  Skills from LAiSER
+                  Skills (powered by LAiSER)
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {data.skills.map((skillObj, index) => {
-                    const targetName = skillObj?.targetName;
-                    return targetName ? (
-                      <Badge
+                    if (!skillObj?.targetName) return null;
+                    return (
+                      <div
                         key={index}
-                        variant="secondary"
-                        className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 cursor-default hover:from-[#429EA6]/10 hover:to-[#234467]/10 hover:bg-transparent pointer-events-none"
+                        className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-[#429EA6]/30 transition-all"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {targetName}
-                      </Badge>
-                    ) : null;
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                          {skillObj.targetName}
+                        </h4>
+                        {skillObj.targetDescription && (
+                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                            {skillObj.targetDescription}
+                          </p>
+                        )}
+                        {skillObj.targetType && (
+                          <div className="mb-2">
+                            <span className="text-xs text-gray-500 mr-2">Type:</span>
+                            {skillObj.targetUrl ? (
+                              <a
+                                href={skillObj.targetUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {skillObj.targetType} →
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                            )}
+                          </div>
+                        )}
+                        {skillObj.targetUrl && !skillObj.targetType && (
+                          <a
+                            href={skillObj.targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View URL →
+                          </a>
+                        )}
+                      </div>
+                    );
                   })}
                 </div>
               </div>

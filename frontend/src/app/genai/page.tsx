@@ -28,6 +28,7 @@ import {
 import { Loader2, ArrowLeft, Paperclip, X, FileText, Edit, Save, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { BadgeConfiguration, BadgeConfigurationData } from '@/components/genai/badge-configuration';
+import { BadgeImageConfiguration, BadgeImageConfigurationData } from '@/components/genai/badge-image-configuration';
 
 import Lottie from 'lottie-react';
 
@@ -73,7 +74,8 @@ export default function GenAIPage() {
     institute_url: '',
     user_prompt: ''
   });
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [imageConfig, setImageConfig] = useState<BadgeImageConfigurationData | undefined>(undefined);
+  const [isConfigOpen, setIsConfigOpen] = useState(true);
 
   // Trigger entrance animation
   useEffect(() => {
@@ -262,6 +264,15 @@ export default function GenAIPage() {
         if (badgeConfig) {
           localStorage.setItem('badgeConfig', JSON.stringify(badgeConfig));
         }
+        if (imageConfig) {
+          console.log('[Page] Saving imageConfig to localStorage:', {
+            ...imageConfig,
+            logo_base64: imageConfig.logo_base64 ? `${imageConfig.logo_base64.substring(0, 50)}... (${imageConfig.logo_base64.length} chars)` : 'undefined'
+          });
+          localStorage.setItem('imageConfig', JSON.stringify(imageConfig));
+        } else {
+          console.log('[Page] imageConfig is undefined, not saving to localStorage');
+        }
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
       }
@@ -289,35 +300,36 @@ export default function GenAIPage() {
   return (
     <main id="main-content" className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
-        <div className="mb-6">
+        <div className={`relative flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-center transition-all duration-500 ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 -translate-y-4'
+        }`}>
           <Button
             variant="outline"
-            className={`transition-all duration-500 ${
-              isVisible 
-                ? 'opacity-100 translate-x-0' 
-                : 'opacity-0 -translate-x-4'
-            }`}
+            className="flex-shrink-0 md:absolute md:left-0"
             onClick={() => router.back()}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <span className="hidden sm:inline">Back</span>
+            <span className="sm:hidden">Back</span>
           </Button>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">
+            Create Credential with AI
+          </h1>
         </div>
 
         <div className="flex justify-center">
-          <div className={`w-full max-w-4xl transition-all duration-700 ${
+          <div className={`w-full max-w-6xl transition-all duration-700 ${
             isVisible
               ? 'opacity-100 translate-y-0'
               : 'opacity-0 translate-y-8'
           }`}>
             <FormProvider {...form}>
               <Card className="border-0 shadow-xl bg-white">
-                <CardHeader className="pb-8">
-                  <h1 className="text-3xl font-bold font-headline text-gray-900 mb-3">
-                    Create a New Credential with AI
-                  </h1>
+                <CardHeader>
                   <CardDescription className="text-lg text-gray-600 leading-relaxed">
-                    Upload your course syllabus or content to get AI-generated credential suggestions.
+                  Upload your course content to build Credentials.
                   </CardDescription>
                 </CardHeader>
 
@@ -328,16 +340,26 @@ export default function GenAIPage() {
                       name="content"
                       render={({ field }) => (
                         <FormItem>
-                          <div className="flex items-center justify-between mb-2">
-                            <FormLabel htmlFor="content-textarea" className="text-base font-semibold text-gray-900">
-                              Content
-                            </FormLabel>
-                            {/* Attach button - Hidden on mobile/tablet */}
+                          <FormControl>
+                            <div className="relative mb-4">
+                              <Textarea
+                                id="content-textarea"
+                                aria-label="Content for badge generation"
+                                placeholder="Enter your course content, project summary, or other text that describes what the badge represents...."
+                                className="min-h-[200px] text-base border-gray-200 focus:border-[#429EA6] focus:ring-2 focus:ring-[#429EA6]/20 resize-none text-gray-700 placeholder:text-gray-400 transition-all duration-300"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage className="text-red-500 mt-2" />
+                          
+                          {/* Description and Attach button below textarea */}
+                          <div className="mt-3 flex items-center justify-between gap-3">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="hidden lg:flex text-gray-600 hover:text-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-gray-600 border border-gray-300 hover:text-[#429EA6] hover:border-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                               onClick={() => fileInputRef.current?.click()}
                               disabled={isParsingFile || attachedFiles.length > 0}
                             >
@@ -352,20 +374,8 @@ export default function GenAIPage() {
                                   Attach
                                 </>
                               )}
-                            </Button>
+                            </Button>                            
                           </div>
-                          <FormControl>
-                            <div className="relative">
-                              <Textarea
-                                id="content-textarea"
-                                aria-label="Content for badge generation"
-                                placeholder="Enter your course content, project summary, or other text that describes what the badge represents...."
-                                className="min-h-[200px] text-base border-gray-200 focus:border-[#429EA6] focus:ring-2 focus:ring-[#429EA6]/20 resize-none text-gray-700 placeholder:text-gray-400 transition-all duration-300"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage className="text-red-500 mt-2" />
                         </FormItem>
                       )}
                     />
@@ -514,34 +524,41 @@ export default function GenAIPage() {
                       </div>
                     )}
 
-                    {/* Badge Configuration - Collapsible */}
+                    {/* Configuration - Collapsible */}
                     <div className="mt-6">
                       <Collapsible
                         open={isConfigOpen}
                         onOpenChange={setIsConfigOpen}
-                        className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#429EA6] hover:shadow-md"
+                        className="bg-white rounded-lg border border-gray-200 overflow-hidden"
                       >
                         <CollapsibleTrigger asChild>
-                          <div className="flex items-center justify-between p-3 cursor-pointer">
+                          <div className="flex items-center justify-between p-3 cursor-pointer transition-all duration-200">
                             <div className="flex items-center space-x-3">
-                              <Settings className="h-5 w-5 text-[#429EA6]" />
+                              <Settings className="h-5 w-5 text-[#429EA6] transition-transform duration-200" />
                               <div>
-                                <p className="text-sm font-medium text-gray-900">Badge Configuration</p>
-                                <p className="text-xs text-gray-500">Customize style, tone, and level</p>
+                                <p className="text-sm font-medium text-gray-900">Configuration</p>
+                                <p className="text-xs text-gray-500">Customize style, tone, level.</p>
                               </div>
                             </div>
-                            {isConfigOpen ? (
-                              <ChevronUp className="h-5 w-5 text-gray-500" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5 text-gray-500" />
-                            )}
+                            <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${isConfigOpen ? 'rotate-180' : 'rotate-0'}`} />
                           </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="px-4 pb-4">
-                          <BadgeConfiguration
-                            onConfigurationChange={setBadgeConfig}
-                            variant="inline"
-                          />
+                        <CollapsibleContent className="px-4 pb-4 data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden transition-all duration-300">
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <div className="flex-[0.6]">
+                              <h3 className="text-base font-semibold text-[#234467] mb-4">Style Configuration</h3>
+                              <BadgeConfiguration
+                                onConfigurationChange={setBadgeConfig}
+                                variant="inline"
+                              />
+                            </div>
+                            <div className="flex-[0.4] md:border-l md:border-gray-200 md:pl-6 pt-4 md:pt-0">
+                              <BadgeImageConfiguration
+                                onConfigurationChange={setImageConfig}
+                                variant="inline"
+                              />
+                            </div>
+                          </div>
                         </CollapsibleContent>
                       </Collapsible>
                     </div>
@@ -568,7 +585,7 @@ export default function GenAIPage() {
 
                     <div className="flex items-center justify-end mt-6">
                       <div className="flex items-center space-x-4">
-                        {/* Skills from LAiSER Toggle */}
+                        {/* Extract Skills(powered by LAiSER) Toggle */}
                         <div className="flex items-center space-x-2">
                           <Switch
                             id="laiser-toggle"
@@ -580,7 +597,17 @@ export default function GenAIPage() {
                             htmlFor="laiser-toggle"
                             className="text-sm font-medium text-gray-700 cursor-pointer transition-colors duration-200 hover:text-[#234467]"
                           >
-                            Skills from LAiSER
+                            Extract Skills (powered by{' '}
+                            <a
+                              href="https://laiser.gwu.edu/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#429EA6] hover:text-[#234467] hover:underline transition-colors duration-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              LAiSER
+                            </a>
+                            )
                           </label>
                         </div>
 
@@ -597,7 +624,7 @@ export default function GenAIPage() {
                               />
                             </div>
                           )}
-                          Generate Suggestions
+                          Generate Badge
                         </Button>
                       </div>
                     </div>

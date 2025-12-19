@@ -159,6 +159,7 @@ export function useStreamingSuggestionGenerator() {
     content: string,
     enableSkillExtraction: boolean = false,
     badgeConfig?: any,
+    imageConfig?: any,
     userPrompt?: string
   ) => {
     try {
@@ -172,18 +173,50 @@ export function useStreamingSuggestionGenerator() {
         )
       );
 
-      // Prepare additional parameters for the API
-      const additionalParams: any = {};
-      if (enableSkillExtraction) {
-        additionalParams.enable_skill_extraction = true;
+      // Construct the API payload according to the new structure
+      const payload: any = {
+        course_input: content,
+        badge_configuration: {
+          badge_style: badgeConfig?.badge_style || 'professional',
+          badge_tone: badgeConfig?.badge_tone || 'authoritative',
+          criterion_style: badgeConfig?.criterion_style || 'task-oriented',
+          badge_level: badgeConfig?.badge_level || 'not-specified',
+          institution: badgeConfig?.institution || '',
+          institute_url: badgeConfig?.institute_url || '',
+          custom_instructions: userPrompt || badgeConfig?.user_prompt || ''
+        },
+        enable_skill_extraction: enableSkillExtraction,
+        context_length: null
+      };
+
+      // Add image_generation configuration
+      if (imageConfig && imageConfig.shape) {
+        // User selected "Add your own badge configuration"
+        console.log('[API] Image Config received:', imageConfig);
+        console.log('[API] Logo base64 exists:', !!imageConfig.logo_base64);
+        console.log('[API] Logo base64 length:', imageConfig.logo_base64?.length || 0);
+        
+        payload.image_generation = {
+          enable_image_generation: true,
+          image_configuration: {
+            image_type: '',
+            border_color: '',
+            border_width: 0,
+            primary_color: imageConfig.fill_mode === 'gradient' ? imageConfig.start_color : imageConfig.fill_color,
+            secondary_color: imageConfig.fill_mode === 'gradient' ? imageConfig.end_color : '',
+            shape: imageConfig.shape,
+            logo: imageConfig.logo_base64 || ''
+          }
+        };
+      } else {
+        // Default or "Upload your own Badge Image" - enable_image_generation = false
+        payload.image_generation = {
+          enable_image_generation: false
+        };
       }
-      if (badgeConfig) {
-        Object.assign(additionalParams, badgeConfig);
-      }
-      if (userPrompt) {
-        additionalParams.custom_instructions = userPrompt;
-      }
-      const stream = new StreamingApiClient().generateSuggestionsStream(content, additionalParams);
+
+      console.log('[API] Final payload being sent:', JSON.stringify(payload, null, 2));
+      const stream = new StreamingApiClient().generateSuggestionsStream(payload);
       
       for await (const response of stream) {
         
@@ -493,6 +526,7 @@ export function useStreamingSuggestionGenerator() {
     // Get LAiSER flag and badge configuration from localStorage
     let enableSkillExtraction = false;
     let badgeConfig: any = null;
+    let imageConfig: any = null;
     let userPrompt = '';
     try {
       const laiserEnabled = localStorage.getItem('isLaiserEnabled');
@@ -502,6 +536,18 @@ export function useStreamingSuggestionGenerator() {
       const storedConfig = localStorage.getItem('badgeConfig');
       if (storedConfig) {
         badgeConfig = JSON.parse(storedConfig);
+      }
+
+      // Get image configuration
+      const storedImageConfig = localStorage.getItem('imageConfig');
+      if (storedImageConfig) {
+        imageConfig = JSON.parse(storedImageConfig);
+        console.log('[Hook] Retrieved imageConfig from localStorage:', {
+          ...imageConfig,
+          logo_base64: imageConfig?.logo_base64 ? `${imageConfig.logo_base64.substring(0, 50)}... (${imageConfig.logo_base64.length} chars)` : 'undefined'
+        });
+      } else {
+        console.log('[Hook] No imageConfig found in localStorage');
       }
 
       // Get user prompt
@@ -529,7 +575,7 @@ export function useStreamingSuggestionGenerator() {
     ]);
 
     // Generate single suggestion
-    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction, badgeConfig, userPrompt);
+    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction, badgeConfig, imageConfig, userPrompt);
 
     // Wait for stream to complete
     await Promise.allSettled([promise1]);

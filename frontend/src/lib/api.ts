@@ -130,7 +130,7 @@ export class StreamingApiClient {
     this.baseURL = baseURL;
   }
 
-  async *generateSuggestionsStream(content: string, additionalParams?: Record<string, any>): AsyncGenerator<StreamingResponse, void, unknown> {
+  async *generateSuggestionsStream(payload: any): AsyncGenerator<StreamingResponse, void, unknown> {
     const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.GENERATE}`;
     
     try {
@@ -143,10 +143,7 @@ export class StreamingApiClient {
           'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'no-cache',
         },
-        body: JSON.stringify({ 
-          course_input: content,
-          ...additionalParams 
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
