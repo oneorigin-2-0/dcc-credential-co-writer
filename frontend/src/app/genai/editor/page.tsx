@@ -608,12 +608,26 @@ export default function BadgeEditorPage() {
     try {
       const apiClient = new StreamingApiClient();
 
-      for await (const response of apiClient.generateSuggestionsStream(originalContent, {
-        regenerate: true,
-        custom_instructions: badgeConfiguration.user_prompt,
+      // Build API payload
+      const payload = {
+        course_input: originalContent,
+        badge_configuration: {
+          badge_style: badgeConfiguration.badge_style || 'professional',
+          badge_tone: badgeConfiguration.badge_tone || 'authoritative',
+          criterion_style: badgeConfiguration.criterion_style || 'task-oriented',
+          badge_level: badgeConfiguration.badge_level || 'not-specified',
+          institution: badgeConfiguration.institution || '',
+          institute_url: badgeConfiguration.institute_url || '',
+          custom_instructions: badgeConfiguration.user_prompt || ''
+        },
         enable_skill_extraction: isLaiserEnabled,
-        ...badgeConfiguration,
-      })) {
+        context_length: null,
+        image_generation: {
+          enable_image_generation: false // Regeneration doesn't re-generate image
+        }
+      };
+
+      for await (const response of apiClient.generateSuggestionsStream(payload)) {
 
         switch (response.type) {
           case 'start':
@@ -910,6 +924,15 @@ export default function BadgeEditorPage() {
     );
   }
 
+  // Determine if Column 3 (Image/Skills) should be shown
+  const hasImagePreview = badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image;
+  const hasSkills = badgeSuggestion.skills && badgeSuggestion.skills.length > 0;
+  const showColumn3 = hasImagePreview || hasSkills;
+
+  // Adjust column spans based on whether Column 3 is visible
+  const column1Span = showColumn3 ? "lg:col-span-3" : "lg:col-span-4";
+  const column2Span = showColumn3 ? "lg:col-span-6" : "lg:col-span-8";
+
   return (
     <main id="main-content" className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
@@ -927,7 +950,7 @@ export default function BadgeEditorPage() {
           <div className="w-full">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Column 1: Configuration */}
-              <div className="lg:col-span-3">
+              <div className={column1Span}>
                 <BadgeConfiguration
                   onRegenerate={handleRegenerate}
                   isRegenerating={isRegenerating}
@@ -937,7 +960,7 @@ export default function BadgeEditorPage() {
               </div>
 
               {/* Column 2: Badge Suggestion Editor / Streaming */}
-              <div className="lg:col-span-6">
+              <div className={column2Span}>
                 {isStreaming ? (
                   streamingError ? (
                     <Card className="border-red-300 shadow-lg bg-red-50 h-full">
@@ -1263,19 +1286,20 @@ export default function BadgeEditorPage() {
                 </Dialog>
               </div>
 
-              {/* Column 3: Badge Image Display and Skills */}
-              <div className="lg:col-span-3 space-y-6">
-                {/* Only show image if image generation was enabled */}
-                {(badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image) && (
-                  <BadgeImageDisplay
-                    imageUrl={badgeSuggestion.image}
-                    imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
-                    onEditImage={handleEditImage}
-                  />
-                )}
+              {/* Column 3: Badge Image Display and Skills - Only render if there's content */}
+              {showColumn3 && (
+                <div className="lg:col-span-3 space-y-6">
+                  {/* Only show image if image generation was enabled */}
+                  {hasImagePreview && (
+                    <BadgeImageDisplay
+                      imageUrl={badgeSuggestion.image}
+                      imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
+                      onEditImage={handleEditImage}
+                    />
+                  )}
 
-                {/* Skills Section */}
-                {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
+                  {/* Skills Section */}
+                  {hasSkills && (
                   <Card className="border-secondary shadow-lg">
                     <CardContent className="p-0">
                       <Accordion type="single" collapsible defaultValue="skills">
@@ -1287,7 +1311,7 @@ export default function BadgeEditorPage() {
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4">
                             <div className="space-y-4 mt-2 h-[calc(100vh-400px)] overflow-y-auto pr-2">
-                              {badgeSuggestion.skills.map((skillObj, index) => (
+                              {badgeSuggestion.skills?.map((skillObj, index) => (
                                 skillObj.targetName && (
                                   <div
                                     key={index}
@@ -1338,7 +1362,8 @@ export default function BadgeEditorPage() {
                     </CardContent>
                   </Card>
                 )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
