@@ -290,9 +290,9 @@ def _generate_text_badge_layers(
             canvas["height"]
         )
         shape_height = shape_bounds["bottom"] - shape_bounds["top"]
-        title_y = shape_bounds["top"] + shape_height * 0.50  # Title at 50% (center) of shape
+        title_y = shape_bounds["top"] + shape_height * 0.46  # Title at 46% from top
         # Adjust ribbon down by ~15px to account for text baseline vs visual center
-        ribbon_y_offset = int(title_y - canvas_center) - 15
+        ribbon_y_offset = int(title_y - canvas_center) + 15
 
         # Different widths for ribbon types
         ribbon_width = 540 if ribbon_type == "ribbon" else 490  # ribbon_folded is shorter
