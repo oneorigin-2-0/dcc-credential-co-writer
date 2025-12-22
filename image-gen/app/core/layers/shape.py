@@ -15,7 +15,122 @@ class ShapeLayer(Layer):
         self.border = spec.get("border", {"color": None, "width": 0})
         self.params = spec.get("params", {})
         self.scale_factor = float(spec.get("scale_factor", 1.0))
-    
+
+    def _darken_color(self, hex_color, factor):
+        """Darken a hex color by a factor (0.0 = black, 1.0 = original)"""
+        hex_color = hex_color.lstrip('#')
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        r = int(r * factor)
+        g = int(g * factor)
+        b = int(b * factor)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _render_ribbon_folded(self, canvas, W, H):
+        """Custom rendering for folded ribbon with 3D depth effect.
+
+        3-Part approach:
+        - Part 1 (0-15%): Left section, moved UP by height/2, darker, V-cut on LEFT (outer edge)
+        - Part 2 (15-85%): Middle section, stays in place (main ribbon) - rendered ON TOP
+        - Part 3 (85-100%): Right section, moved UP by height/2, darker, V-cut on RIGHT (outer edge)
+        """
+        # Get parameters
+        width = int(self.params.get("width", 480) * self.scale_factor)
+        height = int(self.params.get("height", 80) * self.scale_factor)
+        fold_percent = self.params.get("fold_percent", 0.15)  # 15% on each side
+        y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
+        fold_darken = self.params.get("fold_darken", 0.8)
+
+        cx, cy = W // 2, H // 2
+        ribbon_cy = cy + y_offset
+
+        # Full ribbon bounds
+        left = cx - width // 2
+        right = cx + width // 2
+        top = ribbon_cy - height // 2
+        bottom = ribbon_cy + height // 2
+
+        # Calculate fold dimensions
+        fold_section_width = int(width * fold_percent)  # 15% of width
+        fold_offset = height // 4  # Move folds UP by quarter height (less than before)
+        tail_depth = int(height * 0.3)  # V-cut depth (30% of height)
+        mid_y = ribbon_cy - fold_offset  # Middle Y for V-point (adjusted for fold offset)
+
+        # Offset to move folds outward (50% of fold width)
+        fold_outward_offset = fold_section_width // 2
+
+        # Part 1: Left fold (V-notch on LEFT edge) - moved LEFT by 50% of fold width
+        left_fold_left = left - fold_outward_offset
+        left_fold_right = left + fold_section_width - fold_outward_offset
+        left_fold = [
+            (left_fold_left, top - fold_offset),                    # top-left (V point facing out)
+            (left_fold_right, top - fold_offset),                   # top-right
+            (left_fold_right, bottom - fold_offset),                # bottom-right
+            (left_fold_left, bottom - fold_offset),                 # bottom-left (V point facing out)
+            (left_fold_left + tail_depth, mid_y),                   # V center (indented inward)
+        ]
+
+        # Part 2: Main ribbon rectangle (full width - rendered ON TOP to cover overlaps)
+        main_rect = [left, top, right, bottom]
+
+        # Part 3: Right fold (V-notch on RIGHT edge) - moved RIGHT by 50% of fold width
+        right_fold_left = right - fold_section_width + fold_outward_offset
+        right_fold_right = right + fold_outward_offset
+        right_fold = [
+            (right_fold_left, top - fold_offset),                   # top-left
+            (right_fold_right, top - fold_offset),                  # top-right (V point facing out)
+            (right_fold_right - tail_depth, mid_y),                 # V center (indented inward)
+            (right_fold_right, bottom - fold_offset),               # bottom-right (V point facing out)
+            (right_fold_left, bottom - fold_offset),                # bottom-left
+        ]
+
+        # Get colors
+        mode = self.fill.get("mode", "solid")
+        if mode == "solid":
+            main_color = self.fill.get("color", "#C41E3A")
+            fold_color = self._darken_color(main_color, fold_darken)
+        elif mode == "gradient":
+            start_color = self.fill.get("start_color", "#C41E3A")
+            end_color = self.fill.get("end_color", "#8B0000")
+            fold_color = self._darken_color(start_color, fold_darken)
+            main_color = None  # Will use gradient
+        else:
+            return  # Transparent - nothing to render
+
+        # RENDER ORDER: Folds first (behind), then main ribbon (on top)
+
+        # 1. Draw left and right folds (darker, behind) - polygons with V-cuts
+        fold_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        fold_draw = ImageDraw.Draw(fold_layer)
+        fold_draw.polygon(left_fold, fill=fold_color)
+        fold_draw.polygon(right_fold, fill=fold_color)
+        canvas.alpha_composite(fold_layer)
+
+        # 2. Draw main ribbon (on top)
+        ribbon_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ribbon_draw = ImageDraw.Draw(ribbon_layer)
+
+        if mode == "solid":
+            ribbon_draw.rectangle(main_rect, fill=main_color)
+        else:
+            # Create gradient for main ribbon
+            gradient = make_linear_gradient(
+                (W, H),
+                self.fill.get("start_color", "#FFFFFF"),
+                self.fill.get("end_color", "#FFFFFF"),
+                self.fill.get("vertical", True)
+            )
+            # Mask to main ribbon rectangle
+            ribbon_mask = Image.new("L", (W, H), 0)
+            mask_draw = ImageDraw.Draw(ribbon_mask)
+            mask_draw.rectangle(main_rect, fill=255)
+            ribbon_layer.paste(gradient, (0, 0), ribbon_mask)
+
+        canvas.alpha_composite(ribbon_layer)
+
+        # Note: Borders disabled for ribbon_folded to maintain clean appearance
+
     def _mask(self, size):
         W, H = size
         s = self.shape
@@ -54,10 +169,101 @@ class ShapeLayer(Layer):
 
             rect = [x1, y1, x2, y2]
             return rounded_rect_mask(size, rect, radius)
+        if s == "ribbon":
+            # Classic ribbon/banner with V-notch tails on both ends
+            width = int(self.params.get("width", 480) * self.scale_factor)
+            height = int(self.params.get("height", 80) * self.scale_factor)
+            tail_depth = int(self.params.get("tail_depth", 25) * self.scale_factor)
+            y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
+
+            cx, cy = W // 2, H // 2
+
+            # Position ribbon (y_offset positive = lower on canvas)
+            ribbon_cy = cy + y_offset
+
+            left = cx - width // 2
+            right = cx + width // 2
+            top = ribbon_cy - height // 2
+            bottom = ribbon_cy + height // 2
+            mid_y = ribbon_cy
+
+            # 6 points for ribbon with V-notch tails
+            pts = [
+                (left, top),                      # top-left
+                (right, top),                     # top-right
+                (right - tail_depth, mid_y),      # right V-point (inward)
+                (right, bottom),                  # bottom-right
+                (left, bottom),                   # bottom-left
+                (left + tail_depth, mid_y),       # left V-point (inward)
+            ]
+
+            return polygon_mask(size, pts)
+        if s == "ribbon_folded":
+            # Folded ribbon with 3D depth effect - V-cuts on outer edges like classic ribbon
+            width = int(self.params.get("width", 480) * self.scale_factor)
+            height = int(self.params.get("height", 80) * self.scale_factor)
+            fold_percent = self.params.get("fold_percent", 0.15)
+            y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
+
+            cx, cy = W // 2, H // 2
+            ribbon_cy = cy + y_offset
+
+            left = cx - width // 2
+            right = cx + width // 2
+            top = ribbon_cy - height // 2
+            bottom = ribbon_cy + height // 2
+
+            # Calculate fold dimensions
+            fold_section_width = int(width * fold_percent)
+            fold_offset = height // 4  # Move folds UP by quarter height (less than before)
+            tail_depth = int(height * 0.3)  # V-cut depth
+            mid_y = ribbon_cy - fold_offset  # Middle Y for V-point
+
+            # Create mask combining all 3 parts
+            m = Image.new("L", size, 0)
+            d = ImageDraw.Draw(m)
+
+            # Offset to move folds outward (50% of fold width)
+            fold_outward_offset = fold_section_width // 2
+
+            # Part 1: Left fold (V-notch on LEFT edge) - moved LEFT by 50%
+            left_fold_left = left - fold_outward_offset
+            left_fold_right = left + fold_section_width - fold_outward_offset
+            left_fold = [
+                (left_fold_left, top - fold_offset),
+                (left_fold_right, top - fold_offset),
+                (left_fold_right, bottom - fold_offset),
+                (left_fold_left, bottom - fold_offset),
+                (left_fold_left + tail_depth, mid_y),
+            ]
+            d.polygon(left_fold, fill=255)
+
+            # Part 2: Main ribbon (full width - covers overlaps)
+            d.rectangle([left, top, right, bottom], fill=255)
+
+            # Part 3: Right fold (V-notch on RIGHT edge) - moved RIGHT by 50%
+            right_fold_left = right - fold_section_width + fold_outward_offset
+            right_fold_right = right + fold_outward_offset
+            right_fold = [
+                (right_fold_left, top - fold_offset),
+                (right_fold_right, top - fold_offset),
+                (right_fold_right - tail_depth, mid_y),
+                (right_fold_right, bottom - fold_offset),
+                (right_fold_left, bottom - fold_offset),
+            ]
+            d.polygon(right_fold, fill=255)
+
+            return m
         raise ValueError(f"Unknown shape: {s}")
     
     def render(self, canvas):
         W, H = canvas.width, canvas.height
+
+        # Special handling for ribbon_folded - custom multi-part rendering
+        if self.shape == "ribbon_folded":
+            self._render_ribbon_folded(canvas, W, H)
+            return
+
         m = self._mask((W,H))
         # Fill
         mode = self.fill.get("mode","solid")
@@ -112,4 +318,29 @@ class ShapeLayer(Layer):
 
                 rect = [x1, y1, x2, y2]
                 d.rounded_rectangle(rect, radius=radius, outline=col, width=bw)
+            elif s == "ribbon":
+                # Classic ribbon/banner with V-notch tails
+                width = int(self.params.get("width", 480) * self.scale_factor)
+                height = int(self.params.get("height", 80) * self.scale_factor)
+                tail_depth = int(self.params.get("tail_depth", 25) * self.scale_factor)
+                y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
+
+                cx, cy = W // 2, H // 2
+                ribbon_cy = cy + y_offset
+
+                left = cx - width // 2
+                right = cx + width // 2
+                top = ribbon_cy - height // 2
+                bottom = ribbon_cy + height // 2
+                mid_y = ribbon_cy
+
+                pts = [
+                    (left, top),
+                    (right, top),
+                    (right - tail_depth, mid_y),
+                    (right, bottom),
+                    (left, bottom),
+                    (left + tail_depth, mid_y),
+                ]
+                d.polygon(pts, outline=col, width=bw)
             canvas.alpha_composite(bd)
