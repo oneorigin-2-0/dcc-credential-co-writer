@@ -38,7 +38,7 @@ class ShapeLayer(Layer):
         # Get parameters
         width = int(self.params.get("width", 480) * self.scale_factor)
         height = int(self.params.get("height", 80) * self.scale_factor)
-        fold_percent = self.params.get("fold_percent", 0.15)  # 15% on each side
+        fold_percent = 0.15  # Fixed at 15% on each side
         y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
         fold_darken = self.params.get("fold_darken", 0.8)
 
@@ -85,18 +85,9 @@ class ShapeLayer(Layer):
             (right_fold_left, bottom - fold_offset),                # bottom-left
         ]
 
-        # Get colors
-        mode = self.fill.get("mode", "solid")
-        if mode == "solid":
-            main_color = self.fill.get("color", "#C41E3A")
-            fold_color = self._darken_color(main_color, fold_darken)
-        elif mode == "gradient":
-            start_color = self.fill.get("start_color", "#C41E3A")
-            end_color = self.fill.get("end_color", "#8B0000")
-            fold_color = self._darken_color(start_color, fold_darken)
-            main_color = None  # Will use gradient
-        else:
-            return  # Transparent - nothing to render
+        # Get colors (solid mode only)
+        main_color = self.fill.get("color", "#C41E3A")
+        fold_color = self._darken_color(main_color, fold_darken)
 
         # RENDER ORDER: Folds first (behind), then main ribbon (on top)
 
@@ -110,26 +101,9 @@ class ShapeLayer(Layer):
         # 2. Draw main ribbon (on top)
         ribbon_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         ribbon_draw = ImageDraw.Draw(ribbon_layer)
-
-        if mode == "solid":
-            ribbon_draw.rectangle(main_rect, fill=main_color)
-        else:
-            # Create gradient for main ribbon
-            gradient = make_linear_gradient(
-                (W, H),
-                self.fill.get("start_color", "#FFFFFF"),
-                self.fill.get("end_color", "#FFFFFF"),
-                self.fill.get("vertical", True)
-            )
-            # Mask to main ribbon rectangle
-            ribbon_mask = Image.new("L", (W, H), 0)
-            mask_draw = ImageDraw.Draw(ribbon_mask)
-            mask_draw.rectangle(main_rect, fill=255)
-            ribbon_layer.paste(gradient, (0, 0), ribbon_mask)
+        ribbon_draw.rectangle(main_rect, fill=main_color)
 
         canvas.alpha_composite(ribbon_layer)
-
-        # Note: Borders disabled for ribbon_folded to maintain clean appearance
 
     def _mask(self, size):
         W, H = size
@@ -202,7 +176,7 @@ class ShapeLayer(Layer):
             # Folded ribbon with 3D depth effect - V-cuts on outer edges like classic ribbon
             width = int(self.params.get("width", 480) * self.scale_factor)
             height = int(self.params.get("height", 80) * self.scale_factor)
-            fold_percent = self.params.get("fold_percent", 0.15)
+            fold_percent = 0.15  # Fixed at 15% on each side
             y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
 
             cx, cy = W // 2, H // 2
@@ -318,29 +292,5 @@ class ShapeLayer(Layer):
 
                 rect = [x1, y1, x2, y2]
                 d.rounded_rectangle(rect, radius=radius, outline=col, width=bw)
-            elif s == "ribbon":
-                # Classic ribbon/banner with V-notch tails
-                width = int(self.params.get("width", 480) * self.scale_factor)
-                height = int(self.params.get("height", 80) * self.scale_factor)
-                tail_depth = int(self.params.get("tail_depth", 25) * self.scale_factor)
-                y_offset = int(self.params.get("y_offset", 180) * self.scale_factor)
-
-                cx, cy = W // 2, H // 2
-                ribbon_cy = cy + y_offset
-
-                left = cx - width // 2
-                right = cx + width // 2
-                top = ribbon_cy - height // 2
-                bottom = ribbon_cy + height // 2
-                mid_y = ribbon_cy
-
-                pts = [
-                    (left, top),
-                    (right, top),
-                    (right - tail_depth, mid_y),
-                    (right, bottom),
-                    (left, bottom),
-                    (left + tail_depth, mid_y),
-                ]
-                d.polygon(pts, outline=col, width=bw)
+            # Note: ribbon and ribbon_folded shapes do not support borders
             canvas.alpha_composite(bd)
