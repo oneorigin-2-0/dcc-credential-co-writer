@@ -36,6 +36,16 @@ import {
 import { StreamingApiClient } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
 
+// Default colors for badge image editor layer configuration
+const IMAGE_EDITOR_DEFAULTS = {
+  backgroundColor: '#FFFFFF',
+  textColor: '#000000',
+  borderColor: '#000000',
+  fillColor: '#00B4D8',
+  gradientStart: '#E76F51',
+  gradientEnd: '#FF8C42',
+} as const;
+
 export default function BadgeEditorPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -818,12 +828,16 @@ export default function BadgeEditorPage() {
       "description": badgeSuggestion.description,
       "criteria": {
         "narrative": badgeSuggestion.criteria
-      },
-      "image": {
-        "id": badgeSuggestion.image || "",
-        "type": "Image"
       }
     };
+
+    // Only include image if image generation was enabled and image exists
+    if (badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image) {
+      achievement.image = {
+        "id": badgeSuggestion.image,
+        "type": "Image"
+      };
+    }
 
     // Add alignment array if skills exist
     if (badgeSuggestion.skills && badgeSuggestion.skills.length > 0) {
@@ -965,10 +979,10 @@ export default function BadgeEditorPage() {
                     />
                   )
                 ) : (
-                  <Card className="border-[#429EA6] shadow-lg bg-white">
+                  <Card className="border-secondary shadow-lg bg-white">
                     <CardHeader className='pb-4'>
                       <div className="mb-3">
-                        <CardTitle className="text-[#234467] font-headline font-bold text-lg">
+                        <CardTitle className="text-primary font-headline font-bold text-lg">
                           Badge Suggestion Editor
                         </CardTitle>
                       </div>
@@ -1190,7 +1204,7 @@ export default function BadgeEditorPage() {
                             href={selectedSkill.targetUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                            className="text-secondary hover:underline inline-flex items-center gap-1"
                           >
                             View URL →
                           </a>
@@ -1249,23 +1263,26 @@ export default function BadgeEditorPage() {
                 </Dialog>
               </div>
 
-              {/* Column 3: Badge Image Display */}
+              {/* Column 3: Badge Image Display and Skills */}
               <div className="lg:col-span-3 space-y-6">
-                <BadgeImageDisplay
-                  imageUrl={badgeSuggestion.image}
-                  imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
-                  onEditImage={handleEditImage}
-                />
+                {/* Only show image if image generation was enabled */}
+                {(badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image) && (
+                  <BadgeImageDisplay
+                    imageUrl={badgeSuggestion.image}
+                    imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
+                    onEditImage={handleEditImage}
+                  />
+                )}
 
-                {/* Skills Section - Below Image Preview */}
+                {/* Skills Section */}
                 {badgeSuggestion.skills && badgeSuggestion.skills.length > 0 && (
-                  <Card className="border-[#429EA6] shadow-lg">
+                  <Card className="border-secondary shadow-lg">
                     <CardContent className="p-0">
                       <Accordion type="single" collapsible defaultValue="skills">
-                        <AccordionItem value="skills" className="border-[#429EA6] bg-gray-50 rounded-lg border-b-0 [&:hover]:border-[#429EA6]">
+                        <AccordionItem value="skills" className="border-secondary bg-gray-50 rounded-lg border-b-0 [&:hover]:border-secondary">
                           <AccordionTrigger className="px-4 py-3 hover:no-underline">
                             <div className="flex items-center justify-between w-full pr-4">
-                              <h3 className="text-[#234467] font-headline font-bold text-md">Skills (powered by LAiSER)</h3>
+                              <h3 className="text-primary font-headline font-bold text-md">Skills (powered by LAiSER)</h3>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4">
@@ -1292,7 +1309,7 @@ export default function BadgeEditorPage() {
                                             href={skillObj.targetUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-xs text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
                                           >
                                             {skillObj.targetType} →
                                           </a>
@@ -1306,7 +1323,7 @@ export default function BadgeEditorPage() {
                                         href={skillObj.targetUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-xs text-[#429EA6] hover:underline inline-flex items-center gap-1"
+                                        className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
                                       >
                                         View URL →
                                       </a>
@@ -1353,7 +1370,7 @@ export default function BadgeEditorPage() {
                   <Button
                     onClick={handleApplyImageChanges}
                     disabled={!generatedImage}
-                    className="bg-[#429EA6] text-white hover:bg-[#429EA6]/90"
+                    className="bg-secondary text-white hover:bg-secondary/90"
                   >
                     Apply Changes
                   </Button>
@@ -1368,7 +1385,7 @@ export default function BadgeEditorPage() {
                     }}
                     disabled={!generatedImage}
                     variant="outline"
-                    className="border-[#234467] text-[#234467] hover:bg-[#234467] hover:text-white"
+                    className="border-primary text-primary hover:bg-primary hover:text-white"
                   >
                     Download PNG
                   </Button>
@@ -1409,8 +1426,8 @@ export default function BadgeEditorPage() {
                       <button
                         key={index}
                         className={`w-full p-3 mb-2 text-left rounded-lg border transition-all duration-200 ${isActive
-                          ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5'
+                          ? 'bg-secondary text-white border-secondary shadow-md'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-secondary hover:bg-secondary/5'
                           }`}
                         onClick={() => toggleAccordion('layer', index)}
                       >
@@ -1451,7 +1468,7 @@ export default function BadgeEditorPage() {
                                   <select
                                     value={layer.mode || 'solid'}
                                     onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.mode`, e.target.value)}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                   >
                                     <option value="solid">Solid</option>
                                     <option value="gradient">Gradient</option>
@@ -1462,15 +1479,15 @@ export default function BadgeEditorPage() {
                                   <div className="flex items-center space-x-2">
                                     <input
                                       type="color"
-                                      value={layer.color || '#FFFFFF'}
+                                      value={layer.color || IMAGE_EDITOR_DEFAULTS.backgroundColor}
                                       onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
                                       className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                     />
                                     <input
                                       type="text"
-                                      value={layer.color || '#FFFFFF'}
+                                      value={layer.color || IMAGE_EDITOR_DEFAULTS.backgroundColor}
                                       onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
-                                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                     />
                                   </div>
                                 </div>
@@ -1512,7 +1529,7 @@ export default function BadgeEditorPage() {
                                         setEditedImageConfig(updatedConfig);
                                         generateImage(updatedConfig);
                                       }}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                     >
                                       <option value="hexagon">Hexagon</option>
                                       <option value="circle">Circle</option>
@@ -1527,7 +1544,7 @@ export default function BadgeEditorPage() {
                                         <select
                                           value={layer.fill.mode || 'solid'}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.mode`, e.target.value)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                         >
                                           <option value="solid">Solid</option>
                                           <option value="gradient">Gradient</option>
@@ -1540,15 +1557,15 @@ export default function BadgeEditorPage() {
                                             <div className="flex items-center space-x-2">
                                               <input
                                                 type="color"
-                                                value={layer.fill.start_color || '#E76F51'}
+                                                value={layer.fill.start_color || IMAGE_EDITOR_DEFAULTS.gradientStart}
                                                 onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.start_color`, e.target.value)}
                                                 className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                               />
                                               <input
                                                 type="text"
-                                                value={layer.fill.start_color || '#E76F51'}
+                                                value={layer.fill.start_color || IMAGE_EDITOR_DEFAULTS.gradientStart}
                                                 onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.start_color`, e.target.value)}
-                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                               />
                                             </div>
                                           </div>
@@ -1557,15 +1574,15 @@ export default function BadgeEditorPage() {
                                             <div className="flex items-center space-x-2">
                                               <input
                                                 type="color"
-                                                value={layer.fill.end_color || '#FF8C42'}
+                                                value={layer.fill.end_color || IMAGE_EDITOR_DEFAULTS.gradientEnd}
                                                 onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.end_color`, e.target.value)}
                                                 className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                               />
                                               <input
                                                 type="text"
-                                                value={layer.fill.end_color || '#FF8C42'}
+                                                value={layer.fill.end_color || IMAGE_EDITOR_DEFAULTS.gradientEnd}
                                                 onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.end_color`, e.target.value)}
-                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                               />
                                             </div>
                                           </div>
@@ -1574,7 +1591,7 @@ export default function BadgeEditorPage() {
                                             <select
                                               value={layer.fill.vertical ? 'vertical' : 'horizontal'}
                                               onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.vertical`, e.target.value === 'vertical')}
-                                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                             >
                                               <option value="vertical">Vertical</option>
                                               <option value="horizontal">Horizontal</option>
@@ -1587,15 +1604,15 @@ export default function BadgeEditorPage() {
                                           <div className="flex items-center space-x-2">
                                             <input
                                               type="color"
-                                              value={layer.fill.color || '#00B4D8'}
+                                              value={layer.fill.color || IMAGE_EDITOR_DEFAULTS.fillColor}
                                               onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.color`, e.target.value)}
                                               className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                             />
                                             <input
                                               type="text"
-                                              value={layer.fill.color || '#00B4D8'}
+                                              value={layer.fill.color || IMAGE_EDITOR_DEFAULTS.fillColor}
                                               onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.fill.color`, e.target.value)}
-                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                             />
                                           </div>
                                         </div>
@@ -1611,7 +1628,7 @@ export default function BadgeEditorPage() {
                                           type="number"
                                           value={layer.border.width || 0}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.width`, parseInt(e.target.value))}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                         />
                                       </div>
                                       <div>
@@ -1619,15 +1636,15 @@ export default function BadgeEditorPage() {
                                         <div className="flex items-center space-x-2">
                                           <input
                                             type="color"
-                                            value={layer.border.color || '#000000'}
+                                            value={layer.border.color || IMAGE_EDITOR_DEFAULTS.borderColor}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.color`, e.target.value)}
                                             className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                           />
                                           <input
                                             type="text"
-                                            value={layer.border.color || '#000000'}
+                                            value={layer.border.color || IMAGE_EDITOR_DEFAULTS.borderColor}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.border.color`, e.target.value)}
-                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                           />
                                         </div>
                                       </div>
@@ -1645,7 +1662,7 @@ export default function BadgeEditorPage() {
                                             type="number"
                                             value={layer.params?.radius || (layer.shape === 'rounded_rect' ? 50 : 250)}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.radius`, parseInt(e.target.value))}
-                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                           />
                                         </div>
                                       )}
@@ -1656,7 +1673,7 @@ export default function BadgeEditorPage() {
                                             type="number"
                                             value={layer.params?.width || 450}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.width`, parseInt(e.target.value))}
-                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                           />
                                         </div>
                                       )}
@@ -1667,7 +1684,7 @@ export default function BadgeEditorPage() {
                                             type="number"
                                             value={layer.params?.height || 450}
                                             onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.params.height`, parseInt(e.target.value))}
-                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                           />
                                         </div>
                                       )}
@@ -1692,7 +1709,7 @@ export default function BadgeEditorPage() {
                                       <button
                                         type="button"
                                         onClick={() => document.getElementById('logo-upload-input')?.click()}
-                                        className="w-full px-3 py-2 text-sm border border-[#429EA6] text-[#429EA6] rounded hover:bg-[#429EA6] hover:text-white transition-colors flex items-center justify-center gap-2"
+                                        className="w-full px-3 py-2 text-sm border border-secondary text-secondary rounded hover:bg-secondary hover:text-white transition-colors flex items-center justify-center gap-2"
                                       >
                                         <Upload className="h-4 w-4" />
                                         Choose Logo File
@@ -1724,7 +1741,7 @@ export default function BadgeEditorPage() {
                                           max="1000"
                                           value={typeof layer.size === 'object' ? 400 : layer.size}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size`, parseInt(e.target.value))}
-                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-secondary"
                                         />
                                         <div className="flex justify-between items-center text-xs">
                                           <span className="text-gray-500">50px</span>
@@ -1744,7 +1761,7 @@ export default function BadgeEditorPage() {
                                           max="550"
                                           value={layer.position.y || 300}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.position.y`, parseInt(e.target.value))}
-                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-secondary"
                                         />
                                         <div className="flex justify-between items-center text-xs">
                                           <span className="text-gray-500">50</span>
@@ -1770,7 +1787,7 @@ export default function BadgeEditorPage() {
                                           max="500"
                                           value={typeof layer.size === 'object' ? 400 : layer.size}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.size`, parseInt(e.target.value))}
-                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-secondary"
                                         />
                                         <div className="flex justify-between items-center text-xs">
                                           <span className="text-gray-500">50px</span>
@@ -1792,7 +1809,7 @@ export default function BadgeEditorPage() {
                                       type="text"
                                       value={layer.text || ''}
                                       onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.text`, e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                     />
                                   </div>
                                   {layer.font && (
@@ -1802,7 +1819,7 @@ export default function BadgeEditorPage() {
                                         <select
                                           value={layer.font.path?.replace('assets/fonts/', '').replace('.ttf', '') || 'Arial'}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.path`, `assets/fonts/${e.target.value}.ttf`)}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                         >
                                           <option value="Arial">Arial</option>
                                           <option value="ArialBold">Arial Bold</option>
@@ -1816,7 +1833,7 @@ export default function BadgeEditorPage() {
                                           type="number"
                                           value={layer.font.size || 12}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.font.size`, parseInt(e.target.value))}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                         />
                                       </div>
                                     </>
@@ -1826,15 +1843,15 @@ export default function BadgeEditorPage() {
                                     <div className="flex items-center space-x-2">
                                       <input
                                         type="color"
-                                        value={layer.color || '#000000'}
+                                        value={layer.color || IMAGE_EDITOR_DEFAULTS.textColor}
                                         onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
                                         className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
                                       />
                                       <input
                                         type="text"
-                                        value={layer.color || '#000000'}
+                                        value={layer.color || IMAGE_EDITOR_DEFAULTS.textColor}
                                         onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.color`, e.target.value)}
-                                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                       />
                                     </div>
                                   </div>
@@ -1848,7 +1865,7 @@ export default function BadgeEditorPage() {
                                           max="850"
                                           value={layer.align.y || 500}
                                           onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.align.y`, parseInt(e.target.value))}
-                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#429EA6]"
+                                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-secondary"
                                         />
                                         <div className="flex justify-between items-center text-xs">
                                           <span className="text-gray-500">150</span>
@@ -1866,7 +1883,7 @@ export default function BadgeEditorPage() {
                                         type="number"
                                         value={layer.wrap.line_gap}
                                         onChange={(e) => updateImageConfig(`layers.${activeLayerIndex}.wrap.line_gap`, parseInt(e.target.value))}
-                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#429EA6] focus:border-transparent"
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-secondary focus:border-transparent"
                                       />
                                     </div>
                                   )} */}
@@ -1892,10 +1909,10 @@ export default function BadgeEditorPage() {
                   <div className="flex-1 flex items-center justify-center p-4 overflow-auto"
                     style={{
                       backgroundImage: `
-                           linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                           linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                           linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                           linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
+                           linear-gradient(45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                           linear-gradient(-45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                           linear-gradient(45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%), 
+                           linear-gradient(-45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%)
                          `,
                       backgroundSize: '20px 20px',
                       backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'

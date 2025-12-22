@@ -346,7 +346,7 @@ export default function GenAIPage() {
                                 id="content-textarea"
                                 aria-label="Content for badge generation"
                                 placeholder="Enter your course content, project summary, or other text that describes what the badge represents...."
-                                className="min-h-[200px] text-base border-gray-200 focus:border-[#429EA6] focus:ring-2 focus:ring-[#429EA6]/20 resize-none text-gray-700 placeholder:text-gray-400 transition-all duration-300"
+                                className="min-h-[200px] text-base border-gray-200 focus:border-secondary focus:ring-2 focus:ring-secondary/20 resize-none text-gray-700 placeholder:text-gray-400 transition-all duration-300"
                                 {...field}
                               />
                             </div>
@@ -359,7 +359,7 @@ export default function GenAIPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-gray-600 border border-gray-300 hover:text-[#429EA6] hover:border-[#429EA6] hover:bg-[#429EA6]/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                              className="text-gray-600 border border-gray-300 hover:text-secondary hover:border-secondary hover:bg-secondary/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                               onClick={() => fileInputRef.current?.click()}
                               disabled={isParsingFile || attachedFiles.length > 0}
                             >
@@ -400,7 +400,7 @@ export default function GenAIPage() {
                                 });
                               }
                             }}
-                            className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-[#429EA6] hover:shadow-md"
+                            className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-secondary hover:shadow-md"
                             style={{
                               animation: `slideIn 0.3s ease-out ${index * 0.1}s both`
                             }}
@@ -408,7 +408,7 @@ export default function GenAIPage() {
                             <div className="flex items-center justify-between p-3">
                               <CollapsibleTrigger asChild>
                                 <div className="flex items-center space-x-3 flex-1 cursor-pointer transition-all duration-200">
-                                  <FileText className="h-5 w-5 text-[#429EA6] transition-transform duration-200 hover:scale-110" />
+                                  <FileText className="h-5 w-5 text-secondary transition-transform duration-200 hover:scale-110" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-900">{file.name}</p>
                                     <p className="text-xs text-gray-500 font-bold">
@@ -457,7 +457,7 @@ export default function GenAIPage() {
                                           e.stopPropagation();
                                           startEdit(index, file.content);
                                         }}
-                                        className="transition-all duration-200 hover:scale-105 hover:text-[#429EA6]"
+                                        className="transition-all duration-200 hover:scale-105 hover:text-secondary"
                                       >
                                         <Edit className="h-4 w-4 mr-1 transition-transform duration-200 hover:rotate-12" />
                                         Edit
@@ -534,7 +534,7 @@ export default function GenAIPage() {
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between p-3 cursor-pointer transition-all duration-200">
                             <div className="flex items-center space-x-3">
-                              <Settings className="h-5 w-5 text-[#429EA6] transition-transform duration-200" />
+                              <Settings className="h-5 w-5 text-secondary transition-transform duration-200" />
                               <div>
                                 <p className="text-sm font-medium text-gray-900">Configuration</p>
                                 <p className="text-xs text-gray-500">Customize style, tone, level.</p>
@@ -546,7 +546,7 @@ export default function GenAIPage() {
                         <CollapsibleContent className="px-4 pb-4 data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden transition-all duration-300">
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-[0.6]">
-                              <h3 className="text-base font-semibold text-[#234467] mb-4">Style Configuration</h3>
+                              <h3 className="text-base font-semibold text-primary mb-4">Style Configuration</h3>
                               <BadgeConfiguration
                                 onConfigurationChange={setBadgeConfig}
                                 variant="inline"
@@ -571,12 +571,12 @@ export default function GenAIPage() {
                           checked={consentChecked}
                           onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
                           className="mt-1 transition-all duration-200"
-                          style={{ borderColor: '#429EA6' }}
+                          className="border-secondary"
                         />
                         <label
                           htmlFor="consent-checkbox"
                           className="text-sm leading-relaxed font-body select-none"
-                          style={{ color: '#40464c' }}
+                          className="text-foreground"
                         >
                           I acknowledge and consent to my input being securely utilized for model training and research purposes.
                         </label>
@@ -595,14 +595,14 @@ export default function GenAIPage() {
                           />
                           <label
                             htmlFor="laiser-toggle"
-                            className="text-sm font-medium text-gray-700 cursor-pointer transition-colors duration-200 hover:text-[#234467]"
+                            className="text-sm font-medium text-gray-700 cursor-pointer transition-colors duration-200 hover:text-primary"
                           >
                             Extract Skills (powered by{' '}
                             <a
                               href="https://laiser.gwu.edu/"
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[#429EA6] hover:text-[#234467] hover:underline transition-colors duration-200"
+                              className="text-secondary hover:text-primary hover:underline transition-colors duration-200"
                               onClick={(e) => e.stopPropagation()}
                             >
                               LAiSER

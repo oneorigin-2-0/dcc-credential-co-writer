@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Upload, Trash2, X, ChevronDown } from 'lucide-react';
 import {
   Dialog,
@@ -22,11 +23,12 @@ import {
 } from '@/components/ui/select';
 
 export interface BadgeImageConfigurationData {
-  shape?: 'hexagon' | 'circle' | 'rounded_rect';
-  fill_mode?: 'solid' | 'gradient';
-  fill_color?: string;
-  start_color?: string;
-  end_color?: string;
+  enable_image_generation?: boolean;
+  shape?: 'hexagon' | 'circle' | 'rounded_rect' | null;
+  fill_mode?: 'solid' | 'gradient' | null;
+  fill_color?: string | null;
+  start_color?: string | null;
+  end_color?: string | null;
   gradient_direction?: 'vertical' | 'horizontal';
   width?: number;
   height?: number;
@@ -85,12 +87,15 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
   // Selection state: 'none' | 'upload' | 'configure'
   const [selectedOption, setSelectedOption] = useState<'none' | 'upload' | 'configure'>('none');
 
-  // Image configuration state
-  const [imageShape, setImageShape] = useState<'hexagon' | 'circle' | 'rounded_rect'>(initialConfig?.shape || 'hexagon');
-  const [fillMode, setFillMode] = useState<'solid' | 'gradient'>(initialConfig?.fill_mode || 'solid');
-  const [fillColor, setFillColor] = useState(initialConfig?.fill_color || '#00B4D8');
-  const [startColor, setStartColor] = useState(initialConfig?.start_color || '#E76F51');
-  const [endColor, setEndColor] = useState(initialConfig?.end_color || '#FF8C42');
+  // Image generation toggle - defaults to FALSE
+  const [enableImageGeneration, setEnableImageGeneration] = useState(initialConfig?.enable_image_generation ?? false);
+
+  // Image configuration state - ALL DEFAULT TO NULL/UNSELECTED
+  const [imageShape, setImageShape] = useState<'hexagon' | 'circle' | 'rounded_rect' | null>(initialConfig?.shape || null);
+  const [fillMode, setFillMode] = useState<'solid' | 'gradient' | null>(initialConfig?.fill_mode || null);
+  const [fillColor, setFillColor] = useState<string | null>(initialConfig?.fill_color || null);
+  const [startColor, setStartColor] = useState<string | null>(initialConfig?.start_color || null);
+  const [endColor, setEndColor] = useState<string | null>(initialConfig?.end_color || null);
   const [gradientDirection, setGradientDirection] = useState<'vertical' | 'horizontal'>(initialConfig?.gradient_direction || 'vertical');
   const [width, setWidth] = useState(initialConfig?.width || 450);
   const [height, setHeight] = useState(initialConfig?.height || 450);
@@ -101,24 +106,27 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
   const [badgeImageBase64, setBadgeImageBase64] = useState<string>('');
   const [badgeImageFileName, setBadgeImageFileName] = useState<string>('');
 
-  // Color picker state for solid color
-  const [currentColor, setCurrentColor] = useState(fillColor);
-  const [hue, setHue] = useState(() => hexToHsl(fillColor)[0]);
-  const [saturation, setSaturation] = useState(() => hexToHsl(fillColor)[1]);
-  const [lightness, setLightness] = useState(() => hexToHsl(fillColor)[2]);
+  // Color picker state for solid color (defaults for picker UI only)
+  const defaultPickerColor = '#00B4D8';
+  const [currentColor, setCurrentColor] = useState(fillColor || defaultPickerColor);
+  const [hue, setHue] = useState(() => hexToHsl(fillColor || defaultPickerColor)[0]);
+  const [saturation, setSaturation] = useState(() => hexToHsl(fillColor || defaultPickerColor)[1]);
+  const [lightness, setLightness] = useState(() => hexToHsl(fillColor || defaultPickerColor)[2]);
   const [opacity, setOpacity] = useState(100);
 
   // Color picker state for gradient start color
+  const defaultStartColor = '#E76F51';
+  const defaultEndColor = '#FF8C42';
   const [currentGradientColor, setCurrentGradientColor] = useState<'start' | 'end'>('start');
-  const [startHue, setStartHue] = useState(() => hexToHsl(startColor)[0]);
-  const [startSaturation, setStartSaturation] = useState(() => hexToHsl(startColor)[1]);
-  const [startLightness, setStartLightness] = useState(() => hexToHsl(startColor)[2]);
+  const [startHue, setStartHue] = useState(() => hexToHsl(startColor || defaultStartColor)[0]);
+  const [startSaturation, setStartSaturation] = useState(() => hexToHsl(startColor || defaultStartColor)[1]);
+  const [startLightness, setStartLightness] = useState(() => hexToHsl(startColor || defaultStartColor)[2]);
   const [startOpacity, setStartOpacity] = useState(100);
 
   // Color picker state for gradient end color
-  const [endHue, setEndHue] = useState(() => hexToHsl(endColor)[0]);
-  const [endSaturation, setEndSaturation] = useState(() => hexToHsl(endColor)[1]);
-  const [endLightness, setEndLightness] = useState(() => hexToHsl(endColor)[2]);
+  const [endHue, setEndHue] = useState(() => hexToHsl(endColor || defaultEndColor)[0]);
+  const [endSaturation, setEndSaturation] = useState(() => hexToHsl(endColor || defaultEndColor)[1]);
+  const [endLightness, setEndLightness] = useState(() => hexToHsl(endColor || defaultEndColor)[2]);
   const [endOpacity, setEndOpacity] = useState(100);
 
   const colorAreaRef = useRef<HTMLDivElement>(null);
@@ -236,6 +244,7 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
       if (selectedOption === 'configure') {
         // Send badge configuration data
         const config: BadgeImageConfigurationData = {
+          enable_image_generation: enableImageGeneration, // ← Include toggle state
           shape: imageShape,
           fill_mode: fillMode,
           fill_color: fillColor,
@@ -265,11 +274,11 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOption, badgeImageBase64, badgeImageFileName, imageShape, fillMode, fillColor, startColor, endColor, gradientDirection, width, height, logoFile, logoFileName, logoBase64]);
+  }, [selectedOption, enableImageGeneration, badgeImageBase64, badgeImageFileName, imageShape, fillMode, fillColor, startColor, endColor, gradientDirection, width, height, logoFile, logoFileName, logoBase64]);
 
   const isInline = variant === 'inline';
   const borderClass = isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-secondary focus:border-primary focus:ring-primary';
-  const labelClass = isInline ? 'text-gray-700 font-medium text-sm mb-2' : 'text-[#40464c] font-subhead font-medium text-sm mb-2';
+  const labelClass = isInline ? 'text-gray-700 font-medium text-sm mb-2' : 'text-foreground font-subhead font-medium text-sm mb-2';
 
   const shapes = [
     { value: 'hexagon' as const, label: 'Hexagon' },
@@ -363,7 +372,7 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
             onClick={() => document.getElementById('badge-image-upload')?.click()}
             className="border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-secondary hover:bg-secondary/5 transition-all flex flex-col items-center justify-center p-12"
           >
-            <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-16 h-16 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-lg flex items-center justify-center">
                 <svg className="w-10 h-10 text-secondary" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
@@ -386,10 +395,10 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
                 className="flex items-center justify-center p-4 border-2 border-gray-200 rounded-lg"
                 style={{
                   backgroundImage: `
-                  linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                  linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                  linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                  linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
+                  linear-gradient(45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                  linear-gradient(-45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                  linear-gradient(45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%), 
+                  linear-gradient(-45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%)
                 `,
                   backgroundSize: '20px 20px',
                   backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
@@ -435,9 +444,31 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
           ← Back
         </button>
       </div>
+
+      {/* Enable Image Generation Toggle */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-secondary/5 to-primary/5 rounded-lg border border-secondary/20 mb-4">
+        <div className="flex flex-col">
+          <Label htmlFor="enable-generation" className="text-sm font-semibold text-gray-900 mb-1">
+            Enable Image Generation
+          </Label>
+          <p className="text-xs text-gray-600">
+            Turn on to generate badge image with your configuration
+          </p>
+        </div>
+        <Switch
+          id="enable-generation"
+          checked={enableImageGeneration}
+          onCheckedChange={setEnableImageGeneration}
+          className="data-[state=checked]:bg-secondary"
+        />
+      </div>
+
       {/* Shape Tiles */}
       <div>
         <Label className={labelClass}>Select Shape</Label>
+        {!imageShape && (
+          <p className="text-xs text-gray-400 italic mt-1 mb-2">No shape selected</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {shapes.map((shape) => (
             <button
@@ -462,13 +493,19 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
           <Dialog open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
             <DialogTrigger asChild>
               <div
-                className="w-8 h-8 rounded border-2 border-gray-300 shadow-sm cursor-pointer hover:border-secondary transition-all"
+                className="w-8 h-8 rounded border-2 border-gray-300 shadow-sm cursor-pointer hover:border-secondary transition-all flex items-center justify-center"
                 style={{
-                  background: fillMode === 'gradient'
+                  background: fillMode === 'gradient' && startColor && endColor
                     ? `linear-gradient(${gradientDirection === 'vertical' ? 'to bottom' : 'to right'}, ${startColor}, ${endColor})`
-                    : fillColor
+                    : fillMode === 'solid' && fillColor
+                    ? fillColor
+                    : 'hsl(var(--muted) / 0.2)'
                 }}
-              />
+              >
+                {!fillColor && !startColor && (
+                  <span className="text-xs text-gray-400 font-semibold">?</span>
+                )}
+              </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[400px] p-0 [&>button]:hidden">
               <DialogHeader className="px-6 pt-4 pb-4 border-b border-gray-200 flex flex-row items-center justify-between gap-4">
@@ -517,9 +554,11 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2 text-center">
-                    {fillMode === 'gradient'
+                    {fillMode === 'gradient' && startColor && endColor
                       ? `Gradient: ${startColor.toUpperCase()} → ${endColor.toUpperCase()}`
-                      : `Solid: ${fillColor.toUpperCase()}`
+                      : fillMode === 'solid' && fillColor
+                      ? `Solid: ${fillColor.toUpperCase()}`
+                      : 'No color selected'
                     }
                   </p>
                 </div>
@@ -630,6 +669,7 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
                   <div
                     className="w-full h-6 rounded border border-gray-300 cursor-pointer relative"
                     style={{
+                      // Rainbow spectrum for hue selection - these colors represent the full visible spectrum
                       background: 'linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)'
                     }}
                     onMouseDown={(e) => {
@@ -725,7 +765,7 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
                     <span className="text-xs text-gray-600 font-medium">HEX</span>
                     <Input
                       type="text"
-                      value={(fillMode === 'gradient' ? (currentGradientColor === 'start' ? startColor : endColor) : fillColor).toUpperCase().replace('#', '')}
+                      value={(fillMode === 'gradient' ? (currentGradientColor === 'start' ? startColor : endColor) : fillColor)?.toUpperCase().replace('#', '') || ''}
                       onChange={(e) => {
                         const val = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`;
                         if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
@@ -784,7 +824,15 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
             </DialogContent>
           </Dialog>
           <span className="text-sm font-medium text-gray-700">
-            {fillMode === 'gradient' ? 'Gradient' : 'Solid'} - {fillMode === 'gradient' ? `${startColor} → ${endColor}` : fillColor}
+            {!fillMode ? (
+              <span className="text-gray-400 italic">Not selected</span>
+            ) : fillMode === 'gradient' && startColor && endColor ? (
+              `Gradient - ${startColor} → ${endColor}`
+            ) : fillMode === 'solid' && fillColor ? (
+              `Solid - ${fillColor}`
+            ) : (
+              <span className="text-gray-400 italic">Select a color</span>
+            )}
           </span>
         </div>
       </div>
@@ -803,9 +851,9 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
         {!logoFileName ? (
           <div
             onClick={() => document.getElementById('logo-upload')?.click()}
-            className="border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-secondary hover:bg-secondary/5 transition-all flex flex-col items-center justify-center p-8 mt-1"
+            className="border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-secondary hover:bg-secondary/5 transition-all flex flex-col items-center justify-center p-4 mt-1"
           >
-            <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-lg flex items-center justify-center">
                 <Upload className="h-6 w-6 text-secondary" />
               </div>
@@ -824,10 +872,10 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
                 className="flex items-center justify-center p-4 border-2 border-gray-200 rounded-lg"
                 style={{
                   backgroundImage: `
-                    linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                    linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                    linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                    linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
+                    linear-gradient(45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                    linear-gradient(-45deg, hsl(var(--muted) / 0.3) 25%, transparent 25%), 
+                    linear-gradient(45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%), 
+                    linear-gradient(-45deg, transparent 75%, hsl(var(--muted) / 0.3) 75%)
                   `,
                   backgroundSize: '20px 20px',
                   backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'

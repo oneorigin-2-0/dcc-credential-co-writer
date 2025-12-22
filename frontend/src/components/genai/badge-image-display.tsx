@@ -13,9 +13,9 @@ interface BadgeImageDisplayProps {
 
 export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeImageDisplayProps) {
   return (
-    <Card className="border-[#429EA6] shadow-lg">
+    <Card className="border-secondary shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="text-[#234467] font-headline font-bold text-lg">
+        <CardTitle className="text-primary font-headline font-bold text-lg">
           Badge Image Preview
         </CardTitle>
       </CardHeader>
@@ -23,7 +23,7 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
       <CardContent className="flex flex-col items-center justify-center space-y-4 h-full">
         {/* Badge Image */}
         <div className="flex flex-col items-center space-y-3">
-          <div className="flex justify-center items-center p-3 rounded-lg border-2 border-[#429EA6]/20">
+          <div className="flex justify-center items-center p-3 rounded-lg border-2 border-secondary/20">
             <img
               src={imageUrl}
               alt="Badge image preview for credential"
@@ -37,7 +37,7 @@ export function BadgeImageDisplay({ imageUrl, imageConfig, onEditImage }: BadgeI
               onClick={onEditImage}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 border-[#429EA6] text-[#429EA6] hover:bg-[#429EA6] hover:text-white"
+              className="flex items-center gap-2 border-secondary text-secondary hover:bg-secondary hover:text-white"
             >
               <Edit className="h-4 w-4" />
               Edit Image

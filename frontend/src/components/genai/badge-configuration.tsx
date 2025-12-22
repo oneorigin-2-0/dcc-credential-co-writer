@@ -114,8 +114,8 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
   }, [style, tone, level, criterionTemplate, institution, instituteUrl, userPrompt]);
 
   const isInline = variant === 'inline';
-  const borderClass = isInline ? 'border-gray-200 focus:border-[#429EA6] focus:ring-[#429EA6]/20' : 'border-[#429EA6] focus:border-[#234467] focus:ring-[#234467]';
-  const labelClass = isInline ? 'text-gray-700 font-medium text-sm mb-2' : 'text-[#40464c] font-subhead font-medium text-sm mb-2';
+  const borderClass = isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-secondary focus:border-primary focus:ring-primary';
+  const labelClass = isInline ? 'text-gray-700 font-medium text-sm mb-2' : 'text-foreground font-subhead font-medium text-sm mb-2';
 
   // Prepare options for tiles
   const styleOptions = getDisplayValues('style').map(value => ({ value, label: value }));
@@ -136,8 +136,8 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
               onClick={() => setStyle(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md border-2 transition-all shadow-sm ${
                 style === option.value
-                  ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md ring-2 ring-[#429EA6]/20'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5 hover:shadow-md'
+                  ? 'bg-secondary text-white border-secondary shadow-md ring-2 ring-secondary/20'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-secondary hover:bg-secondary/5 hover:shadow-md'
               }`}
             >
               {option.label}
@@ -157,8 +157,8 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
               onClick={() => setTone(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md border-2 transition-all shadow-sm ${
                 tone === option.value
-                  ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md ring-2 ring-[#429EA6]/20'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5 hover:shadow-md'
+                  ? 'bg-secondary text-white border-secondary shadow-md ring-2 ring-secondary/20'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-secondary hover:bg-secondary/5 hover:shadow-md'
               }`}
             >
               {option.label}
@@ -178,8 +178,8 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
               onClick={() => setLevel(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md border-2 transition-all shadow-sm ${
                 level === option.value
-                  ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md ring-2 ring-[#429EA6]/20'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5 hover:shadow-md'
+                  ? 'bg-secondary text-white border-secondary shadow-md ring-2 ring-secondary/20'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-secondary hover:bg-secondary/5 hover:shadow-md'
               }`}
             >
               {option.label}
@@ -199,8 +199,8 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
               onClick={() => setCriterionTemplate(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md border-2 transition-all shadow-sm ${
                 criterionTemplate === option.value
-                  ? 'bg-[#429EA6] text-white border-[#429EA6] shadow-md ring-2 ring-[#429EA6]/20'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#429EA6] hover:bg-[#429EA6]/5 hover:shadow-md'
+                  ? 'bg-secondary text-white border-secondary shadow-md ring-2 ring-secondary/20'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-secondary hover:bg-secondary/5 hover:shadow-md'
               }`}
             >
               {option.label}
@@ -233,7 +233,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="cursor-pointer">
-                      <Info className="h-4 w-4 text-[#429EA6]" />
+                      <Info className="h-4 w-4 text-secondary" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -259,7 +259,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
           id="user-prompt"
           aria-label="Custom instructions for badge generation"
           placeholder="Enter custom instructions for badge generation..."
-          className={`min-h-[80px] resize-none mt-1 ${isInline ? 'border-gray-200 focus:border-[#429EA6] focus:ring-[#429EA6]/20' : 'border-gray-300 focus:border-[#429EA6] focus:ring-[#429EA6]'}`}
+          className={`min-h-[100px] resize-none mt-1 ${isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-gray-300 focus:border-secondary focus:ring-secondary'}`}
           value={userPrompt}
           onChange={(e) => setUserPrompt(e.target.value)}
         />
@@ -272,7 +272,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
             onClick={onRegenerate}
             disabled={isRegenerating}
             variant="outline"
-            className="flex items-center gap-2 border-[#429EA6] text-[#234467] hover:bg-[#429EA6]/10"
+            className="flex items-center gap-2 border-secondary text-primary hover:bg-secondary/10"
           >
             {isRegenerating ? (
               <>
@@ -296,9 +296,9 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
   }
 
   return (
-    <Card className="border-[#429EA6] shadow-lg">
+    <Card className="border-secondary shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="text-[#234467] font-headline font-bold text-lg">
+        <CardTitle className="text-primary font-headline font-bold text-lg">
           Badge Configuration
         </CardTitle>
       </CardHeader>

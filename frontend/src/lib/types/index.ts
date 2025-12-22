@@ -32,6 +32,7 @@ export interface BadgeSuggestion {
   description: string;
   criteria: string;
   image?: string;
+  enable_image_generation?: boolean; // Flag to track if image generation was enabled
   metrics?: BadgeMetrics;
   skills?: SkillObject[]; // Full skill objects from LAiSER with all fields
 }

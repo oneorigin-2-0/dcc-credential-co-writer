@@ -47,12 +47,22 @@ export function useStreamingSuggestionGenerator() {
       if (storedSuggestions) {
         const suggestions = JSON.parse(storedSuggestions);
         if (suggestions.length > 0) {
+          // Get imageConfig to check enable_image_generation flag
+          const storedImageConfig = localStorage.getItem('imageConfig');
+          const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
+          
           setSuggestionCards(prev => 
             prev.map(card => {
               const storedSuggestion = suggestions.find((s: any) => s.id === card.id);
-              return storedSuggestion 
-                ? { ...card, data: storedSuggestion.data, loading: false, streamingStarted: true }
-                : card;
+              if (storedSuggestion) {
+                // Ensure enable_image_generation flag is set (for backward compatibility)
+                const suggestionData = {
+                  ...storedSuggestion.data,
+                  enable_image_generation: storedSuggestion.data?.enable_image_generation ?? imageConfig?.enable_image_generation ?? false
+                };
+                return { ...card, data: suggestionData, loading: false, streamingStarted: true };
+              }
+              return card;
             })
           );
           
@@ -93,6 +103,10 @@ export function useStreamingSuggestionGenerator() {
                 
                 const skills = extractSkills(rawFinalData);
                 
+                // Get imageConfig to check enable_image_generation flag
+                const storedImageConfig = localStorage.getItem('imageConfig');
+                const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -103,6 +117,7 @@ export function useStreamingSuggestionGenerator() {
                     description: achievement.description,
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
+                    enable_image_generation: imageConfig?.enable_image_generation || false,
                     metrics: metrics,
                     skills: skills,
                   };
@@ -113,6 +128,7 @@ export function useStreamingSuggestionGenerator() {
                     description: rawFinalData.badge_description,
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
+                    enable_image_generation: imageConfig?.enable_image_generation || false,
                     metrics: metrics,
                     skills: skills,
                   };
@@ -190,9 +206,10 @@ export function useStreamingSuggestionGenerator() {
       };
 
       // Add image_generation configuration
-      if (imageConfig && imageConfig.shape) {
-        // User selected "Add your own badge configuration"
+      if (imageConfig && imageConfig.enable_image_generation === true) {
+        // User enabled image generation toggle
         console.log('[API] Image Config received:', imageConfig);
+        console.log('[API] Enable Image Generation:', imageConfig.enable_image_generation);
         console.log('[API] Logo base64 exists:', !!imageConfig.logo_base64);
         console.log('[API] Logo base64 length:', imageConfig.logo_base64?.length || 0);
         
@@ -202,14 +219,15 @@ export function useStreamingSuggestionGenerator() {
             image_type: '',
             border_color: '',
             border_width: 0,
-            primary_color: imageConfig.fill_mode === 'gradient' ? imageConfig.start_color : imageConfig.fill_color,
-            secondary_color: imageConfig.fill_mode === 'gradient' ? imageConfig.end_color : '',
-            shape: imageConfig.shape,
+            primary_color: imageConfig.fill_mode === 'gradient' ? (imageConfig.start_color || '') : (imageConfig.fill_color || ''),
+            secondary_color: imageConfig.fill_mode === 'gradient' ? (imageConfig.end_color || '') : '',
+            shape: imageConfig.shape || '',
             logo: imageConfig.logo_base64 || ''
           }
         };
       } else {
-        // Default or "Upload your own Badge Image" - enable_image_generation = false
+        // Default, "Upload your own Badge Image", or toggle is OFF
+        console.log('[API] Image generation disabled');
         payload.image_generation = {
           enable_image_generation: false
         };
@@ -255,12 +273,18 @@ export function useStreamingSuggestionGenerator() {
                 console.error('Failed to store final response in localStorage:', error);
               }
               
+              // Add enable_image_generation flag to the mapped suggestion
+              const suggestionWithFlag = {
+                ...response.mappedSuggestion,
+                enable_image_generation: imageConfig?.enable_image_generation || false
+              };
+
               setSuggestionCards(prev => 
                 prev.map(card => 
                   card.id === cardId 
                     ? { 
                         ...card, 
-                        data: response.mappedSuggestion, // Use mapped suggestion for UI display
+                        data: suggestionWithFlag, // Use mapped suggestion with flag
                         loading: false, 
                         error: null,
                         streamingText: 'Complete!',
@@ -276,7 +300,7 @@ export function useStreamingSuggestionGenerator() {
               try {
                 const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
                 const updated = existing.filter((s: any) => s.id !== cardId);
-                updated.push({ id: cardId, data: response.mappedSuggestion });
+                updated.push({ id: cardId, data: suggestionWithFlag });
                 localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
               } catch (error) {
                 console.error('Failed to save suggestion to localStorage:', error);
