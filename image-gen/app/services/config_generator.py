@@ -297,16 +297,22 @@ def _generate_text_badge_layers(
         # Different widths for ribbon types
         ribbon_width = 540 if ribbon_type == "ribbon" else 490  # ribbon_folded is shorter
 
+        # Build ribbon params
+        ribbon_params = {
+            "width": ribbon_width,
+            "height": 70,
+            "y_offset": ribbon_y_offset,  # Dynamically calculated to align with title
+        }
+        # Reduce V-notch depth for regular ribbon (smaller = shallower V, wider angle)
+        if ribbon_type == "ribbon":
+            ribbon_params["tail_depth"] = 15  # Default is 25, reduced for shallower V
+
         ribbon_layer = {
             "type": "ShapeLayer",
             "shape": ribbon_type,
             "fill": {"mode": "solid", "color": ribbon_color},
             "border": {"color": None, "width": 0},
-            "params": {
-                "width": ribbon_width,
-                "height": 70,
-                "y_offset": ribbon_y_offset,  # Dynamically calculated to align with title
-            },
+            "params": ribbon_params,
             "z": random.randint(25, 29),
         }
 
