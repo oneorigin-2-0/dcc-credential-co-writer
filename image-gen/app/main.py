@@ -2,6 +2,7 @@
 FastAPI main application entry point
 """
 
+import copy
 import time
 import json
 from fastapi import FastAPI, Request
@@ -11,12 +12,72 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.settings import settings
+from app.config import ENABLE_LOG_BASE64_DATA
 from app.controllers.badge_image import router as badges_router
 from app.controllers.health import router as health_router
 from app.core.logging_config import get_logger, log_request_info
 
 # Initialize logger
 logger = get_logger("main")
+
+
+def _sanitize_body_for_logging(body: dict) -> dict:
+    """
+    Remove base64 encoded data from request body for cleaner logs.
+    Controlled by ENABLE_LOG_BASE64_DATA flag.
+    Uses deep copy to avoid mutating original objects.
+    """
+    if ENABLE_LOG_BASE64_DATA:
+        return body
+
+    sanitized = copy.deepcopy(body)
+
+    # Recursively remove logo fields and base64 strings
+    def _remove_logo_and_base64(obj):
+        if isinstance(obj, dict):
+            result = {}
+            for key, value in obj.items():
+                if key.lower() == "logo" and isinstance(value, str) and value:
+                    result[key] = "<base64_data_excluded_from_log>"
+                elif isinstance(value, str) and ("base64" in key.lower() or value.startswith("data:image")):
+                    result[key] = "<base64_data_excluded_from_log>"
+                elif isinstance(value, (dict, list)):
+                    result[key] = _remove_logo_and_base64(value)
+                else:
+                    result[key] = value
+            return result
+        elif isinstance(obj, list):
+            return [_remove_logo_and_base64(item) for item in obj]
+        else:
+            return obj
+
+    return _remove_logo_and_base64(sanitized)
+
+
+def _sanitize_response_for_logging(data):
+    """
+    Remove base64 strings and logo fields from responses when logging is disabled.
+    Preserves structure but replaces base64 strings with a placeholder.
+    """
+    if ENABLE_LOG_BASE64_DATA:
+        return data
+
+    if isinstance(data, dict):
+        result = {}
+        for key, value in data.items():
+            # Remove logo fields and base64 strings
+            if key.lower() == "logo" and isinstance(value, str) and value:
+                result[key] = "<base64_data_excluded_from_log>"
+            elif isinstance(value, str) and ("base64" in key.lower() or value.startswith("data:image")):
+                result[key] = "<base64_data_excluded_from_log>"
+            elif isinstance(value, (dict, list)):
+                result[key] = _sanitize_response_for_logging(value)
+            else:
+                result[key] = value
+        return result
+    if isinstance(data, list):
+        return [_sanitize_response_for_logging(item) for item in data]
+    return data
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -49,12 +110,13 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         cloned_request_body = {}
         if body:
             try:
-                cloned_request_body = json.loads(body.decode('utf-8'))
+                request_json = json.loads(body.decode('utf-8'))
+                cloned_request_body = _sanitize_body_for_logging(request_json)
             except (json.JSONDecodeError, UnicodeDecodeError):
-                # If not JSON, return as string representation (limit size)
+                # If not JSON, return as string representation (full string)
                 body_str = body.decode('utf-8', errors='ignore')
-                if len(body_str) > 1000:
-                    cloned_request_body = {"_raw_body_preview": body_str[:1000] + "..."}
+                if not ENABLE_LOG_BASE64_DATA and ("data:image" in body_str or "base64" in body_str.lower()):
+                    cloned_request_body = {"_raw_body": "<base64_data_excluded_from_log>"}
                 else:
                     cloned_request_body = {"_raw_body": body_str}
 
@@ -100,16 +162,19 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 # Some responses don't have a body (like streaming responses)
                 pass
 
-            # Parse response body for logging (full response, no truncation)
+            # Parse response body for logging (optionally sanitize base64)
             cloned_response_body = {}
             if response_body:
                 try:
-                    # Parse full JSON response without any truncation
-                    cloned_response_body = json.loads(response_body.decode('utf-8'))
+                    response_json = json.loads(response_body.decode('utf-8'))
+                    cloned_response_body = _sanitize_response_for_logging(response_json)
                 except (json.JSONDecodeError, UnicodeDecodeError):
-                    # If not JSON, return as string representation (full string, no truncation)
+                    # If not JSON, return as string representation
                     body_str = response_body.decode('utf-8', errors='ignore')
-                    cloned_response_body = {"_raw_body": body_str}
+                    if not ENABLE_LOG_BASE64_DATA and ("data:image" in body_str or "base64" in body_str.lower()):
+                        cloned_response_body = {"_raw_body": "<base64_data_excluded_from_log>"}
+                    else:
+                        cloned_response_body = {"_raw_body": body_str}
 
             # Prepare response headers (exclude sensitive info)
             response_headers_dict = dict(response.headers)
