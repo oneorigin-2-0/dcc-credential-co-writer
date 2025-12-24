@@ -78,7 +78,44 @@ def get_shape_width_at_y(shape_spec, y_position, canvas_width, canvas_height, sc
         if rect[1] <= y_position <= rect[3]:
             return rect[0], rect[2]
         return cx, cx  # Outside rectangle
-    
+
+    elif shape == "ribbon":
+        # Classic ribbon with V-notch tails
+        width = int(params.get("width", 480) * scale_factor)
+        height = int(params.get("height", 80) * scale_factor)
+        tail_depth = int(params.get("tail_depth", 25) * scale_factor)
+        y_offset = int(params.get("y_offset", 180) * scale_factor)
+
+        ribbon_cy = cy + y_offset
+        left = cx - width // 2
+        right = cx + width // 2
+        top = ribbon_cy - height // 2
+        bottom = ribbon_cy + height // 2
+
+        # Check if y_position is within ribbon bounds
+        if top <= y_position <= bottom:
+            # For simplicity, return full width (excluding tail notch area)
+            # The V-notch only affects the very edge, text should use inner width
+            return left + tail_depth, right - tail_depth
+        return cx, cx  # Outside ribbon
+
+    elif shape == "ribbon_folded":
+        # Folded ribbon - return main ribbon body bounds (text goes on main body)
+        width = int(params.get("width", 440) * scale_factor)
+        height = int(params.get("height", 80) * scale_factor)
+        y_offset = int(params.get("y_offset", 140) * scale_factor)
+
+        ribbon_cy = cy + y_offset
+        left = cx - width // 2
+        right = cx + width // 2
+        top = ribbon_cy - height // 2
+        bottom = ribbon_cy + height // 2
+
+        # Check if y_position is within main ribbon bounds
+        if top <= y_position <= bottom:
+            return left, right
+        return cx, cx  # Outside ribbon
+
     # Default: use full width minus margin
     margin = 50
     return margin, canvas_width - margin
@@ -144,6 +181,36 @@ def get_shape_bounds(shape_spec, canvas_width, canvas_height, scale_factor=1.0):
         rect = [x1, y1, x2, y2]
         top, bottom = rect[1], rect[3]
         return {"top": top, "bottom": bottom, "center_x": cx, "center_y": cy, "radius": min(width, height)//2}
-    
+
+    elif shape == "ribbon":
+        # Classic ribbon with V-notch tails
+        width = int(params.get("width", 480) * scale_factor)
+        height = int(params.get("height", 80) * scale_factor)
+        y_offset = int(params.get("y_offset", 180) * scale_factor)
+
+        cx = canvas_width // 2
+        cy = canvas_height // 2
+        ribbon_cy = cy + y_offset
+
+        top = ribbon_cy - height // 2
+        bottom = ribbon_cy + height // 2
+
+        return {"top": top, "bottom": bottom, "center_x": cx, "center_y": ribbon_cy, "radius": width // 2}
+
+    elif shape == "ribbon_folded":
+        # Folded ribbon - return main ribbon body bounds (text positioning)
+        width = int(params.get("width", 480) * scale_factor)
+        height = int(params.get("height", 80) * scale_factor)
+        y_offset = int(params.get("y_offset", 180) * scale_factor)
+
+        cx = canvas_width // 2
+        cy = canvas_height // 2
+        ribbon_cy = cy + y_offset
+
+        top = ribbon_cy - height // 2
+        bottom = ribbon_cy + height // 2
+
+        return {"top": top, "bottom": bottom, "center_x": cx, "center_y": ribbon_cy, "radius": width // 2}
+
     # Default fallback
     return {"top": 50, "bottom": canvas_height-50, "center_x": canvas_width//2, "center_y": canvas_height//2, "radius": min(canvas_width, canvas_height)//2 - 50}

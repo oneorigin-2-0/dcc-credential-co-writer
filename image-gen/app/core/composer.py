@@ -58,8 +58,8 @@ class Composer:
         # Logo CENTER should be at 25% from top (more consistent across different logo sizes)
         logo_center_y = bounds["top"] + hexagon_height * 0.25  # Logo center: 25% from top
         logo_y = logo_center_y - (logo_height / 2)             # Adjust to top edge for rendering
-        text1_y = bounds["top"] + hexagon_height * 0.43      # Title: 43% from top 
-        text2_y = bounds["top"] + hexagon_height * 0.62       # Subtitle: 62% from top 
+        text1_y = bounds["top"] + hexagon_height * 0.46      # Title: 46% from top 
+        text2_y = bounds["top"] + hexagon_height * 0.66       # Subtitle: 66% from top 
         skill_rect_y = hexagon_center_y + hexagon_height * 0.25  # Skill badge: 25% below center
 
         # Calculate skill text position to be centered within the rectangle
