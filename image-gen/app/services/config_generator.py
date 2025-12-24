@@ -149,6 +149,7 @@ def _generate_text_badge_layers(
     border_color: Optional[str] = None,
     border_width: Optional[int] = None,
     shape: Optional[str] = None,
+    ribbon_type: Optional[str] = None,
 ):
     """Generate text-based badge configuration following spec
 
@@ -160,6 +161,7 @@ def _generate_text_badge_layers(
         border_color: Optional border color hex code (e.g., '#000000')
         border_width: Optional border width in pixels (e.g., 6)
         shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
+        ribbon_type: Optional ribbon type ('ribbon', 'ribbon_folded', 'none', or None for random)
     """
     if seed is not None:
         random.seed(seed)
@@ -289,8 +291,20 @@ def _generate_text_badge_layers(
 
     # Ribbon layer (optional, z: 25-29, behind title)
     ribbon_layer = None
-    if random.random() < 0.5:  # 50% chance to include ribbon
-        ribbon_type = random.choice(["ribbon", "ribbon_folded"])
+    should_add_ribbon = False
+    selected_ribbon_type = None
+
+    if ribbon_type == "none":
+        should_add_ribbon = False
+    elif ribbon_type in ["ribbon", "ribbon_folded"]:
+        should_add_ribbon = True
+        selected_ribbon_type = ribbon_type
+    else:  # None - random 50% chance
+        if random.random() < 0.5:
+            should_add_ribbon = True
+            selected_ribbon_type = random.choice(["ribbon", "ribbon_folded"])
+
+    if should_add_ribbon:
         ribbon_color = _darken_color(start, 0.7)
 
         # Calculate title Y position based on main shape bounds
@@ -306,7 +320,7 @@ def _generate_text_badge_layers(
         ribbon_y_offset = int(title_y - canvas_center) + 15
 
         # Different widths for ribbon types
-        ribbon_width = 540 if ribbon_type == "ribbon" else 490  # ribbon_folded is shorter
+        ribbon_width = 540 if selected_ribbon_type == "ribbon" else 490  # ribbon_folded is shorter
 
         # Build ribbon params
         ribbon_params = {
@@ -315,12 +329,12 @@ def _generate_text_badge_layers(
             "y_offset": ribbon_y_offset,  # Dynamically calculated to align with title
         }
         # Reduce V-notch depth for regular ribbon (smaller = shallower V, wider angle)
-        if ribbon_type == "ribbon":
+        if selected_ribbon_type == "ribbon":
             ribbon_params["tail_depth"] = 15  # Default is 25, reduced for shallower V
 
         ribbon_layer = {
             "type": "ShapeLayer",
-            "shape": ribbon_type,
+            "shape": selected_ribbon_type,
             "fill": {"mode": "solid", "color": ribbon_color},
             "border": {"color": None, "width": 0},
             "params": ribbon_params,
@@ -555,7 +569,8 @@ def generate_text_overlay_config(
     border_color: Optional[str] = None,
     border_width: Optional[int] = None,
     shape: Optional[str] = None,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    ribbon_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with text overlay
 
@@ -568,6 +583,7 @@ def generate_text_overlay_config(
         border_width: Optional border width in pixels (e.g., 6)
         shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
         seed: Optional random seed for reproducibility
+        ribbon_type: Optional ribbon type ('ribbon', 'ribbon_folded', 'none', or None for random)
 
     Returns:
         Complete badge configuration ready for rendering
@@ -588,7 +604,8 @@ def generate_text_overlay_config(
         institution_colors=colors,
         border_color=border_color,
         border_width=border_width,
-        shape=shape
+        shape=shape,
+        ribbon_type=ribbon_type
     )
 
     return config

@@ -315,7 +315,8 @@ async def generate_badge_with_text(request: BadgeGenerationRequest):
             border_color=request.image_configuration.border_color,
             border_width=request.image_configuration.border_width if request.image_configuration.border_width > 0 else None,
             shape=request.image_configuration.shape,
-            seed=None
+            seed=None,
+            ribbon_type=request.image_configuration.ribbon_type
         )
 
         # Step 3: Check if logo is provided - if yes, use generate_badge_with_logo_helper
