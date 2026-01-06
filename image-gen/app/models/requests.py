@@ -164,6 +164,7 @@ class ImageConfiguration(BaseModel):
     border_width: int = Field(default=0, description="Border width in pixels (e.g., 6)")
     shape: Optional[str] = Field(default=None, description="Badge shape: 'hexagon', 'circle', or 'rounded_rect'")
     logo: Optional[str] = Field(default="", description="Base64 encoded logo (optional)")
+    ribbon_type: Optional[str] = Field(default=None, description="Ribbon type: 'ribbon', 'ribbon_folded', 'none', or None for random 50% chance")
 
 
 class BadgeGenerationRequest(BaseModel):
