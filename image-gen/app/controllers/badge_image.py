@@ -124,18 +124,21 @@ def decode_base64_logo(base64_string: str) -> bytes:
 async def generate_badge_with_logo_helper(
     config_dict: dict,
     logo_bytes: bytes,
-    scale_factor: float = 2.0
+    scale_factor: float = 2.0,
+    logo_base64: Optional[str] = None
 ) -> BadgeResponse:
     """
     Helper function to generate badge with custom logo (from bytes)
     
     This is the core logic extracted from generate_badge_with_logo endpoint.
     Can be used when logo is provided as base64 string in BadgeGenerationRequest.
+    Uses logo_base64 by default (no temp files needed), falls back to temp file if base64 not provided.
     
     Args:
         config_dict: Badge configuration dictionary with layers
         logo_bytes: Logo image bytes (from base64 decode)
         scale_factor: Scale factor for rendering
+        logo_base64: Optional base64 string (if provided, will be used directly instead of creating temp file)
         
     Returns:
         BadgeResponse with base64 encoded image and configuration
@@ -147,23 +150,26 @@ async def generate_badge_with_logo_helper(
         if "layers" not in config_dict:
             raise HTTPException(status_code=400, detail="Config must contain 'layers' field")
         
-        # Save logo bytes to temp file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-            tmp.write(logo_bytes)
-            temp_logo_path = tmp.name
+        # Encode logo bytes to base64 if not provided
+        if not logo_base64:
+            logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+            logger.debug(f"Encoded logo bytes to base64 ({len(logo_base64)} chars)")
         
-        logger.info(f"Saved logo from base64 to temp file: {temp_logo_path}")
-        
-        # Replace LogoLayer paths in configuration
+        # Replace LogoLayer with logo_base64 (preferred) or path (fallback)
         layers = config_dict.get("layers", [])
         logo_replaced = False
         
         for layer in layers:
             if layer.get("type") in ["LogoLayer"]:
-                # Replace the path with our uploaded logo
-                layer["path"] = temp_logo_path
+                # Use logo_base64 by default (no temp file needed)
+                layer["logo_base64"] = logo_base64
+                # Remove path to ensure base64 is used
+                if "path" in layer:
+                    original_path = layer.pop("path")
+                    logger.debug(f"Replaced path '{original_path}' with logo_base64 in {layer.get('type')}")
+                else:
+                    logger.info(f"Set logo_base64 in {layer.get('type')}")
                 logo_replaced = True
-                logger.info(f"Replaced logo path in {layer.get('type')}")
         
         if not logo_replaced:
             logger.warning("No LogoLayer found in config to replace")
@@ -182,7 +188,7 @@ async def generate_badge_with_logo_helper(
             "layers": layers
         }
         
-        logger.info("Badge with custom logo generated successfully")
+        logger.info("Badge with custom logo generated successfully (using logo_base64)")
         return result
         
     except HTTPException:
@@ -192,7 +198,7 @@ async def generate_badge_with_logo_helper(
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
     
     finally:
-        # Always cleanup temporary logo file
+        # Cleanup temporary logo file if it was created (shouldn't be needed with base64 approach)
         if temp_logo_path and os.path.exists(temp_logo_path):
             try:
                 os.unlink(temp_logo_path)
@@ -332,10 +338,12 @@ async def generate_badge_with_text(request: BadgeGenerationRequest):
                 }
                 
                 # Call helper function to generate badge with logo
+                # Pass the original base64 string to avoid re-encoding
                 return await generate_badge_with_logo_helper(
                     config_dict=config_dict,
                     logo_bytes=logo_bytes,
-                    scale_factor=request.scale_factor
+                    scale_factor=request.scale_factor,
+                    logo_base64=request.image_configuration.logo  # Use original base64 string
                 )
             except ValueError as e:
                 logger.error(f"Failed to decode logo (invalid base64): {e}, falling back to default logo")
@@ -479,10 +487,12 @@ async def generate_badge_with_icon(request: BadgeGenerationRequest):
                 }
                 
                 # Call helper function to generate badge with logo
+                # Pass the original base64 string to avoid re-encoding
                 return await generate_badge_with_logo_helper(
                     config_dict=config_dict,
                     logo_bytes=logo_bytes,
-                    scale_factor=request.scale_factor
+                    scale_factor=request.scale_factor,
+                    logo_base64=request.image_configuration.logo  # Use original base64 string
                 )
             except ValueError as e:
                 logger.error(f"Failed to decode logo (invalid base64): {e}, falling back to default behavior")
@@ -560,10 +570,12 @@ async def generate_badge_with_logo(
             scale_factor = config_dict.get("scale_factor", 2.0)
 
         # Step 4: Use helper function to generate badge with logo
+        # Note: UploadFile doesn't have original base64, so it will be encoded in the helper
         return await generate_badge_with_logo_helper(
             config_dict=config_dict,
             logo_bytes=logo_bytes,
-            scale_factor=scale_factor
+            scale_factor=scale_factor,
+            logo_base64=None  # Will be encoded from logo_bytes in helper
         )
 
     except HTTPException:
