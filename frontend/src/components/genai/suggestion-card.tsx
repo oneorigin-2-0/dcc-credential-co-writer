@@ -289,20 +289,14 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
         {status === 'success' && data && (
           <div className="space-y-4">
-            {/* Debug: Log skills data */}
-            {(() => {
-              console.log('[SuggestionCard] Card', id, '- data.skills:', data.skills);
-              console.log('[SuggestionCard] Card', id, '- full data:', data);
-              return null;
-            })()}
             
-            {/* Badge Image with Gradient Background - Only show if image generation was enabled */}
-            {(data.enable_image_generation !== false && data.image) && (
+            {/* Badge Image with Gradient Background - Show if uploaded or generated */}
+            {((data.enable_image_generation !== false && data.image) || data.uploaded_badge_image) && (
               <div className="flex justify-center mb-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-lg blur-xl"></div>
                   <img
-                    src={data.image}
+                    src={data.uploaded_badge_image || data.image}
                     alt={`${data.title} badge preview image`}
                     className="relative w-40 h-40 object-contain rounded-lg border-2 border-white shadow-xl bg-white"
                   />

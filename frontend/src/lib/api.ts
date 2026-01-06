@@ -240,10 +240,8 @@ export class StreamingApiClient {
                                        data?.credentialSubject?.achievement?.skills;
                     
                     if (skillsArray && Array.isArray(skillsArray)) {
-                      console.log('[API] Found skills array:', skillsArray);
                       // Store full skill objects
                       const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
-                      console.log('[API] Extracted skills objects:', skills);
                       return skills.length > 0 ? skills : undefined;
                     }
                     return undefined;
@@ -252,7 +250,6 @@ export class StreamingApiClient {
                   // Check parsed level first (skills might be at top level of parsed response)
                   // Then check finalData (skills might be inside content)
                   const skills = extractSkills(parsed) || extractSkills(finalData);
-                  console.log('[API] Final skills result:', skills);
                   
                   let suggestion;
                   

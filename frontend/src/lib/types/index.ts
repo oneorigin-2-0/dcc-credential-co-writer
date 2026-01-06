@@ -33,6 +33,8 @@ export interface BadgeSuggestion {
   criteria: string;
   image?: string;
   enable_image_generation?: boolean; // Flag to track if image generation was enabled
+  uploaded_badge_image?: string; // Base64 of uploaded badge image (when user uploads their own)
+  uploaded_badge_image_name?: string; // Filename of uploaded badge image
   metrics?: BadgeMetrics;
   skills?: SkillObject[]; // Full skill objects from LAiSER with all fields
 }

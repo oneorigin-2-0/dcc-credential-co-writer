@@ -234,6 +234,7 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
       if (selectedOption === 'upload') {
         // Send badge image upload data
         const config: BadgeImageConfigurationData = {
+          enable_image_generation: false, // User uploaded their own badge image
           logo_base64: badgeImageBase64 || undefined,
           logo_file_name: badgeImageFileName || undefined,
         };
@@ -257,11 +258,6 @@ export function BadgeImageConfiguration({ onConfigurationChange, variant = 'card
           logo_base64: logoBase64,
           logo_file_name: logoFileName || undefined,
         };
-
-        console.log('[BadgeImageConfig] Sending config:', {
-          ...config,
-          logo_base64: config.logo_base64 ? `${config.logo_base64.substring(0, 50)}... (${config.logo_base64.length} chars)` : 'undefined'
-        });
 
         // Only call onConfigurationChange if config actually changed
         const configString = JSON.stringify(config);

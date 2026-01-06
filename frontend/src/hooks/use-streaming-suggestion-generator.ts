@@ -134,6 +134,13 @@ export function useStreamingSuggestionGenerator() {
                   };
                 }
                 
+                // If user uploaded their own badge image (when enable_image_generation is false)
+                // restore it from imageConfig for display purposes
+                if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+                  mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
+                  mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
+                }
+                
                 return { 
                   ...card, 
                   data: mappedSuggestion, 
@@ -208,11 +215,6 @@ export function useStreamingSuggestionGenerator() {
       // Add image_generation configuration
       if (imageConfig && imageConfig.enable_image_generation === true) {
         // User enabled image generation toggle
-        console.log('[API] Image Config received:', imageConfig);
-        console.log('[API] Enable Image Generation:', imageConfig.enable_image_generation);
-        console.log('[API] Logo base64 exists:', !!imageConfig.logo_base64);
-        console.log('[API] Logo base64 length:', imageConfig.logo_base64?.length || 0);
-        
         payload.image_generation = {
           enable_image_generation: true,
           image_configuration: {
@@ -227,13 +229,11 @@ export function useStreamingSuggestionGenerator() {
         };
       } else {
         // Default, "Upload your own Badge Image", or toggle is OFF
-        console.log('[API] Image generation disabled');
         payload.image_generation = {
           enable_image_generation: false
         };
       }
 
-      console.log('[API] Final payload being sent:', JSON.stringify(payload, null, 2));
       const stream = new StreamingApiClient().generateSuggestionsStream(payload);
       
       for await (const response of stream) {
@@ -253,11 +253,6 @@ export function useStreamingSuggestionGenerator() {
             // Handle final response (type: "final")
             
             if (response.data && response.mappedSuggestion) {
-              console.log(`[Hook] Card ${cardId} - Final response received`);
-              console.log(`[Hook] response.data:`, response.data);
-              console.log(`[Hook] response.mappedSuggestion:`, response.mappedSuggestion);
-              console.log(`[Hook] response.mappedSuggestion.skills:`, response.mappedSuggestion?.skills);
-              
               // Store raw final response data in localStorage
               try {
                 // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
@@ -278,6 +273,13 @@ export function useStreamingSuggestionGenerator() {
                 ...response.mappedSuggestion,
                 enable_image_generation: imageConfig?.enable_image_generation || false
               };
+
+              // If user uploaded their own badge image (when enable_image_generation is false)
+              // add it to the suggestion for display purposes
+              if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+                suggestionWithFlag.uploaded_badge_image = imageConfig.logo_base64;
+                suggestionWithFlag.uploaded_badge_image_name = imageConfig.logo_file_name;
+              }
 
               setSuggestionCards(prev => 
                 prev.map(card => 
@@ -373,22 +375,18 @@ export function useStreamingSuggestionGenerator() {
                   // Extract skills from the response - get full skill objects
                   // Check multiple possible locations: top level, credentialSubject, or achievement
                   const extractSkills = (data: any): any[] | undefined => {
-                    console.log(`[Hook Token] Card ${cardId} - Extracting skills from badgeData:`, data);
                     const skillsArray = data?.skills || 
                                        data?.credentialSubject?.skills || 
                                        data?.credentialSubject?.achievement?.skills;
-                    console.log(`[Hook Token] Card ${cardId} - Found skillsArray:`, skillsArray);
                     if (skillsArray && Array.isArray(skillsArray)) {
                       // Store full skill objects
                       const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
-                      console.log(`[Hook Token] Card ${cardId} - Extracted skills objects:`, skills);
                       return skills.length > 0 ? skills : undefined;
                     }
                     return undefined;
                   };
                   
                   const skills = extractSkills(badgeData);
-                  console.log(`[Hook Token] Card ${cardId} - Final skills result:`, skills);
                   
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
@@ -403,7 +401,6 @@ export function useStreamingSuggestionGenerator() {
                       metrics: metrics,
                       skills: skills,
                     };
-                    console.log(`[Hook Token] Card ${cardId} - Created suggestion with skills:`, suggestion);
                   }
                   
           
@@ -566,12 +563,6 @@ export function useStreamingSuggestionGenerator() {
       const storedImageConfig = localStorage.getItem('imageConfig');
       if (storedImageConfig) {
         imageConfig = JSON.parse(storedImageConfig);
-        console.log('[Hook] Retrieved imageConfig from localStorage:', {
-          ...imageConfig,
-          logo_base64: imageConfig?.logo_base64 ? `${imageConfig.logo_base64.substring(0, 50)}... (${imageConfig.logo_base64.length} chars)` : 'undefined'
-        });
-      } else {
-        console.log('[Hook] No imageConfig found in localStorage');
       }
 
       // Get user prompt

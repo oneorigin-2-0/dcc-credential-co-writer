@@ -265,13 +265,7 @@ export default function GenAIPage() {
           localStorage.setItem('badgeConfig', JSON.stringify(badgeConfig));
         }
         if (imageConfig) {
-          console.log('[Page] Saving imageConfig to localStorage:', {
-            ...imageConfig,
-            logo_base64: imageConfig.logo_base64 ? `${imageConfig.logo_base64.substring(0, 50)}... (${imageConfig.logo_base64.length} chars)` : 'undefined'
-          });
           localStorage.setItem('imageConfig', JSON.stringify(imageConfig));
-        } else {
-          console.log('[Page] imageConfig is undefined, not saving to localStorage');
         }
       } catch (error) {
         console.error('Error storing content in localStorage:', error);
@@ -570,13 +564,11 @@ export default function GenAIPage() {
                           id="consent-checkbox"
                           checked={consentChecked}
                           onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
-                          className="mt-1 transition-all duration-200"
-                          className="border-secondary"
+                          className="mt-1 transition-all duration-200 border-secondary"
                         />
                         <label
                           htmlFor="consent-checkbox"
-                          className="text-sm leading-relaxed font-body select-none"
-                          className="text-foreground"
+                          className="text-sm leading-relaxed font-body select-none text-foreground"
                         >
                           I acknowledge and consent to my input being securely utilized for model training and research purposes.
                         </label>

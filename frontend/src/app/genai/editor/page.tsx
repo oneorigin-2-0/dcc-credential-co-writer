@@ -164,12 +164,9 @@ export default function BadgeEditorPage() {
 
         // Extract skills from raw final data and merge with parsedSuggestion
         if (rawFinalData) {
-          console.log('[Editor] Raw final data:', rawFinalData);
           const skills = extractSkills(rawFinalData);
-          console.log('[Editor] Extracted skills:', skills);
           if (skills) {
             parsedSuggestion.skills = skills;
-            console.log('[Editor] Updated parsedSuggestion with skills:', parsedSuggestion);
           }
         }
       } catch (error) {
@@ -212,6 +209,22 @@ export default function BadgeEditorPage() {
               image: undefined,
               skills: skills,
             };
+          }
+
+          // Check for uploaded badge image from imageConfig
+          const storedImageConfig = localStorage.getItem('imageConfig');
+          if (storedImageConfig) {
+            try {
+              const imageConfig = JSON.parse(storedImageConfig);
+              // If user uploaded their own badge image (when enable_image_generation is false)
+              if (imageConfig.enable_image_generation === false && imageConfig.logo_base64) {
+                mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
+                mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
+                mappedSuggestion.enable_image_generation = false;
+              }
+            } catch (e) {
+              console.error('Error parsing imageConfig:', e);
+            }
           }
 
           setBadgeSuggestion(mappedSuggestion);
@@ -715,14 +728,13 @@ export default function BadgeEditorPage() {
             break;
 
           case 'error':
-            console.log('Stream error:', response.error);
             setStreamingError(response.error || 'Unknown error occurred');
             setIsStreaming(false);
             setStreamingComplete(false);
             break;
 
           default:
-            console.log('Unknown response type:', response.type);
+            break;
         }
       }
     } catch (error) {
@@ -925,9 +937,14 @@ export default function BadgeEditorPage() {
   }
 
   // Determine if Column 3 (Image/Skills) should be shown
-  const hasImagePreview = badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image;
+  const hasUploadedBadgeImage = badgeSuggestion.uploaded_badge_image ? true : false;
+  const hasGeneratedImage = badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image;
+  const hasImagePreview = hasUploadedBadgeImage || hasGeneratedImage;
   const hasSkills = badgeSuggestion.skills && badgeSuggestion.skills.length > 0;
   const showColumn3 = hasImagePreview || hasSkills;
+  
+  // Determine which image to display (prioritize uploaded badge image)
+  const displayImageUrl = badgeSuggestion.uploaded_badge_image || badgeSuggestion.image;
 
   // Adjust column spans based on whether Column 3 is visible
   const column1Span = showColumn3 ? "lg:col-span-3" : "lg:col-span-4";
@@ -1289,12 +1306,12 @@ export default function BadgeEditorPage() {
               {/* Column 3: Badge Image Display and Skills - Only render if there's content */}
               {showColumn3 && (
                 <div className="lg:col-span-3 space-y-6">
-                  {/* Only show image if image generation was enabled */}
+                  {/* Show image if uploaded or generated */}
                   {hasImagePreview && (
                     <BadgeImageDisplay
-                      imageUrl={badgeSuggestion.image}
+                      imageUrl={displayImageUrl}
                       imageConfig={currentCardId ? JSON.parse(localStorage.getItem('finalResponses') || '{}')[currentCardId]?.imageConfig : null}
-                      onEditImage={handleEditImage}
+                      onEditImage={hasGeneratedImage ? handleEditImage : undefined}
                     />
                   )}
 
