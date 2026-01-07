@@ -4,10 +4,20 @@ Moved from mit-slm to centralize all image-related logic
 """
 import random
 from typing import Dict, Any, Optional
+from app.core.utils.geometry import get_shape_bounds
 
 
 def _rand_hex():
     return "#" + "".join(random.choice("0123456789ABCDEF") for _ in range(6))
+
+
+def _darken_color(hex_color: str, factor: float = 0.7) -> str:
+    """Darken a hex color by a factor (0.0 = black, 1.0 = original)"""
+    hex_color = hex_color.lstrip('#')
+    r = int(int(hex_color[0:2], 16) * factor)
+    g = int(int(hex_color[2:4], 16) * factor)
+    b = int(int(hex_color[4:6], 16) * factor)
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def _pick_palette_color(palette):
@@ -136,6 +146,10 @@ def _generate_text_badge_layers(
     seed: Optional[int] = None,
     logo_path: str = "assets/logos/dcc_logo.png",
     institution_colors: Optional[dict] = None,
+    border_color: Optional[str] = None,
+    border_width: Optional[int] = None,
+    shape: Optional[str] = None,
+    ribbon_type: Optional[str] = None,
 ):
     """Generate text-based badge configuration following spec
 
@@ -144,6 +158,10 @@ def _generate_text_badge_layers(
         seed: Random seed for reproducibility
         logo_path: Path to logo image
         institution_colors: Dict with primary, secondary, tertiary colors from institution
+        border_color: Optional border color hex code (e.g., '#000000')
+        border_width: Optional border width in pixels (e.g., 6)
+        shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
+        ribbon_type: Optional ribbon type ('ribbon', 'ribbon_folded', 'none', or None for random)
     """
     if seed is not None:
         random.seed(seed)
@@ -196,7 +214,12 @@ def _generate_text_badge_layers(
     }
 
     # Shape layer (z: 10-19)
-    shape = random.choice(["hexagon", "circle", "rounded_rect"])
+    # Use provided shape or random selection
+    valid_shapes = ["hexagon", "circle", "rounded_rect"]
+    if shape and shape in valid_shapes:
+        selected_shape = shape
+    else:
+        selected_shape = random.choice(valid_shapes)
 
     # Select gradient colors using curated schemes (if no institution colors)
     if not institution_colors:
@@ -224,22 +247,22 @@ def _generate_text_badge_layers(
         "vertical": True,
     }
 
-    # Border disabled by default 
-    # if random.random() < 0.6:
-    #     border = {
-    #         "color": _pick_palette_color(neutrals + cool + warm),
-    #         "width": random.randint(1, 6),
-    #     }
-    # else:
-    border = {
-        "color": None,
-        "width": 0
-    }
+    # Apply custom border if provided, otherwise disabled by default
+    if border_color or border_width:
+        border = {
+            "color": border_color or "#000000",
+            "width": border_width or 6
+        }
+    else:
+        border = {
+            "color": None,
+            "width": 0
+        }
 
     # Shape-specific params per spec
-    if shape == "hexagon":
+    if selected_shape == "hexagon":
         params = {"radius": 250}
-    elif shape == "circle":
+    elif selected_shape == "circle":
         params = {"radius": 250}
     else:  # rounded_rect
         params = {
@@ -250,21 +273,73 @@ def _generate_text_badge_layers(
 
     shape_layer = {
         "type": "ShapeLayer",
-        "shape": shape,
+        "shape": selected_shape,
         "fill": fill,
         "border": border,
         "params": params,
         "z": random.randint(10, 19),
     }
 
-    # Logo layer (z: 20-29)
+    # Logo layer (z: 20-24)
     logo_layer = {
         "type": "LogoLayer",
         "path": logo_path,
         "size": {"dynamic": True},
         "position": {"x": "center", "y": "dynamic"},
-        "z": random.randint(20, 29),
+        "z": random.randint(20, 24),
     }
+
+    # Ribbon layer (optional, z: 25-29, behind title)
+    ribbon_layer = None
+    should_add_ribbon = False
+    selected_ribbon_type = None
+
+    if ribbon_type == "none":
+        should_add_ribbon = False
+    elif ribbon_type in ["ribbon", "ribbon_folded"]:
+        should_add_ribbon = True
+        selected_ribbon_type = ribbon_type
+    else:  # None - random 50% chance
+        if random.random() < 0.5:
+            should_add_ribbon = True
+            selected_ribbon_type = random.choice(["ribbon", "ribbon_folded"])
+
+    if should_add_ribbon:
+        ribbon_color = _darken_color(start, 0.7)
+
+        # Calculate title Y position based on main shape bounds
+        canvas_center = canvas["height"] // 2  # 300 for 600x600 canvas
+        shape_bounds = get_shape_bounds(
+            {"shape": shape, "params": params},
+            canvas["width"],
+            canvas["height"]
+        )
+        shape_height = shape_bounds["bottom"] - shape_bounds["top"]
+        title_y = shape_bounds["top"] + shape_height * 0.46  # Title at 46% from top
+        # Adjust ribbon down by ~15px to account for text baseline vs visual center
+        ribbon_y_offset = int(title_y - canvas_center) + 15
+
+        # Different widths for ribbon types
+        ribbon_width = 540 if selected_ribbon_type == "ribbon" else 490  # ribbon_folded is shorter
+
+        # Build ribbon params
+        ribbon_params = {
+            "width": ribbon_width,
+            "height": 70,
+            "y_offset": ribbon_y_offset,  # Dynamically calculated to align with title
+        }
+        # Reduce V-notch depth for regular ribbon (smaller = shallower V, wider angle)
+        if selected_ribbon_type == "ribbon":
+            ribbon_params["tail_depth"] = 15  # Default is 25, reduced for shallower V
+
+        ribbon_layer = {
+            "type": "ShapeLayer",
+            "shape": selected_ribbon_type,
+            "fill": {"mode": "solid", "color": ribbon_color},
+            "border": {"color": None, "width": 0},
+            "params": ribbon_params,
+            "z": random.randint(25, 29),
+        }
 
     # Smart text processing
     def _clip_smart(s, max_len=40):
@@ -336,6 +411,7 @@ def _generate_text_badge_layers(
             # background_layer, added this layer in image-generation backend so no need to pass here
             shape_layer,
             logo_layer,
+            *([ribbon_layer] if ribbon_layer else []),  # Add ribbon if generated
             *text_layers,
         ],
     }
@@ -490,7 +566,11 @@ def generate_text_overlay_config(
     institute: str = "",
     achievement_phrase: str = "",
     colors: Optional[dict] = None,
-    seed: Optional[int] = None
+    border_color: Optional[str] = None,
+    border_width: Optional[int] = None,
+    shape: Optional[str] = None,
+    seed: Optional[int] = None,
+    ribbon_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """Generate image configuration with text overlay
 
@@ -499,7 +579,11 @@ def generate_text_overlay_config(
         institute: Institution/organization name (optional, defaults to empty string)
         achievement_phrase: Achievement phrase or motto (optional, defaults to empty string)
         colors: Optional brand colors (primary, secondary, tertiary)
+        border_color: Optional border color hex code (e.g., '#000000')
+        border_width: Optional border width in pixels (e.g., 6)
+        shape: Optional badge shape ('hexagon', 'circle', or 'rounded_rect')
         seed: Optional random seed for reproducibility
+        ribbon_type: Optional ribbon type ('ribbon', 'ribbon_folded', 'none', or None for random)
 
     Returns:
         Complete badge configuration ready for rendering
@@ -517,7 +601,11 @@ def generate_text_overlay_config(
         meta=meta,
         seed=seed,
         logo_path="assets/logos/dcc_logo.png",
-        institution_colors=colors
+        institution_colors=colors,
+        border_color=border_color,
+        border_width=border_width,
+        shape=shape,
+        ribbon_type=ribbon_type
     )
 
     return config

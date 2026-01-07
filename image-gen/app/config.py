@@ -52,3 +52,8 @@ default_badge_config = {
 # Constants
 DEFAULT_CANVAS_WIDTH = 600
 DEFAULT_CANVAS_HEIGHT = 600
+
+# Logging controls
+# When False, base64 data will be stripped from logs (requests/responses)
+# When True, full base64 strings will be logged
+ENABLE_LOG_BASE64_DATA = False

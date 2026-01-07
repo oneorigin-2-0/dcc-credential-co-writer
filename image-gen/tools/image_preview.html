@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badge Image Preview</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 20px 0;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 80px);
+        }
+        .input-panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            resize: none;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .button-row {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            display: none;
+        }
+        .image-container {
+            text-align: center;
+            display: none;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: calc(100vh - 200px);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+        }
+        .image-info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            display: none;
+        }
+        .placeholder {
+            color: #999;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Badge Image Preview</h1>
+
+    <div class="main-container">
+        <div class="input-panel">
+            <label for="jsonInput">Paste API Response JSON:</label>
+            <textarea id="jsonInput" placeholder='{
+  "success": true,
+  "message": "Badge generated successfully",
+  "data": {
+    "base64": "data:image/png;base64,..."
+  },
+  "config": {...}
+}'></textarea>
+
+            <div class="button-row">
+                <button class="btn-primary" onclick="renderImage()">Render Image</button>
+                <button class="btn-secondary" onclick="clearAll()">Clear</button>
+            </div>
+
+            <div id="error" class="error"></div>
+            <div id="success" class="success"></div>
+        </div>
+
+        <div class="preview-panel">
+            <div id="placeholder" class="placeholder">Image preview will appear here</div>
+            <div id="imageContainer" class="image-container">
+                <img id="previewImage" alt="Badge Preview">
+                <div id="imageInfo" class="image-info"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function renderImage() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            const errorDiv = document.getElementById('error');
+            const successDiv = document.getElementById('success');
+            const imageContainer = document.getElementById('imageContainer');
+            const previewImage = document.getElementById('previewImage');
+            const imageInfo = document.getElementById('imageInfo');
+            const placeholder = document.getElementById('placeholder');
+
+            // Reset UI
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            imageContainer.style.display = 'none';
+            placeholder.style.display = 'block';
+
+            if (!jsonInput) {
+                showError('Please paste the API response JSON');
+                return;
+            }
+
+            try {
+                const response = JSON.parse(jsonInput);
+
+                // Check for success
+                if (!response.success) {
+                    showError('API response indicates failure: ' + (response.message || 'Unknown error'));
+                    return;
+                }
+
+                // Extract base64 image
+                let base64Data = null;
+
+                if (response.data && response.data.base64) {
+                    base64Data = response.data.base64;
+                } else if (response.base64) {
+                    base64Data = response.base64;
+                }
+
+                if (!base64Data) {
+                    showError('No base64 image found in response. Expected: response.data.base64');
+                    return;
+                }
+
+                // Set image source
+                previewImage.src = base64Data;
+
+                // Show success and image, hide placeholder
+                successDiv.textContent = 'Image rendered successfully!';
+                successDiv.style.display = 'block';
+                placeholder.style.display = 'none';
+                imageContainer.style.display = 'block';
+
+                // Show config info if available
+                if (response.config) {
+                    const config = response.config;
+                    let info = [];
+                    if (config.title) info.push('Title: ' + config.title);
+                    if (config.subtitle) info.push('Subtitle: ' + config.subtitle);
+                    if (config.scale_factor) info.push('Scale: ' + config.scale_factor + 'x');
+                    imageInfo.textContent = info.join(' | ');
+                }
+
+                // Get image dimensions after load
+                previewImage.onload = function() {
+                    const dims = this.naturalWidth + ' x ' + this.naturalHeight + ' px';
+                    if (imageInfo.textContent) {
+                        imageInfo.textContent += ' | ' + dims;
+                    } else {
+                        imageInfo.textContent = dims;
+                    }
+                };
+
+            } catch (e) {
+                showError('Invalid JSON: ' + e.message);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function clearAll() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+            document.getElementById('imageContainer').style.display = 'none';
+            document.getElementById('imageInfo').textContent = '';
+        }
+
+        // Allow Ctrl+Enter to render
+        document.getElementById('jsonInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                renderImage();
+            }
+        });
+
+        // Auto-render on paste
+        document.getElementById('jsonInput').addEventListener('paste', function(e) {
+            // Use setTimeout to allow the paste to complete first
+            setTimeout(renderImage, 100);
+        });
+    </script>
+</body>
+</html>
