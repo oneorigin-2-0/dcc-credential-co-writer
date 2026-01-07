@@ -200,13 +200,13 @@ export default function CredentialSuggestionsPage() {
               {/* Left: Original Content (sticky) - Hidden on mobile/tablet */}
               <div className="hidden lg:block md:col-span-4">
                 <div className="sticky top-4">
-                  <Card className="border-0 bg-gradient-to-br from-[#429EA6]/15 via-[#429EA6]/10 to-blue-50/50 shadow-xl">
+                  <Card className="border-0 bg-gradient-to-br from-secondary/15 via-secondary/10 to-blue-50/50 shadow-xl">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <div>
-                              <h2 className="text-sm font-bold text-[#234467]">Original Content</h2>
-                              <p className="text-xs text-[#429EA6] font-medium">Source Input</p>
+                              <h2 className="text-sm font-bold text-primary">Original Content</h2>
+                              <p className="text-xs text-secondary font-medium">Source Input</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function CredentialSuggestionsPage() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div className="cursor-pointer">
-                                    <Info className="h-4 w-4 text-[#234467]" />
+                                    <Info className="h-4 w-4 text-primary" />
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -228,7 +228,7 @@ export default function CredentialSuggestionsPage() {
                             variant="outline" 
                             size="sm" 
                             onClick={handleCopyOriginal}
-                            className="border-[#429EA6] bg-white text-[#429EA6] hover:bg-[#429EA6] hover:text-white transition-all duration-200"
+                            className="border-secondary bg-white text-secondary hover:bg-secondary hover:text-white transition-all duration-200"
                           >
                             <Copy className="h-4 w-4 mr-1" /> Copy
                           </Button>
@@ -265,11 +265,11 @@ export default function CredentialSuggestionsPage() {
                         <div className="flex items-center justify-center mb-3">
                           <CheckCircle className="h-8 w-8 text-green-500 mr-2" />
                           <h3 className="text-lg font-semibold text-green-800">
-                            All Suggestions Generated!
+                            Suggestion Generated!
                           </h3>
                         </div>
                         <p className="text-green-700 text-sm text-center">
-                          Click on any suggestion card below to edit and customize your credential.
+                          Click on the suggestion card below to edit and customize your credential.
                         </p>
                       </CardContent>
                     </Card>
@@ -290,23 +290,23 @@ export default function CredentialSuggestionsPage() {
                 {/* Show message when no cards are visible yet */}
                 {suggestionCards.filter(card => card.streamingStarted && !card.error).length === 0 && isGenerating && (
                   <div className="flex flex-col items-center py-12 space-y-6 mb-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#429EA6]"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
                     <div className="text-center">
-                      <h3 className="text-lg font-semibold text-[#234467] mb-2">Initializing AI Generation</h3>
-                      <p className="text-[#626a73] text-sm">
+                      <h3 className="text-lg font-semibold text-primary mb-2">Initializing AI Generation</h3>
+                      <p className="text-muted-foreground text-sm">
                         Starting up the AI engines... Cards will appear as streaming begins.
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Suggestion Cards - Only render columns when cards exist, exclude failed ones */}
+                {/* Suggestion Cards - Only render when cards exist, exclude failed ones */}
                 {suggestionCards.filter(card => card.streamingStarted && !card.error).length > 0 && (
-                  <div className="columns-1 md:columns-2 gap-6">
+                  <div>
                     {suggestionCards
                       .filter(card => card.streamingStarted && !card.error)
                       .map((card) => (
-                        <div key={card.id} className="break-inside-avoid mb-6">
+                        <div key={card.id} className="w-full">
                           <SuggestionCard
                             id={card.id}
                             data={card.data}

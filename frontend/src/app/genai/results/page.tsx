@@ -54,7 +54,6 @@ function ResultsContent() {
             try {
                 const decodedData = JSON.parse(decodeURIComponent(dataParam));
                 setBadgeResults(decodedData);
-                console.log('Loaded badge results:', decodedData);
             } catch (error) {
                 console.error('Error parsing badge data:', error);
                 // Fallback to localStorage
@@ -163,7 +162,6 @@ function ResultsContent() {
     };
 
     const handleUseSuggestion = (suggestion: BadgeSuggestion) => {
-        console.log('Using selected badge suggestion:', suggestion);
         toast({
             title: 'Badge Data Ready!',
             description: 'You can now proceed to create your badge.',

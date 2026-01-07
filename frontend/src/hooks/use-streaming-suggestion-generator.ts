@@ -26,9 +26,6 @@ export function useStreamingSuggestionGenerator() {
   const { toast } = useToast();
   const [suggestionCards, setSuggestionCards] = useState<SuggestionCard[]>([
     { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 2, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 3, data: null, loading: false, error: null, streamingStarted: false },
-    { id: 4, data: null, loading: false, error: null, streamingStarted: false },
   ]);
   const [allCompleted, setAllCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -50,12 +47,22 @@ export function useStreamingSuggestionGenerator() {
       if (storedSuggestions) {
         const suggestions = JSON.parse(storedSuggestions);
         if (suggestions.length > 0) {
+          // Get imageConfig to check enable_image_generation flag
+          const storedImageConfig = localStorage.getItem('imageConfig');
+          const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
+          
           setSuggestionCards(prev => 
             prev.map(card => {
               const storedSuggestion = suggestions.find((s: any) => s.id === card.id);
-              return storedSuggestion 
-                ? { ...card, data: storedSuggestion.data, loading: false, streamingStarted: true }
-                : card;
+              if (storedSuggestion) {
+                // Ensure enable_image_generation flag is set (for backward compatibility)
+                const suggestionData = {
+                  ...storedSuggestion.data,
+                  enable_image_generation: storedSuggestion.data?.enable_image_generation ?? imageConfig?.enable_image_generation ?? false
+                };
+                return { ...card, data: suggestionData, loading: false, streamingStarted: true };
+              }
+              return card;
             })
           );
           
@@ -96,6 +103,10 @@ export function useStreamingSuggestionGenerator() {
                 
                 const skills = extractSkills(rawFinalData);
                 
+                // Get imageConfig to check enable_image_generation flag
+                const storedImageConfig = localStorage.getItem('imageConfig');
+                const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
+                
                 // Extract mapped suggestion from raw final data
                 let mappedSuggestion;
                 if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
@@ -106,6 +117,7 @@ export function useStreamingSuggestionGenerator() {
                     description: achievement.description,
                     criteria: achievement.criteria?.narrative || achievement.description,
                     image: achievement.image?.id || undefined,
+                    enable_image_generation: imageConfig?.enable_image_generation || false,
                     metrics: metrics,
                     skills: skills,
                   };
@@ -116,9 +128,17 @@ export function useStreamingSuggestionGenerator() {
                     description: rawFinalData.badge_description,
                     criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
                     image: undefined,
+                    enable_image_generation: imageConfig?.enable_image_generation || false,
                     metrics: metrics,
                     skills: skills,
                   };
+                }
+                
+                // If user uploaded their own badge image (when enable_image_generation is false)
+                // restore it from imageConfig for display purposes
+                if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+                  mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
+                  mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
                 }
                 
                 return { 
@@ -157,21 +177,64 @@ export function useStreamingSuggestionGenerator() {
     }
   }, [suggestionCards, isGenerating, justCompleted]);
 
-  const generateSingleSuggestionStream = useCallback(async (cardId: number, content: string, enableSkillExtraction: boolean = false) => {
+  const generateSingleSuggestionStream = useCallback(async (
+    cardId: number,
+    content: string,
+    enableSkillExtraction: boolean = false,
+    badgeConfig?: any,
+    imageConfig?: any,
+    userPrompt?: string
+  ) => {
     try {
-      
+
       // Set loading state (but don't mark as streaming started yet)
-      setSuggestionCards(prev => 
-        prev.map(card => 
-          card.id === cardId 
+      setSuggestionCards(prev =>
+        prev.map(card =>
+          card.id === cardId
             ? { ...card, loading: true, error: null, progress: 0, streamingText: 'Connecting to AI service...' }
             : card
         )
       );
 
-      // Prepare additional parameters for the API
-      const additionalParams = enableSkillExtraction ? { enable_skill_extraction: true } : {};
-      const stream = new StreamingApiClient().generateSuggestionsStream(content, additionalParams);
+      // Construct the API payload according to the new structure
+      const payload: any = {
+        course_input: content,
+        badge_configuration: {
+          badge_style: badgeConfig?.badge_style || 'professional',
+          badge_tone: badgeConfig?.badge_tone || 'authoritative',
+          criterion_style: badgeConfig?.criterion_style || 'task-oriented',
+          badge_level: badgeConfig?.badge_level || 'not-specified',
+          institution: badgeConfig?.institution || '',
+          institute_url: badgeConfig?.institute_url || '',
+          custom_instructions: userPrompt || badgeConfig?.user_prompt || ''
+        },
+        enable_skill_extraction: enableSkillExtraction,
+        context_length: null
+      };
+
+      // Add image_generation configuration
+      if (imageConfig && imageConfig.enable_image_generation === true) {
+        // User enabled image generation toggle
+        payload.image_generation = {
+          enable_image_generation: true,
+          image_configuration: {
+            image_type: '',
+            border_color: '',
+            border_width: 0,
+            primary_color: imageConfig.fill_mode === 'gradient' ? (imageConfig.start_color || '') : (imageConfig.fill_color || ''),
+            secondary_color: imageConfig.fill_mode === 'gradient' ? (imageConfig.end_color || '') : '',
+            shape: imageConfig.shape || '',
+            logo: imageConfig.logo_base64 || ''
+          }
+        };
+      } else {
+        // Default, "Upload your own Badge Image", or toggle is OFF
+        payload.image_generation = {
+          enable_image_generation: false
+        };
+      }
+
+      const stream = new StreamingApiClient().generateSuggestionsStream(payload);
       
       for await (const response of stream) {
         
@@ -190,11 +253,6 @@ export function useStreamingSuggestionGenerator() {
             // Handle final response (type: "final")
             
             if (response.data && response.mappedSuggestion) {
-              console.log(`[Hook] Card ${cardId} - Final response received`);
-              console.log(`[Hook] response.data:`, response.data);
-              console.log(`[Hook] response.mappedSuggestion:`, response.mappedSuggestion);
-              console.log(`[Hook] response.mappedSuggestion.skills:`, response.mappedSuggestion?.skills);
-              
               // Store raw final response data in localStorage
               try {
                 // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
@@ -210,12 +268,25 @@ export function useStreamingSuggestionGenerator() {
                 console.error('Failed to store final response in localStorage:', error);
               }
               
+              // Add enable_image_generation flag to the mapped suggestion
+              const suggestionWithFlag = {
+                ...response.mappedSuggestion,
+                enable_image_generation: imageConfig?.enable_image_generation || false
+              };
+
+              // If user uploaded their own badge image (when enable_image_generation is false)
+              // add it to the suggestion for display purposes
+              if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+                suggestionWithFlag.uploaded_badge_image = imageConfig.logo_base64;
+                suggestionWithFlag.uploaded_badge_image_name = imageConfig.logo_file_name;
+              }
+
               setSuggestionCards(prev => 
                 prev.map(card => 
                   card.id === cardId 
                     ? { 
                         ...card, 
-                        data: response.mappedSuggestion, // Use mapped suggestion for UI display
+                        data: suggestionWithFlag, // Use mapped suggestion with flag
                         loading: false, 
                         error: null,
                         streamingText: 'Complete!',
@@ -231,7 +302,7 @@ export function useStreamingSuggestionGenerator() {
               try {
                 const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
                 const updated = existing.filter((s: any) => s.id !== cardId);
-                updated.push({ id: cardId, data: response.mappedSuggestion });
+                updated.push({ id: cardId, data: suggestionWithFlag });
                 localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
               } catch (error) {
                 console.error('Failed to save suggestion to localStorage:', error);
@@ -304,22 +375,18 @@ export function useStreamingSuggestionGenerator() {
                   // Extract skills from the response - get full skill objects
                   // Check multiple possible locations: top level, credentialSubject, or achievement
                   const extractSkills = (data: any): any[] | undefined => {
-                    console.log(`[Hook Token] Card ${cardId} - Extracting skills from badgeData:`, data);
                     const skillsArray = data?.skills || 
                                        data?.credentialSubject?.skills || 
                                        data?.credentialSubject?.achievement?.skills;
-                    console.log(`[Hook Token] Card ${cardId} - Found skillsArray:`, skillsArray);
                     if (skillsArray && Array.isArray(skillsArray)) {
                       // Store full skill objects
                       const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
-                      console.log(`[Hook Token] Card ${cardId} - Extracted skills objects:`, skills);
                       return skills.length > 0 ? skills : undefined;
                     }
                     return undefined;
                   };
                   
                   const skills = extractSkills(badgeData);
-                  console.log(`[Hook Token] Card ${cardId} - Final skills result:`, skills);
                   
                   // Map to our format - handle new API structure
                   let suggestion: BadgeSuggestion | null = null;
@@ -334,7 +401,6 @@ export function useStreamingSuggestionGenerator() {
                       metrics: metrics,
                       skills: skills,
                     };
-                    console.log(`[Hook Token] Card ${cardId} - Created suggestion with skills:`, suggestion);
                   }
                   
           
@@ -478,13 +544,31 @@ export function useStreamingSuggestionGenerator() {
       return;
     }
 
-    // Get LAiSER flag from localStorage
+    // Get LAiSER flag and badge configuration from localStorage
     let enableSkillExtraction = false;
+    let badgeConfig: any = null;
+    let imageConfig: any = null;
+    let userPrompt = '';
     try {
       const laiserEnabled = localStorage.getItem('isLaiserEnabled');
       enableSkillExtraction = laiserEnabled === 'true';
+
+      // Get badge configuration
+      const storedConfig = localStorage.getItem('badgeConfig');
+      if (storedConfig) {
+        badgeConfig = JSON.parse(storedConfig);
+      }
+
+      // Get image configuration
+      const storedImageConfig = localStorage.getItem('imageConfig');
+      if (storedImageConfig) {
+        imageConfig = JSON.parse(storedImageConfig);
+      }
+
+      // Get user prompt
+      userPrompt = localStorage.getItem('userPrompt') || '';
     } catch (error) {
-      console.error('Error reading LAiSER flag from localStorage:', error);
+      console.error('Error reading from localStorage:', error);
     }
 
     setIsGenerating(true);
@@ -503,23 +587,13 @@ export function useStreamingSuggestionGenerator() {
     // Reset all cards to initial state
     setSuggestionCards([
       { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 2, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 3, data: null, loading: false, error: null, streamingStarted: false },
-      { id: 4, data: null, loading: false, error: null, streamingStarted: false },
     ]);
 
-    // Generate all 4 suggestions in TRUE PARALLEL (no delays)
-    
-    // Create all promises immediately - they start executing right away
-    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction);
-    const promise2 = generateSingleSuggestionStream(2, originalContent, enableSkillExtraction);
-    const promise3 = generateSingleSuggestionStream(3, originalContent, enableSkillExtraction);
-    const promise4 = generateSingleSuggestionStream(4, originalContent, enableSkillExtraction);
-    
-    
-    // Wait for all streams to complete
-    await Promise.allSettled([promise1, promise2, promise3, promise4]);
-    // await Promise.allSettled([promise1]);
+    // Generate single suggestion
+    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction, badgeConfig, imageConfig, userPrompt);
+
+    // Wait for stream to complete
+    await Promise.allSettled([promise1]);
 
     // Note: Suggestions are saved to localStorage individually as they complete
     // (see 'final' and 'data' case handlers above). No bulk save needed here.

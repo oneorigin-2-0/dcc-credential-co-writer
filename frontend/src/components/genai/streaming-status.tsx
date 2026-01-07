@@ -46,18 +46,18 @@ export function StreamingStatus({ isGenerating, completedCount, totalCount }: St
 
   return (
     <Card 
-      className={`mb-8 border-[#429EA6] shadow-lg overflow-hidden relative transition-all duration-500 ${
+      className={`mb-8 border-secondary shadow-lg overflow-hidden relative transition-all duration-500 ${
         isFadingOut 
           ? 'opacity-0 translate-y-[-10px]' 
           : 'opacity-100 translate-y-0'
       }`}
     >
       {/* Base gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#DDD78D]/20 to-[#429EA6]/10"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-muted/20 to-secondary/10"></div>
       
       {/* Animated gradient wave when generating */}
       {isGenerating && (
-        <div className="absolute inset-0 bg-gradient-to-r from-[#DDD78D]/50 via-[#429EA6]/40 to-[#234467]/30 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-muted/50 via-secondary/40 to-primary/30 animate-pulse"></div>
       )}
       
       {/* Moving shimmer effect from right to left */}
@@ -72,10 +72,10 @@ export function StreamingStatus({ isGenerating, completedCount, totalCount }: St
       )}
       
       <CardHeader className="relative z-10">
-        <CardTitle className="text-[#234467] font-headline font-bold text-xl">
-          Crafting Your Credential Suggestions
+        <CardTitle className="text-primary font-headline font-bold text-xl">
+          Crafting Your Credential Suggestion
         </CardTitle>
-        <CardDescription className="text-[#40464c] font-body text-base">
+        <CardDescription className="text-foreground font-body text-base">
           {getStatusMessage()}
         </CardDescription>
       </CardHeader>

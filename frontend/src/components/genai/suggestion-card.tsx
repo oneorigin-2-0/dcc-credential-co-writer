@@ -73,7 +73,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             <Lottie animationData={animationData} loop={true} />
           </div>
         ) : (
-          <Sparkles className="h-5 w-5 text-[#429EA6]" />
+          <Sparkles className="h-5 w-5 text-secondary" />
         );
       case 'error':
         return <AlertCircle className="h-5 w-5 text-red-500" />;
@@ -157,7 +157,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
           : 'opacity-0 translate-y-4'
       } ${
         isClickable 
-          ? 'cursor-pointer lg:hover:shadow-xl border-2 border-transparent lg:hover:border-[#429EA6] bg-gradient-to-br from-white to-gray-50' 
+          ? 'cursor-pointer lg:hover:shadow-xl border-2 border-transparent lg:hover:border-secondary bg-gradient-to-br from-white to-gray-50' 
           : 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-transparent'
       } ${status === 'error' ? 'from-red-50 to-red-100 border-red-200' : ''} ${
         status === 'loading' ? 'from-blue-50 to-indigo-50 border-blue-200' : ''
@@ -169,7 +169,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
           <div className={`p-2 rounded-lg ${
             status === 'success' ? 'bg-green-100' :
             status === 'error' ? 'bg-red-100' :
-            status === 'loading' ? 'bg-[#429EA6]' :
+            status === 'loading' ? 'bg-secondary' :
             'bg-gray-200'
           }`}>
             {getStatusIcon(status)}
@@ -203,10 +203,10 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
               <div className="space-y-3">
                 {/* Raw JSON Content Display */}
                 <div className="space-y-1">
-                  <div className="p-4 bg-gradient-to-br from-[#234467] to-[#320E3B] rounded-lg border-2 border-[#429EA6]/50 overflow-y-auto shadow-xl">
-                    <pre ref={preRef} className="text-xs text-[#DDD78D] font-mono leading-relaxed whitespace-pre-wrap">
+                  <div className="p-4 bg-gradient-to-br from-primary to-chart-4 rounded-lg border-2 border-secondary/50 overflow-y-auto shadow-xl">
+                    <pre ref={preRef} className="text-xs text-muted font-mono leading-relaxed whitespace-pre-wrap">
                       {rawStreamingContent}
-                      {!isStreamingComplete && <span className="animate-pulse text-[#429EA6]">|</span>}
+                      {!isStreamingComplete && <span className="animate-pulse text-secondary">|</span>}
                     </pre>
                   </div>
                 </div>
@@ -256,15 +256,15 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             ) : streamingText ? (
               <div className="text-center space-y-3">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-sm text-[#429EA6] font-medium">{streamingText}</p>
+                  <p className="text-sm text-secondary font-medium">{streamingText}</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <div className="h-4 bg-gradient-to-r from-[#429EA6]/30 to-[#234467]/30 rounded-lg animate-pulse"></div>
-                  <div className="h-4 bg-gradient-to-r from-[#429EA6]/30 to-[#234467]/30 rounded-lg animate-pulse w-3/4 mx-auto"></div>
-                  <div className="h-4 bg-gradient-to-r from-[#429EA6]/30 to-[#234467]/30 rounded-lg animate-pulse w-1/2 mx-auto"></div>
+                  <div className="h-4 bg-gradient-to-r from-secondary/30 to-primary/30 rounded-lg animate-pulse"></div>
+                  <div className="h-4 bg-gradient-to-r from-secondary/30 to-primary/30 rounded-lg animate-pulse w-3/4 mx-auto"></div>
+                  <div className="h-4 bg-gradient-to-r from-secondary/30 to-primary/30 rounded-lg animate-pulse w-1/2 mx-auto"></div>
                 </div>
               </div>
             )}
@@ -289,35 +289,31 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
         {status === 'success' && data && (
           <div className="space-y-4">
-            {/* Debug: Log skills data */}
-            {(() => {
-              console.log('[SuggestionCard] Card', id, '- data.skills:', data.skills);
-              console.log('[SuggestionCard] Card', id, '- full data:', data);
-              return null;
-            })()}
             
-            {/* Badge Image with Gradient Background */}
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#429EA6]/20 to-[#234467]/20 rounded-lg blur-xl"></div>
-                <img
-                  src={data.image}
-                  alt={`${data.title} badge preview image`}
-                  className="relative w-40 h-40 object-contain rounded-lg border-2 border-white shadow-xl bg-white"
-                />
+            {/* Badge Image with Gradient Background - Show if uploaded or generated */}
+            {((data.enable_image_generation !== false && data.image) || data.uploaded_badge_image) && (
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-lg blur-xl"></div>
+                  <img
+                    src={data.uploaded_badge_image || data.image}
+                    alt={`${data.title} badge preview image`}
+                    className="relative w-40 h-40 object-contain rounded-lg border-2 border-white shadow-xl bg-white"
+                  />
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Title with Background */}
-            <div className="text-center px-3 py-3 bg-gradient-to-r from-[#DDD78D]/20 to-[#429EA6]/20 rounded-lg border border-[#429EA6]/30">
-              <h3 className="font-bold text-[#234467] text-base font-headline">
+            <div className="text-center px-3 py-3 bg-gradient-to-r from-muted/20 to-secondary/20 rounded-lg border border-secondary/30">
+              <h3 className="font-bold text-primary text-base font-headline">
                 {data.title}
               </h3>
             </div>
             
             {/* Description Card */}
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
-              <label className="text-xs font-bold text-[#429EA6] uppercase tracking-wide mb-2 block font-subhead">Description</label>
+              <label className="text-xs font-bold text-secondary uppercase tracking-wide mb-2 block font-subhead">Description</label>
               <p className="text-gray-700 text-sm leading-relaxed font-body">
                 {data.description}
               </p>
@@ -325,7 +321,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             
             {/* Criteria Card */}
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
-              <label className="text-xs font-bold text-[#234467] uppercase tracking-wide mb-2 block font-subhead">Criteria</label>
+              <label className="text-xs font-bold text-primary uppercase tracking-wide mb-2 block font-subhead">Criteria</label>
               <p className="text-gray-600 text-sm leading-relaxed font-body">
                 {data.criteria}
               </p>
@@ -334,21 +330,57 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
             {/* Skills Card - Only show if skills exist */}
             {data.skills && data.skills.length > 0 && (
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-gray-200/50 shadow-sm">
-                <label className="text-xs font-bold text-[#429EA6] tracking-wide mb-3 block font-subhead">
-                  Skills from LAiSER
+                <label className="text-xs font-bold text-secondary tracking-wide mb-3 block font-subhead">
+                  Skills (powered by LAiSER)
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {data.skills.map((skillObj, index) => {
-                    const targetName = skillObj?.targetName;
-                    return targetName ? (
-                      <Badge
+                    if (!skillObj?.targetName) return null;
+                    return (
+                      <div
                         key={index}
-                        variant="secondary"
-                        className="bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 text-[#234467] border-[#429EA6]/30 cursor-default hover:from-[#429EA6]/10 hover:to-[#234467]/10 hover:bg-transparent pointer-events-none"
+                        className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {targetName}
-                      </Badge>
-                    ) : null;
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                          {skillObj.targetName}
+                        </h4>
+                        {skillObj.targetDescription && (
+                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                            {skillObj.targetDescription}
+                          </p>
+                        )}
+                        {skillObj.targetType && (
+                          <div className="mb-2">
+                            <span className="text-xs text-gray-500 mr-2">Type:</span>
+                            {skillObj.targetUrl ? (
+                              <a
+                                href={skillObj.targetUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {skillObj.targetType} →
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                            )}
+                          </div>
+                        )}
+                        {skillObj.targetUrl && !skillObj.targetType && (
+                          <a
+                            href={skillObj.targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View URL →
+                          </a>
+                        )}
+                      </div>
+                    );
                   })}
                 </div>
               </div>
@@ -369,7 +401,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                   handleCopyJSON();
                 }}
                 variant="outline"
-                className="w-full flex items-center justify-center gap-2 border-[#429EA6] text-[#429EA6] hover:bg-[#429EA6] hover:text-white transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 border-secondary text-secondary hover:bg-secondary hover:text-white transition-all duration-200"
               >
                 <Copy className="h-4 w-4" />
                 Copy JSON
@@ -379,10 +411,10 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
               <div className={`text-center py-2 px-4 rounded-lg ${
                 status === 'error' 
                   ? 'bg-red-100 border border-red-300' 
-                  : 'bg-gradient-to-r from-[#429EA6]/10 to-[#234467]/10 border border-[#429EA6]/30'
+                  : 'bg-gradient-to-r from-secondary/10 to-primary/10 border border-secondary/30'
               }`}>
                 <p className={`text-xs font-semibold font-body ${
-                  status === 'error' ? 'text-red-600' : 'text-[#234467]'
+                  status === 'error' ? 'text-red-600' : 'text-primary'
                 }`}>
                   ✨ Click to edit and customise
                 </p>
