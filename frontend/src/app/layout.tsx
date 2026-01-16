@@ -3,6 +3,7 @@ import { Roboto, Roboto_Serif, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 // DCC Brand Fonts - Roboto family
 const roboto = Roboto({
@@ -31,7 +32,7 @@ const robotoBody = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: 'BadgeSmith - AI-Powered Badge Creator',
+  title: 'Credential Co-writer',
   description:
     'Create OpenBadges with AI assistance. Analyze content, get suggestions for title, description, and criteria, and export in OpenBadge 3.0 format.',
 };
@@ -53,6 +54,7 @@ export default function RootLayout({
         </a>
         <Header />
         {children}
+        <Footer />
         <Toaster />
       </body>
     </html>
