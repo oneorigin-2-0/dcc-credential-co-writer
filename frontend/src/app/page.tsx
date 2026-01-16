@@ -4,7 +4,7 @@ import { WandSparkles } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-      <main id="main-content" className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
+      <main id="main-content" className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="w-full max-w-4xl text-center">
           <div>
             <h1 className="text-3xl font-headline font-black">Craft Your Recognition</h1>
