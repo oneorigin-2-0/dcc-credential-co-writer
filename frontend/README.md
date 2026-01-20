@@ -44,7 +44,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # API Configuration
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8001/api/v1
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
 ### 4. Start Development Server
