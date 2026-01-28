@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { ReduxProvider } from '@/providers/ReduxProvider';
 
 // DCC Brand Fonts - Roboto family
 const roboto = Roboto({
@@ -52,10 +53,12 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <Header />
-        {children}
-        <Footer />
-        <Toaster />
+        <ReduxProvider>
+          <Header />
+          {children}
+          <Footer />
+          <Toaster />
+        </ReduxProvider>
       </body>
     </html>
   );

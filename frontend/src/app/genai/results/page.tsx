@@ -15,6 +15,8 @@ import { ArrowLeft, Edit, CheckCircle, Save, X, Copy, FileDown, RefreshCw, Loade
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setGeneratedBadgeData } from '@/store/slices/genaiSlice';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +35,9 @@ function ResultsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const dispatch = useAppDispatch();
+    const generatedBadgeData = useAppSelector((state) => state.genai.generatedBadgeData);
+    const originalContent = useAppSelector((state) => state.genai.originalContent);
     const [badgeResults, setBadgeResults] = useState<BadgeResultsData | null>(null);
     const [selectedSuggestion, setSelectedSuggestion] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,40 +49,32 @@ function ResultsContent() {
     }>({ title: '', description: '', criteria: '' });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
-    const [originalContent, setOriginalContent] = useState<string>('');
 
     useEffect(() => {
-        // Get data from URL params or localStorage
+        // Get data from URL params or Redux
         const dataParam = searchParams.get('data');
 
         if (dataParam) {
             try {
                 const decodedData = JSON.parse(decodeURIComponent(dataParam));
                 setBadgeResults(decodedData);
+                dispatch(setGeneratedBadgeData(decodedData));
             } catch (error) {
                 console.error('Error parsing badge data:', error);
-                // Fallback to localStorage
-                const storedData = localStorage.getItem('generatedBadgeData');
-                if (storedData) {
-                    setBadgeResults(JSON.parse(storedData));
+                // Fallback to Redux
+                if (generatedBadgeData) {
+                    setBadgeResults(generatedBadgeData);
                 }
             }
         } else {
-            // Try to get from localStorage
-            const storedData = localStorage.getItem('generatedBadgeData');
-            if (storedData) {
-                setBadgeResults(JSON.parse(storedData));
+            // Try to get from Redux
+            if (generatedBadgeData) {
+                setBadgeResults(generatedBadgeData);
             }
         }
 
-        // Get original content from localStorage
-        const storedContent = localStorage.getItem('originalContent');
-        if (storedContent) {
-            setOriginalContent(storedContent);
-        }
-
         setIsLoading(false);
-    }, [searchParams]);
+    }, [searchParams, generatedBadgeData, dispatch]);
 
     const handleRegenerate = async () => {
         if (!originalContent) {
@@ -135,8 +132,8 @@ function ResultsContent() {
                 setBadgeResults(updatedResults);
                 setSelectedSuggestion(0); // Reset to first suggestion
                 
-                // Update localStorage
-                localStorage.setItem('generatedBadgeData', JSON.stringify(updatedResults));
+                // Update Redux
+                dispatch(setGeneratedBadgeData(updatedResults));
                 
                 toast({
                     title: 'Suggestions Regenerated!',
@@ -190,8 +187,8 @@ function ResultsContent() {
 
         setBadgeResults(updatedResults);
 
-        // Update localStorage
-        localStorage.setItem('generatedBadgeData', JSON.stringify(updatedResults));
+        // Update Redux
+        dispatch(setGeneratedBadgeData(updatedResults));
 
         setEditingField(null);
 

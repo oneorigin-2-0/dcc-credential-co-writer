@@ -11,51 +11,39 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
 import { StreamingStatus } from '@/components/genai/streaming-status';
 import { useStreamingSuggestionGenerator } from '@/hooks/use-streaming-suggestion-generator';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setOriginalContent, setGenerationStarted, setSelectedBadgeSuggestion } from '@/store/slices/genaiSlice';
 
 export default function CredentialSuggestionsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [originalContent, setOriginalContent] = useState<string>('');
+  const dispatch = useAppDispatch();
+  const originalContent = useAppSelector((state) => state.genai.originalContent);
+  const generationStarted = useAppSelector((state) => state.genai.generationStarted);
   const [showCompletionAlert, setShowCompletionAlert] = useState(false);
   const [isAlertFadingOut, setIsAlertFadingOut] = useState(false);
   const { suggestionCards, allCompleted, isGenerating, generateAllSuggestionsStream } = useStreamingSuggestionGenerator();
 
   useEffect(() => {
-    // Get original content from localStorage
-    try {
-      const storedContent = localStorage.getItem('originalContent');
-      if (storedContent) {
-        setOriginalContent(storedContent);
-      }
-
-      // Debug: Check what's in localStorage
-      // console.log('Suggestions page - localStorage check:');
-      // console.log('generatedSuggestions:', localStorage.getItem('generatedSuggestions'));
-      // console.log('finalResponses:', localStorage.getItem('finalResponses'));
-      // console.log('isGenerating:', localStorage.getItem('isGenerating'));
-      // console.log('suggestionCards:', suggestionCards);
-    } catch (error) {
-      console.error('Error accessing localStorage:', error);
+    // Original content is now in Redux, no need to read from localStorage
+    if (!originalContent) {
       toast({
         variant: 'destructive',
         title: 'Storage Error',
         description: 'Unable to access stored content. Please go back and try again.',
       });
     }
-  }, [toast, suggestionCards]);
+  }, [toast, originalContent]);
 
   // Auto-start generation if it was initiated from /genai page
   useEffect(() => {
-    if (originalContent) {
-      const generationStarted = localStorage.getItem('generationStarted');
-      if (generationStarted === 'true') {
-        // Start generating suggestions automatically
-        generateAllSuggestionsStream(originalContent);
-        // Clear the flag so it doesn't restart on refresh
-        localStorage.removeItem('generationStarted');
-      }
+    if (originalContent && generationStarted) {
+      // Start generating suggestions automatically
+      generateAllSuggestionsStream(originalContent);
+      // Clear the flag so it doesn't restart on refresh
+      dispatch(setGenerationStarted(false));
     }
-  }, [originalContent, generateAllSuggestionsStream]);
+  }, [originalContent, generationStarted, generateAllSuggestionsStream, dispatch]);
 
   // Navigation guard - prevent leaving page while streaming
   useEffect(() => {
@@ -151,12 +139,11 @@ export default function CredentialSuggestionsPage() {
       image: undefined
     };
 
-    // Store the selected suggestion with card ID and navigate to editor
-    const suggestionWithId = {
-      ...suggestionData,
-      cardId: card.id
-    };
-    localStorage.setItem('selectedBadgeSuggestion', JSON.stringify(suggestionWithId));
+    // Store the selected suggestion with card ID in Redux and navigate to editor
+    dispatch(setSelectedBadgeSuggestion({ 
+      suggestion: suggestionData, 
+      cardId: card.id.toString() 
+    }));
 
     // Navigate to badge suggestion editor
     handleNavigation('/genai/editor');
