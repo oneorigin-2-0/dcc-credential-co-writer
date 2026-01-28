@@ -35,6 +35,15 @@ import Lottie from 'lottie-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { FileParser } from '@/lib/file-parser';
+import { useAppDispatch } from '@/store/hooks';
+import {
+  setOriginalContent,
+  setBadgeConfig as setBadgeConfigRedux,
+  setImageConfig as setImageConfigRedux,
+  setIsLaiserEnabled as setIsLaiserEnabledRedux,
+  setGenerationStarted,
+  clearGenerationData,
+} from '@/store/slices/genaiSlice';
 
 const badgeFormSchema = z.object({
   content: z
@@ -55,6 +64,7 @@ interface AttachedFile {
 export default function GenAIPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [animationData, setAnimationData] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isParsingFile, setIsParsingFile] = useState(false);
@@ -85,10 +95,10 @@ export default function GenAIPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Clear badge config from localStorage on mount (fresh start each visit)
+  // Clear badge config from Redux on mount (fresh start each visit)
   useEffect(() => {
-    localStorage.removeItem('badgeConfig');
-  }, []);
+    dispatch(setBadgeConfigRedux(null));
+  }, [dispatch]);
 
   // Load Lottie animation data
   useEffect(() => {
@@ -245,30 +255,18 @@ export default function GenAIPage() {
     }
 
     try {
-      // Clear all localStorage values to avoid confusion
-      try {
-        localStorage.removeItem('generatedSuggestions');
-        localStorage.removeItem('finalResponses');
-        localStorage.removeItem('selectedBadgeSuggestion');
-        localStorage.removeItem('isGenerating');
-        // console.log('Cleared all localStorage values for fresh generation');
-      } catch (error) {
-        console.error('Error clearing localStorage:', error);
-      }
+      // Clear all generation data from Redux
+      dispatch(clearGenerationData());
 
-      // Store content and generation state in localStorage
-      try {
-        localStorage.setItem('originalContent', combinedContent);
-        localStorage.setItem('generationStarted', 'true');
-        localStorage.setItem('isLaiserEnabled', isLaiserEnabled.toString());
-        if (badgeConfig) {
-          localStorage.setItem('badgeConfig', JSON.stringify(badgeConfig));
-        }
-        if (imageConfig) {
-          localStorage.setItem('imageConfig', JSON.stringify(imageConfig));
-        }
-      } catch (error) {
-        console.error('Error storing content in localStorage:', error);
+      // Store content and generation state in Redux
+      dispatch(setOriginalContent(combinedContent));
+      dispatch(setGenerationStarted(true));
+      dispatch(setIsLaiserEnabledRedux(isLaiserEnabled));
+      if (badgeConfig) {
+        dispatch(setBadgeConfigRedux(badgeConfig));
+      }
+      if (imageConfig) {
+        dispatch(setImageConfigRedux(imageConfig));
       }
 
       // Show immediate feedback

@@ -1,9 +1,20 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { streamingApiClient, StreamingApiClient, type StreamingResponse } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  setIsGenerating,
+  setSuggestionCards,
+  updateSuggestionCard,
+  resetSuggestionCards,
+  setFinalResponse,
+  addGeneratedSuggestion,
+  setStreamingResponse,
+  clearGeneratedSuggestions,
+} from '@/store/slices/genaiSlice';
 
 interface SuggestionCard {
   id: number;
@@ -24,158 +35,121 @@ interface SuggestionCard {
 
 export function useStreamingSuggestionGenerator() {
   const { toast } = useToast();
-  const [suggestionCards, setSuggestionCards] = useState<SuggestionCard[]>([
-    { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-  ]);
-  const [allCompleted, setAllCompleted] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false); // Track fresh completions only
-
-  // Restore generation state from localStorage on page load
+  const dispatch = useAppDispatch();
+  
+  // Get state from Redux
+  const suggestionCards = useAppSelector((state) => state.genai.suggestionCards);
+  const isGenerating = useAppSelector((state) => state.genai.isGenerating);
+  const generatedSuggestions = useAppSelector((state) => state.genai.generatedSuggestions);
+  const finalResponses = useAppSelector((state) => state.genai.finalResponses);
+  const imageConfig = useAppSelector((state) => state.genai.imageConfig);
+  const isLaiserEnabled = useAppSelector((state) => state.genai.isLaiserEnabled);
+  const badgeConfig = useAppSelector((state) => state.genai.badgeConfig);
+  const userPrompt = useAppSelector((state) => state.genai.userPrompt);
+  
+  // Local state for completion tracking
+  const allCompletedRef = useRef(false);
+  const justCompletedRef = useRef(false);
+  
+  // Restore generation state from Redux on page load (handled by Redux Persist)
   useEffect(() => {
-    try {
-      const storedIsGenerating = localStorage.getItem('isGenerating');
-      const storedSuggestions = localStorage.getItem('generatedSuggestions');
-      const finalResponses = localStorage.getItem('finalResponses');
-      
-      
-      if (storedIsGenerating === 'true') {
-        setIsGenerating(true);
-      }
-      
-      // First try to restore from generatedSuggestions
-      if (storedSuggestions) {
-        const suggestions = JSON.parse(storedSuggestions);
-        if (suggestions.length > 0) {
-          // Get imageConfig to check enable_image_generation flag
-          const storedImageConfig = localStorage.getItem('imageConfig');
-          const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
-          
-          setSuggestionCards(prev => 
-            prev.map(card => {
-              const storedSuggestion = suggestions.find((s: any) => s.id === card.id);
-              if (storedSuggestion) {
-                // Ensure enable_image_generation flag is set (for backward compatibility)
-                const suggestionData = {
-                  ...storedSuggestion.data,
-                  enable_image_generation: storedSuggestion.data?.enable_image_generation ?? imageConfig?.enable_image_generation ?? false
-                };
-                return { ...card, data: suggestionData, loading: false, streamingStarted: true };
-              }
-              return card;
-            })
-          );
-          
-          // If we have stored suggestions, just restore them (don't show completion alert)
-          setIsGenerating(false);
-          return; // Exit early if we found suggestions
+    // Redux Persist automatically restores state, but we need to restore suggestion cards
+    // from generatedSuggestions or finalResponses if they exist
+    if (generatedSuggestions.length > 0) {
+      const restoredCards = suggestionCards.map(card => {
+        const storedSuggestion = generatedSuggestions.find((s) => s.id === card.id);
+        if (storedSuggestion) {
+          const suggestionData = {
+            ...storedSuggestion.data,
+            enable_image_generation: storedSuggestion.data?.enable_image_generation ?? imageConfig?.enable_image_generation ?? false
+          };
+          return { ...card, data: suggestionData, loading: false, streamingStarted: true };
         }
-      }
-      
-      // Fallback: try to restore from finalResponses if no generatedSuggestions
-      if (finalResponses) {
-        const responses = JSON.parse(finalResponses);
-        const cardIds = Object.keys(responses);
-        
-        if (cardIds.length > 0) {
-          setSuggestionCards(prev => 
-            prev.map(card => {
-              const cardId = card.id.toString();
-              const rawFinalData = responses[cardId];
-              
-              if (rawFinalData) {
-                // Extract metrics if present
-                const metrics = rawFinalData.metrics;
-                
-                // Extract skills from the response - get full skill objects
-                // Check multiple possible locations: top level, credentialSubject, or achievement
-                const extractSkills = (data: any): any[] | undefined => {
-                  const skillsArray = data?.skills || 
-                                     data?.credentialSubject?.skills || 
-                                     data?.credentialSubject?.achievement?.skills;
-                  if (skillsArray && Array.isArray(skillsArray)) {
-                    // Store full skill objects
-                    const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
-                    return skills.length > 0 ? skills : undefined;
-                  }
-                  return undefined;
-                };
-                
-                const skills = extractSkills(rawFinalData);
-                
-                // Get imageConfig to check enable_image_generation flag
-                const storedImageConfig = localStorage.getItem('imageConfig');
-                const imageConfig = storedImageConfig ? JSON.parse(storedImageConfig) : null;
-                
-                // Extract mapped suggestion from raw final data
-                let mappedSuggestion;
-                if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
-                  // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
-                  const achievement = rawFinalData.credentialSubject.achievement;
-                  mappedSuggestion = {
-                    title: achievement.name,
-                    description: achievement.description,
-                    criteria: achievement.criteria?.narrative || achievement.description,
-                    image: achievement.image?.id || undefined,
-                    enable_image_generation: imageConfig?.enable_image_generation || false,
-                    metrics: metrics,
-                    skills: skills,
-                  };
-                } else {
-                  // Legacy API format: { badge_name, badge_description, criteria: { narrative } }
-                  mappedSuggestion = {
-                    title: rawFinalData.badge_name,
-                    description: rawFinalData.badge_description,
-                    criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
-                    image: undefined,
-                    enable_image_generation: imageConfig?.enable_image_generation || false,
-                    metrics: metrics,
-                    skills: skills,
-                  };
-                }
-                
-                // If user uploaded their own badge image (when enable_image_generation is false)
-                // restore it from imageConfig for display purposes
-                if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
-                  mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
-                  mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
-                }
-                
-                return { 
-                  ...card, 
-                  data: mappedSuggestion, 
-                  loading: false, 
-                  streamingStarted: true 
-                };
-              }
-              return card;
-            })
-          );
-          
-          // If we have final responses, just restore them (don't show completion alert)
-          setIsGenerating(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error restoring state from localStorage:', error);
+        return card;
+      });
+      dispatch(setSuggestionCards(restoredCards));
+      dispatch(setIsGenerating(false));
+      return;
     }
-  }, []);
+    
+    // Fallback: try to restore from finalResponses if no generatedSuggestions
+    const cardIds = Object.keys(finalResponses);
+    if (cardIds.length > 0) {
+      const extractSkills = (data: any): any[] | undefined => {
+        const skillsArray = data?.skills || 
+                           data?.credentialSubject?.skills || 
+                           data?.credentialSubject?.achievement?.skills;
+        if (skillsArray && Array.isArray(skillsArray)) {
+          const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+          return skills.length > 0 ? skills : undefined;
+        }
+        return undefined;
+      };
+      
+      const restoredCards = suggestionCards.map(card => {
+        const cardId = card.id.toString();
+        const rawFinalData = finalResponses[cardId];
+        
+        if (rawFinalData) {
+          const metrics = rawFinalData.metrics;
+          const skills = extractSkills(rawFinalData);
+          
+          let mappedSuggestion;
+          if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
+            const achievement = rawFinalData.credentialSubject.achievement;
+            mappedSuggestion = {
+              title: achievement.name,
+              description: achievement.description,
+              criteria: achievement.criteria?.narrative || achievement.description,
+              image: achievement.image?.id || undefined,
+              enable_image_generation: imageConfig?.enable_image_generation || false,
+              metrics: metrics,
+              skills: skills,
+            };
+          } else {
+            mappedSuggestion = {
+              title: rawFinalData.badge_name,
+              description: rawFinalData.badge_description,
+              criteria: rawFinalData.criteria?.narrative || rawFinalData.badge_description,
+              image: undefined,
+              enable_image_generation: imageConfig?.enable_image_generation || false,
+              metrics: metrics,
+              skills: skills,
+            };
+          }
+          
+          if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+            mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
+            mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
+          }
+          
+          return { 
+            ...card, 
+            data: mappedSuggestion, 
+            loading: false, 
+            streamingStarted: true 
+          };
+        }
+        return card;
+      });
+      
+      dispatch(setSuggestionCards(restoredCards));
+      dispatch(setIsGenerating(false));
+    }
+  }, []); // Only run once on mount
 
-  // Check if all suggestions are complete whenever cards change
-  // Only trigger completion alert for fresh generations (not page reloads)
+  // Check if all suggestions are complete
   useEffect(() => {
     const allHaveData = suggestionCards.every(card => card.data !== null);
     const hasErrors = suggestionCards.some(card => card.error !== null);
-    const wasGenerating = isGenerating;
     
-    if (allHaveData && !hasErrors && !isGenerating && justCompleted) {
-      setAllCompleted(true);
+    if (allHaveData && !hasErrors && !isGenerating && justCompletedRef.current) {
+      allCompletedRef.current = true;
     } else if (isGenerating) {
-      // Reset states when generation starts
-      setAllCompleted(false);
-      setJustCompleted(false);
+      allCompletedRef.current = false;
+      justCompletedRef.current = false;
     }
-  }, [suggestionCards, isGenerating, justCompleted]);
+  }, [suggestionCards, isGenerating]);
 
   const generateSingleSuggestionStream = useCallback(async (
     cardId: number,
@@ -186,17 +160,13 @@ export function useStreamingSuggestionGenerator() {
     userPrompt?: string
   ) => {
     try {
+      // Set loading state
+      dispatch(updateSuggestionCard({
+        id: cardId,
+        updates: { loading: true, error: null, progress: 0, streamingText: 'Connecting to AI service...' }
+      }));
 
-      // Set loading state (but don't mark as streaming started yet)
-      setSuggestionCards(prev =>
-        prev.map(card =>
-          card.id === cardId
-            ? { ...card, loading: true, error: null, progress: 0, streamingText: 'Connecting to AI service...' }
-            : card
-        )
-      );
-
-      // Construct the API payload according to the new structure
+      // Construct the API payload
       const payload: any = {
         course_input: content,
         badge_configuration: {
@@ -214,7 +184,6 @@ export function useStreamingSuggestionGenerator() {
 
       // Add image_generation configuration
       if (imageConfig && imageConfig.enable_image_generation === true) {
-        // User enabled image generation toggle
         payload.image_generation = {
           enable_image_generation: true,
           image_configuration: {
@@ -228,7 +197,6 @@ export function useStreamingSuggestionGenerator() {
           }
         };
       } else {
-        // Default, "Upload your own Badge Image", or toggle is OFF
         payload.image_generation = {
           enable_image_generation: false
         };
@@ -237,36 +205,18 @@ export function useStreamingSuggestionGenerator() {
       const stream = new StreamingApiClient().generateSuggestionsStream(payload);
       
       for await (const response of stream) {
-        
         switch (response.type) {
           case 'start':
-            setSuggestionCards(prev => 
-              prev.map(card => 
-                card.id === cardId 
-                  ? { ...card, streamingText: 'AI stream started, waiting for response...' }
-                  : card
-              )
-            );
+            dispatch(updateSuggestionCard({
+              id: cardId,
+              updates: { streamingText: 'AI stream started, waiting for response...' }
+            }));
             break;
             
           case 'final':
-            // Handle final response (type: "final")
-            
             if (response.data && response.mappedSuggestion) {
-              // Store raw final response data in localStorage
-              try {
-                // const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
-                // existingResponses[cardId] = response.data; // Store raw final data
-                // localStorage.setItem('streamingResponses', JSON.stringify(existingResponses));
-                // console.log(`Stored raw final response data for card ${cardId}:`, response.data);
-                
-                // Store raw final data in finalResponses with card ID
-                const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
-                existingFinalResponses[cardId] = response.data; // Store raw final data
-                localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
-              } catch (error) {
-                console.error('Failed to store final response in localStorage:', error);
-              }
+              // Store raw final response data in Redux
+              dispatch(setFinalResponse({ cardId: cardId.toString(), data: response.data }));
               
               // Add enable_image_generation flag to the mapped suggestion
               const suggestionWithFlag = {
@@ -274,39 +224,26 @@ export function useStreamingSuggestionGenerator() {
                 enable_image_generation: imageConfig?.enable_image_generation || false
               };
 
-              // If user uploaded their own badge image (when enable_image_generation is false)
-              // add it to the suggestion for display purposes
+              // If user uploaded their own badge image
               if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
                 suggestionWithFlag.uploaded_badge_image = imageConfig.logo_base64;
                 suggestionWithFlag.uploaded_badge_image_name = imageConfig.logo_file_name;
               }
 
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        data: suggestionWithFlag, // Use mapped suggestion with flag
-                        loading: false, 
-                        error: null,
-                        streamingText: 'Complete!',
-                        rawStreamingContent: undefined,
-                        isStreamingComplete: true
-                      }
-                    : card
-                )
-              );
-              
+              dispatch(updateSuggestionCard({
+                id: cardId,
+                updates: {
+                  data: suggestionWithFlag,
+                  loading: false,
+                  error: null,
+                  streamingText: 'Complete!',
+                  rawStreamingContent: undefined,
+                  isStreamingComplete: true
+                }
+              }));
 
-              // Save to generatedSuggestions in localStorage
-              try {
-                const existing = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
-                const updated = existing.filter((s: any) => s.id !== cardId);
-                updated.push({ id: cardId, data: suggestionWithFlag });
-                localStorage.setItem('generatedSuggestions', JSON.stringify(updated));
-              } catch (error) {
-                console.error('Failed to save suggestion to localStorage:', error);
-              }
+              // Save to generatedSuggestions in Redux
+              dispatch(addGeneratedSuggestion({ id: cardId, data: suggestionWithFlag }));
 
               toast({
                 title: `${response.mappedSuggestion?.title || 'Credential'} Generated!`,
@@ -316,29 +253,22 @@ export function useStreamingSuggestionGenerator() {
             break;
             
           case 'data':
-            // Handle both token streaming and final response
             if (response.data && response.data.rawContent) {
-              // Raw token streaming content - show like ChatGPT
               const isComplete = response.data.isComplete;
               
-              setSuggestionCards(prev => 
-                prev.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        rawStreamingContent: response.data.rawContent,
-                        isStreamingComplete: isComplete,
-                        streamingText: isComplete ? 'Parsing Response...' : 'Generating Response...',
-                        streamingStarted: true
-                      }
-                    : card
-                )
-              );
+              dispatch(updateSuggestionCard({
+                id: cardId,
+                updates: {
+                  rawStreamingContent: response.data.rawContent,
+                  isStreamingComplete: isComplete,
+                  streamingText: isComplete ? 'Parsing Response...' : 'Generating Response...',
+                  streamingStarted: true
+                }
+              }));
               
               // If streaming is complete, parse the JSON
               if (isComplete) {
                 try {
-                  // Extract JSON from accumulated content (remove markdown code blocks)
                   let jsonContent = response.data.rawContent;
                   if (jsonContent.includes('```json')) {
                     jsonContent = jsonContent.split('```json')[1] || jsonContent;
@@ -348,38 +278,22 @@ export function useStreamingSuggestionGenerator() {
                   }
                   jsonContent = jsonContent.trim();
                   
-                  // Parse the accumulated JSON
                   const badgeData = JSON.parse(jsonContent);
                   
-                  // Store complete response data in localStorage for debugging
-                  try {
-                    const existingResponses = JSON.parse(localStorage.getItem('streamingResponses') || '{}');
-                    existingResponses[cardId] = badgeData;
-                    localStorage.setItem('streamingResponses', JSON.stringify(existingResponses));
-                  } catch (error) {
-                    console.error('Failed to store streaming response in localStorage:', error);
-                  }
+                  // Store streaming response in Redux
+                  dispatch(setStreamingResponse({ cardId: cardId.toString(), data: badgeData }));
 
                   // Store the raw badge data as final response
-                  try {
-                    const existingFinalResponses = JSON.parse(localStorage.getItem('finalResponses') || '{}');
-                    existingFinalResponses[cardId] = badgeData; // Store raw badge data instead of mapped suggestion
-                    localStorage.setItem('finalResponses', JSON.stringify(existingFinalResponses));
-                  } catch (error) {
-                    console.error('Failed to store final response in localStorage:', error);
-                  }
+                  dispatch(setFinalResponse({ cardId: cardId.toString(), data: badgeData }));
                   
-                  // Extract metrics if present
+                  // Extract metrics and skills
                   const metrics = badgeData.metrics;
                   
-                  // Extract skills from the response - get full skill objects
-                  // Check multiple possible locations: top level, credentialSubject, or achievement
                   const extractSkills = (data: any): any[] | undefined => {
                     const skillsArray = data?.skills || 
                                        data?.credentialSubject?.skills || 
                                        data?.credentialSubject?.achievement?.skills;
                     if (skillsArray && Array.isArray(skillsArray)) {
-                      // Store full skill objects
                       const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
                       return skills.length > 0 ? skills : undefined;
                     }
@@ -388,10 +302,9 @@ export function useStreamingSuggestionGenerator() {
                   
                   const skills = extractSkills(badgeData);
                   
-                  // Map to our format - handle new API structure
+                  // Map to our format
                   let suggestion: BadgeSuggestion | null = null;
                   if (badgeData.credentialSubject && badgeData.credentialSubject.achievement) {
-                    // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
                     const achievement = badgeData.credentialSubject.achievement;
                     suggestion = {
                       title: achievement.name,
@@ -403,33 +316,21 @@ export function useStreamingSuggestionGenerator() {
                     };
                   }
                   
-          
+                  dispatch(updateSuggestionCard({
+                    id: cardId,
+                    updates: {
+                      data: suggestion,
+                      loading: false,
+                      error: null,
+                      streamingText: 'Generated Successfully!',
+                      rawStreamingContent: undefined,
+                      isStreamingComplete: true
+                    }
+                  }));
                   
-                  setSuggestionCards(prev => 
-                    prev.map(card => 
-                      card.id === cardId 
-                        ? { 
-                            ...card, 
-                            data: suggestion,
-                            loading: false,
-                            error: null,
-                            streamingText: 'Generated Successfully!',
-                            rawStreamingContent: undefined,
-                            isStreamingComplete: true
-                          }
-                        : card
-                    )
-                  );
-                  
-                  
-                  // Save to generatedSuggestions in localStorage
-                  try {
-                    const existingSuggestions = JSON.parse(localStorage.getItem('generatedSuggestions') || '[]');
-                    const updatedSuggestions = existingSuggestions.filter((s: any) => s.id !== cardId);
-                    updatedSuggestions.push({ id: cardId, data: suggestion });
-                    localStorage.setItem('generatedSuggestions', JSON.stringify(updatedSuggestions));
-                  } catch (error) {
-                    console.error('Error storing suggestion in localStorage:', error);
+                  // Save to generatedSuggestions in Redux
+                  if (suggestion) {
+                    dispatch(addGeneratedSuggestion({ id: cardId, data: suggestion }));
                   }
 
                   toast({
@@ -438,18 +339,14 @@ export function useStreamingSuggestionGenerator() {
                   });
                 } catch (parseError) {
                   console.error('Failed to parse final JSON:', parseError);
-                  setSuggestionCards(prev => 
-                    prev.map(card => 
-                      card.id === cardId 
-                        ? { 
-                            ...card, 
-                            loading: false,
-                            error: 'Failed to parse generated JSON',
-                            streamingText: 'Parse Error'
-                          }
-                        : card
-                    )
-                  );
+                  dispatch(updateSuggestionCard({
+                    id: cardId,
+                    updates: {
+                      loading: false,
+                      error: 'Failed to parse generated JSON',
+                      streamingText: 'Parse Error'
+                    }
+                  }));
                 }
               }
             }
@@ -457,18 +354,14 @@ export function useStreamingSuggestionGenerator() {
             
           case 'error':
             console.error(`Streaming error for card ${cardId}:`, response.error);
-            setSuggestionCards(prev => 
-              prev.map(card => 
-                card.id === cardId 
-                  ? { 
-                      ...card, 
-                      loading: false, 
-                      error: response.error || 'Unknown streaming error',
-                      streamingText: 'Error occurred'
-                    }
-                  : card
-              )
-            );
+            dispatch(updateSuggestionCard({
+              id: cardId,
+              updates: {
+                loading: false,
+                error: response.error || 'Unknown streaming error',
+                streamingText: 'Error occurred'
+              }
+            }));
             
             toast({
               variant: 'destructive',
@@ -477,54 +370,25 @@ export function useStreamingSuggestionGenerator() {
             });
             break;
             
-          case 'error':
-            console.error(`Streaming error for card ${cardId}:`, response.error);
-            setSuggestionCards(prev => 
-              prev.map(card => 
-                card.id === cardId 
-                  ? { 
-                      ...card, 
-                      loading: false, 
-                      error: response.error || 'Streaming error occurred',
-                      streamingText: 'Generation failed'
-                    }
-                  : card
-              )
-            );
-            
-            toast({
-              variant: 'destructive',
-              title: 'Generation Failed',
-              description: response.error || 'An error occurred during generation.',
-            });
-            break;
-            
           case 'complete':
-            setSuggestionCards(prev => 
-              prev.map(card => 
-                card.id === cardId 
-                  ? { ...card, loading: false, streamingText: 'Generation complete!' }
-                  : card
-              )
-            );
+            dispatch(updateSuggestionCard({
+              id: cardId,
+              updates: { loading: false, streamingText: 'Generation complete!' }
+            }));
             break;
         }
       }
     } catch (error) {
       console.error(`Error in streaming generation for card ${cardId}:`, error);
       
-      setSuggestionCards(prev => 
-        prev.map(card => 
-          card.id === cardId 
-            ? { 
-                ...card, 
-                loading: false, 
-                error: error instanceof Error ? error.message : 'Unknown error',
-                streamingText: 'Error occurred'
-              }
-            : card
-        )
-      );
+      dispatch(updateSuggestionCard({
+        id: cardId,
+        updates: {
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          streamingText: 'Error occurred'
+        }
+      }));
 
       toast({
         variant: 'destructive',
@@ -532,7 +396,7 @@ export function useStreamingSuggestionGenerator() {
         description: `Failed to generate credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
-  }, [toast]);
+  }, [dispatch, toast]);
 
   const generateAllSuggestionsStream = useCallback(async (originalContent: string) => {
     if (!originalContent) {
@@ -544,71 +408,39 @@ export function useStreamingSuggestionGenerator() {
       return;
     }
 
-    // Get LAiSER flag and badge configuration from localStorage
-    let enableSkillExtraction = false;
-    let badgeConfig: any = null;
-    let imageConfig: any = null;
-    let userPrompt = '';
-    try {
-      const laiserEnabled = localStorage.getItem('isLaiserEnabled');
-      enableSkillExtraction = laiserEnabled === 'true';
-
-      // Get badge configuration
-      const storedConfig = localStorage.getItem('badgeConfig');
-      if (storedConfig) {
-        badgeConfig = JSON.parse(storedConfig);
-      }
-
-      // Get image configuration
-      const storedImageConfig = localStorage.getItem('imageConfig');
-      if (storedImageConfig) {
-        imageConfig = JSON.parse(storedImageConfig);
-      }
-
-      // Get user prompt
-      userPrompt = localStorage.getItem('userPrompt') || '';
-    } catch (error) {
-      console.error('Error reading from localStorage:', error);
-    }
-
-    setIsGenerating(true);
-    setAllCompleted(false);
-    setJustCompleted(false); // Reset flag for new generation
+    dispatch(setIsGenerating(true));
+    allCompletedRef.current = false;
+    justCompletedRef.current = false;
     
-    // Store generation state in localStorage
-    try {
-      localStorage.setItem('isGenerating', 'true');
-      // Clear previous suggestions when starting new generation
-      localStorage.removeItem('generatedSuggestions');
-    } catch (error) {
-      console.error('Error storing generation state:', error);
-    }
+    // Clear previous suggestions when starting new generation
+    dispatch(clearGeneratedSuggestions());
     
     // Reset all cards to initial state
-    setSuggestionCards([
-      { id: 1, data: null, loading: false, error: null, streamingStarted: false },
-    ]);
+    dispatch(resetSuggestionCards());
 
-    // Generate single suggestion
-    const promise1 = generateSingleSuggestionStream(1, originalContent, enableSkillExtraction, badgeConfig, imageConfig, userPrompt);
+    // Generate single suggestion (using values from Redux selectors)
+    const promise1 = generateSingleSuggestionStream(
+      1, 
+      originalContent, 
+      isLaiserEnabled, 
+      badgeConfig, 
+      imageConfig, 
+      userPrompt
+    );
 
     // Wait for stream to complete
     await Promise.allSettled([promise1]);
 
-    // Note: Suggestions are saved to localStorage individually as they complete
-    // (see 'final' and 'data' case handlers above). No bulk save needed here.
-
     // Mark as just completed (for fresh generation alert)
-    setJustCompleted(true);
-    setIsGenerating(false);
-    
-    // Clear generation state from localStorage
-    try {
-      localStorage.removeItem('isGenerating');
-    } catch (error) {
-      console.error('Error clearing generation state:', error);
-    }
-  }, [generateSingleSuggestionStream, toast]);
+    justCompletedRef.current = true;
+    dispatch(setIsGenerating(false));
+  }, [dispatch, generateSingleSuggestionStream, toast, isLaiserEnabled, badgeConfig, imageConfig, userPrompt]);
+
+  // Calculate allCompleted from state
+  const allCompleted = suggestionCards.every(card => card.data !== null) && 
+                       !suggestionCards.some(card => card.error !== null) && 
+                       !isGenerating && 
+                       allCompletedRef.current;
 
   return {
     suggestionCards,
