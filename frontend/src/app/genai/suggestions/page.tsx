@@ -175,7 +175,7 @@ export default function CredentialSuggestionsPage() {
             <span className="sm:hidden">Back</span>
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">
-            Credential Suggestions
+            Credential Suggestion
           </h1>
         </div>
 

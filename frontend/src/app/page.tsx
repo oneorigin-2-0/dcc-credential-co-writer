@@ -9,7 +9,7 @@ export default function LandingPage() {
           <div>
             <h1 className="text-3xl font-headline font-black">Craft Your Recognition</h1>
             <p className="text-muted-foreground mt-2 font-body">
-              Instantly craft beautiful, verifiable digital badges with the power of AI.
+            Instantly craft Open Badges content with the power of AI.
             </p>
           </div>
           <div className="flex justify-center">
