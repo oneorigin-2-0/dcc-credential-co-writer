@@ -538,7 +538,7 @@ export default function GenAIPage() {
                         <CollapsibleContent className="px-4 pb-4 data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden transition-all duration-300">
                           <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-[0.6]">
-                              <h3 className="text-base font-semibold text-primary mb-4">Style Configuration</h3>
+                              <h3 className="text-base font-semibold text-primary mb-4">Badge Configuration</h3>
                               <BadgeConfiguration
                                 onConfigurationChange={setBadgeConfig}
                                 variant="inline"
