@@ -5,17 +5,30 @@ import Link from 'next/link';
 export function Header() {
   return (
     <header className="p-4 border-b bg-card">
-      <div className="container mx-auto flex items-center gap-4">
-        <a href="https://digitalcredentials.mit.edu/" >
+      <div className="container mx-auto flex items-center justify-between gap-4">
+        {/* Left: DCC Logo linking back to home */}
+        <Link href="/" className="flex items-center">
           <img
             src="/assets/DCC_LOGO.png"
             alt="DCC Digital Credentials Consortium"
-            className="h-8 max-h-16 w-auto object-contain"
+            className="h-10 max-h-20 w-auto object-contain"
           />
-        </a>
-        <h1 className="text-3xl font-bold font-headline text-primary">
+        </Link>
+
+        {/* Center: App title */}
+        <h1 className="flex-1 text-center text-3xl font-bold font-headline text-primary">
           <Link href="/">Credential Co-writer</Link>
         </h1>
+
+        {/* Right: Navigation links */}
+        <nav className="flex items-center gap-4">
+          <Link
+            href="/about"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            About
+          </Link>
+        </nav>
       </div>
     </header>
   );

@@ -258,7 +258,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
         <Textarea
           id="user-prompt"
           aria-label="Custom instructions for badge generation"
-          placeholder="Enter custom instructions for badge generation..."
+          placeholder="For example: “Emphasize the learner’s achievement in a formal tone.”"
           className={`min-h-[100px] resize-none mt-1 ${isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-gray-300 focus:border-secondary focus:ring-secondary'}`}
           value={userPrompt}
           onChange={(e) => setUserPrompt(e.target.value)}

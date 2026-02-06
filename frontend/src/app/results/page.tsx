@@ -278,10 +278,10 @@ function ResultsContent() {
                     <Button
                         variant="outline"
                         className="mb-6"
-                        onClick={() => router.push('/genai')}
+                        onClick={() => router.push('/')}
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Generator
+                        Back
                     </Button>
 
                     <div className="flex justify-center">
@@ -295,7 +295,7 @@ function ResultsContent() {
                                 </p>
                             </CardContent>
                             <CardFooter>
-                                <Button onClick={() => router.push('/genai')} className="bg-primary">
+                                <Button onClick={() => router.push('/')} className="bg-primary">
                                     Generate New Badge
                                 </Button>
                             </CardFooter>
@@ -317,10 +317,10 @@ function ResultsContent() {
                     <Button
                         variant="outline"
                         className="mb-6"
-                        onClick={() => router.push('/genai')}
+                        onClick={() => router.push('/')}
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Generator
+                        Back
                     </Button>
                     <div className="text-center py-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">No Suggestion Available</h2>
@@ -337,10 +337,10 @@ function ResultsContent() {
                 <Button
                     variant="outline"
                     className="mb-6"
-                    onClick={() => router.push('/genai')}
+                    onClick={() => router.push('/')}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Generator
+                    Back
                 </Button>
 
                 <div className="flex justify-center">
