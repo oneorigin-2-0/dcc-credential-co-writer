@@ -35,7 +35,7 @@ export default function CredentialSuggestionsPage() {
     }
   }, [toast, originalContent]);
 
-  // Auto-start generation if it was initiated from /genai page
+  // Auto-start generation if it was initiated from the generator page
   useEffect(() => {
     if (originalContent && generationStarted) {
       // Start generating suggestions automatically
@@ -146,7 +146,7 @@ export default function CredentialSuggestionsPage() {
     }));
 
     // Navigate to badge suggestion editor
-    handleNavigation('/genai/editor');
+    handleNavigation('/editor');
   };
 
   const handleCopyOriginal = async () => {
@@ -167,11 +167,11 @@ export default function CredentialSuggestionsPage() {
         <div className="relative flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-center">
           <Button
             variant="outline"
-            onClick={() => handleNavigation('/genai')}
+            onClick={() => handleNavigation('/')}
             className="flex-shrink-0 md:absolute md:left-0"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Back to Generator</span>
+            <span className="hidden sm:inline">Back</span>
             <span className="sm:hidden">Back</span>
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">

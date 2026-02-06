@@ -224,7 +224,7 @@ export default function BadgeEditorPage() {
           title: 'No Suggestion Available',
           description: 'Please go back and generate suggestions first.',
         });
-        router.push('/genai/suggestions');
+        router.push('/suggestions');
       }
     }
 
@@ -901,10 +901,10 @@ export default function BadgeEditorPage() {
         <Button
           variant="outline"
           className="mb-6"
-          onClick={() => router.push('/genai/suggestions')}
+          onClick={() => router.push('/suggestions')}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Suggestions
+          Back
         </Button>
 
         <div className="flex justify-center">
