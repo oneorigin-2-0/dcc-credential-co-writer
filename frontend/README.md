@@ -87,6 +87,20 @@ ls -la out/
 npx serve out
 ```
 
+## Docker
+
+To run in a docker container:
+
+```bash
+docker build -t mit-badge-front-end --build-arg NEXT_PUBLIC_API_BASE_URL=SET_YOUR_API_ENDPOINT_HERE .
+docker run -p 80:80 mit-badge-front-end
+```
+
+To serve on a different port than 80 adjust accordingly, e.g., to serve on 3000:
+
+```bash
+docker run -p 3000:80 mit-badge-front-end
+```
 
 ## 🔧 Configuration
 
