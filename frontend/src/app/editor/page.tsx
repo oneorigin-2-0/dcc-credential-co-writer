@@ -316,16 +316,16 @@ export default function BadgeEditorPage() {
       setBadgeSuggestion(updatedSuggestion);
 
       // Update Redux - selectedBadgeSuggestion
-      dispatch(setSelectedBadgeSuggestion({ 
-        suggestion: updatedSuggestion, 
-        cardId: currentCardId || undefined 
+      dispatch(setSelectedBadgeSuggestion({
+        suggestion: updatedSuggestion,
+        cardId: currentCardId || undefined
       }));
 
       // Update generatedSuggestions in Redux if currentCardId exists
       if (currentCardId) {
-        dispatch(addGeneratedSuggestion({ 
-          id: parseInt(currentCardId), 
-          data: updatedSuggestion 
+        dispatch(addGeneratedSuggestion({
+          id: parseInt(currentCardId),
+          data: updatedSuggestion
         }));
       }
 
@@ -747,9 +747,9 @@ export default function BadgeEditorPage() {
   const updateAllLocalStorageKeys = useCallback((updatedSuggestion: BadgeSuggestion, cardId?: string | null) => {
     try {
       // Update selectedBadgeSuggestion in Redux
-      dispatch(setSelectedBadgeSuggestion({ 
-        suggestion: updatedSuggestion, 
-        cardId: cardId || undefined 
+      dispatch(setSelectedBadgeSuggestion({
+        suggestion: updatedSuggestion,
+        cardId: cardId || undefined
       }));
 
       // Update finalResponses if cardId is provided
@@ -780,9 +780,9 @@ export default function BadgeEditorPage() {
       // Update generatedSuggestions in Redux
       const targetSuggestionId = cardId ? parseInt(cardId) : null;
       if (targetSuggestionId) {
-        dispatch(addGeneratedSuggestion({ 
-          id: targetSuggestionId, 
-          data: updatedSuggestion 
+        dispatch(addGeneratedSuggestion({
+          id: targetSuggestionId,
+          data: updatedSuggestion
         }));
       }
     } catch (error) {
@@ -795,6 +795,10 @@ export default function BadgeEditorPage() {
     if (!badgeSuggestion) return null;
 
     const achievement: any = {
+      "id": "https://1edtech.edu/achievements/1",
+      "type": [
+        "Achievement"
+      ],
       "name": badgeSuggestion.title,
       "description": badgeSuggestion.description,
       "criteria": {
@@ -823,6 +827,7 @@ export default function BadgeEditorPage() {
 
     return {
       "credentialSubject": {
+
         "achievement": achievement
       }
     };
@@ -870,6 +875,40 @@ export default function BadgeEditorPage() {
     });
   };
 
+  const handleDownloadImage = () => {
+    if (!badgeSuggestion?.image) {
+      toast({
+        variant: 'destructive',
+        title: 'No Image Found',
+        description: 'There is no badge image available to download.',
+      });
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = badgeSuggestion.image;
+      const filename = `${(badgeSuggestion.title || 'badge').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`;
+      link.download = filename;
+      // Append to DOM to ensure click works in some browsers
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast({
+        title: 'Downloaded',
+        description: 'Badge image has been downloaded.',
+      });
+    } catch (error) {
+      console.error('Failed to download image:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: 'Unable to download the badge image.',
+      });
+    }
+  };
+
   if (!badgeSuggestion) {
     return (
       <main className="container mx-auto bg-gray-50 p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
@@ -887,7 +926,7 @@ export default function BadgeEditorPage() {
   const hasImagePreview = hasUploadedBadgeImage || hasGeneratedImage;
   const hasSkills = badgeSuggestion.skills && badgeSuggestion.skills.length > 0;
   const showColumn3 = hasImagePreview || hasSkills;
-  
+
   // Determine which image to display (prioritize uploaded badge image)
   const displayImageUrl = badgeSuggestion.uploaded_badge_image || badgeSuggestion.image;
 
@@ -1154,21 +1193,31 @@ export default function BadgeEditorPage() {
 
                           {/* Fixed Footer */}
                           <div className="flex-shrink-0 -mx-6 -mb-6 px-6 py-4 border-t bg-white flex gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={handleCopyJSON}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy JSON
+                          </Button>
+                          {badgeSuggestion?.image && (
                             <Button
                               variant="outline"
-                              onClick={handleCopyJSON}
+                              onClick={handleDownloadImage}
                               className="flex items-center gap-2"
                             >
-                              <Copy className="h-4 w-4" />
-                              Copy JSON
-                            </Button>
-                            <Button
-                              onClick={handleExportJSON}
-                              className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                            >
                               <FileDown className="h-4 w-4" />
-                              Export JSON
+                              Download Badge Image
                             </Button>
+                          )}
+                          <Button
+                            onClick={handleExportJSON}
+                            className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                          >
+                            <FileDown className="h-4 w-4" />
+                            Export JSON
+                          </Button>
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -1262,68 +1311,68 @@ export default function BadgeEditorPage() {
 
                   {/* Skills Section */}
                   {hasSkills && (
-                  <Card className="border-secondary shadow-lg">
-                    <CardContent className="p-0">
-                      <Accordion type="single" collapsible defaultValue="skills">
-                        <AccordionItem value="skills" className="border-secondary bg-gray-50 rounded-lg border-b-0 [&:hover]:border-secondary">
-                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                            <div className="flex items-center justify-between w-full pr-4">
-                              <h3 className="text-primary font-headline font-bold text-md">Skills (powered by LAiSER)</h3>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-4 pb-4">
-                            <div className="space-y-4 mt-2 h-[calc(100vh-400px)] overflow-y-auto pr-2">
-                              {badgeSuggestion.skills?.map((skillObj, index) => (
-                                skillObj.targetName && (
-                                  <div
-                                    key={index}
-                                    className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
-                                  >
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                                      {skillObj.targetName}
-                                    </h4>
-                                    {skillObj.targetDescription && (
-                                      <p className="text-xs text-gray-600 mb-2 leading-relaxed">
-                                        {skillObj.targetDescription}
-                                      </p>
-                                    )}
-                                    {skillObj.targetType && (
-                                      <div className="mb-2">
-                                        <span className="text-xs text-gray-500 mr-2">Type:</span>
-                                        {skillObj.targetUrl ? (
-                                          <a
-                                            href={skillObj.targetUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                          >
-                                            {skillObj.targetType} →
-                                          </a>
-                                        ) : (
-                                          <span className="text-xs text-gray-700">{skillObj.targetType}</span>
-                                        )}
-                                      </div>
-                                    )}
-                                    {skillObj.targetUrl && !skillObj.targetType && (
-                                      <a
-                                        href={skillObj.targetUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                      >
-                                        View URL →
-                                      </a>
-                                    )}
-                                  </div>
-                                )
-                              ))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </CardContent>
-                  </Card>
-                )}
+                    <Card className="border-secondary shadow-lg">
+                      <CardContent className="p-0">
+                        <Accordion type="single" collapsible defaultValue="skills">
+                          <AccordionItem value="skills" className="border-secondary bg-gray-50 rounded-lg border-b-0 [&:hover]:border-secondary">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <h3 className="text-primary font-headline font-bold text-md">Skills (powered by LAiSER)</h3>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
+                              <div className="space-y-4 mt-2 h-[calc(100vh-400px)] overflow-y-auto pr-2">
+                                {badgeSuggestion.skills?.map((skillObj, index) => (
+                                  skillObj.targetName && (
+                                    <div
+                                      key={index}
+                                      className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                                    >
+                                      <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                                        {skillObj.targetName}
+                                      </h4>
+                                      {skillObj.targetDescription && (
+                                        <p className="text-xs text-gray-600 mb-2 leading-relaxed">
+                                          {skillObj.targetDescription}
+                                        </p>
+                                      )}
+                                      {skillObj.targetType && (
+                                        <div className="mb-2">
+                                          <span className="text-xs text-gray-500 mr-2">Type:</span>
+                                          {skillObj.targetUrl ? (
+                                            <a
+                                              href={skillObj.targetUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                            >
+                                              {skillObj.targetType} →
+                                            </a>
+                                          ) : (
+                                            <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {skillObj.targetUrl && !skillObj.targetType && (
+                                        <a
+                                          href={skillObj.targetUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                        >
+                                          View URL →
+                                        </a>
+                                      )}
+                                    </div>
+                                  )
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </div>
