@@ -102,6 +102,11 @@ To serve on a different port than 80 adjust accordingly, e.g., to serve on 3000:
 docker run -p 3000:80 mit-badge-front-end
 ```
 
+To run in docker compose with handling for https, use the sample [docker-compose.yml](./docker-compose.yml) file, setting the appropriate values where indicated in the file. You may also have to set the 
+NEXT_PUBLIC_API_BASE_URL value directly in the Dockerfile.
+
+
+
 ## 🔧 Configuration
 
 ### API Configuration
