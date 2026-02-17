@@ -7,6 +7,8 @@ RUN npm ci
 
 COPY . .
 
+# If using this Dockerfile in a Docker compose file,
+# then set the NEXT_PUBLIC_API_BASE_URL value directly here
 ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
