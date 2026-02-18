@@ -42,6 +42,7 @@ import {
   addGeneratedSuggestion,
   setGeneratedSuggestions,
   setFinalResponses,
+  updateSuggestionCard,
 } from '@/store/slices/genaiSlice';
 
 // Default colors for badge image editor layer configuration
@@ -638,8 +639,29 @@ export default function BadgeEditorPage() {
             const mappedSuggestion = response.mappedSuggestion;
 
             if (mappedSuggestion) {
-              setBadgeSuggestion(mappedSuggestion);
-              updateAllLocalStorageKeys(mappedSuggestion, currentCardId);
+              // Preserve original enable_image_generation and image from Redux - we send false to API
+              // for regeneration (no re-gen image) but must not overwrite user's preference in state.
+              // API won't return image when enable_image_generation is false, so keep existing image.
+              // Get existing image from badgeSuggestion or finalResponses (more reliable than closure)
+              const existingAchievement = currentCardId ? finalResponses[currentCardId]?.credentialSubject?.achievement : null;
+              const rawBase64 = existingAchievement?.image?.image_base64;
+              const existingImageFromRaw = rawBase64
+                ? (String(rawBase64).startsWith('data:') ? rawBase64 : `data:image/png;base64,${rawBase64}`)
+                : existingAchievement?.image?.id;
+              const existingImage = mappedSuggestion.image ?? badgeSuggestion?.image ?? existingImageFromRaw;
+              const suggestionWithPreservedFlag = {
+                ...mappedSuggestion,
+                enable_image_generation: imageConfig?.enable_image_generation ?? mappedSuggestion.enable_image_generation ?? true,
+                image: existingImage,
+                uploaded_badge_image: mappedSuggestion.uploaded_badge_image ?? badgeSuggestion?.uploaded_badge_image,
+                uploaded_badge_image_name: mappedSuggestion.uploaded_badge_image_name ?? badgeSuggestion?.uploaded_badge_image_name,
+              };
+              if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
+                suggestionWithPreservedFlag.uploaded_badge_image = imageConfig.logo_base64;
+                suggestionWithPreservedFlag.uploaded_badge_image_name = imageConfig.logo_file_name;
+              }
+              setBadgeSuggestion(suggestionWithPreservedFlag);
+              updateAllLocalStorageKeys(suggestionWithPreservedFlag, currentCardId);
 
               toast({
                 title: 'Badge Regenerated',
@@ -663,14 +685,20 @@ export default function BadgeEditorPage() {
                 });
 
                 // Also update imageConfig in finalResponses if available
+                // Preserve enable_image_generation from Redux - regeneration sends false to API
+                // but we must not overwrite user's preference in state
                 if (currentCardId && finalData?.imageConfig) {
                   const currentFinalResponse = finalResponses[currentCardId];
                   if (currentFinalResponse) {
+                    const mergedImageConfig = {
+                      ...finalData.imageConfig,
+                      enable_image_generation: imageConfig?.enable_image_generation ?? finalData.imageConfig?.enable_image_generation
+                    };
                     dispatch(setFinalResponse({
                       cardId: currentCardId,
                       data: {
                         ...currentFinalResponse,
-                        imageConfig: finalData.imageConfig
+                        imageConfig: mergedImageConfig
                       }
                     }));
                   }
@@ -757,14 +785,22 @@ export default function BadgeEditorPage() {
         const currentFinalResponse = finalResponses[cardId];
         if (currentFinalResponse) {
           const updatedResponse = { ...currentFinalResponse };
-          // Update the final response with new data
+          // Update the final response with new data (immutable - avoid mutating frozen Redux objects)
           if (updatedResponse.credentialSubject?.achievement) {
-            updatedResponse.credentialSubject.achievement.name = updatedSuggestion.title;
-            updatedResponse.credentialSubject.achievement.description = updatedSuggestion.description;
-            updatedResponse.credentialSubject.achievement.criteria = { narrative: updatedSuggestion.criteria };
-            if (updatedSuggestion.image) {
-              updatedResponse.credentialSubject.achievement.image = { id: updatedSuggestion.image };
-            }
+            const achievement = updatedResponse.credentialSubject.achievement;
+            updatedResponse.credentialSubject = {
+              ...updatedResponse.credentialSubject,
+              achievement: {
+                ...achievement,
+                name: updatedSuggestion.title,
+                description: updatedSuggestion.description,
+                criteria: { narrative: updatedSuggestion.criteria },
+                // Preserve image when not in updatedSuggestion (e.g. regeneration)
+                image: updatedSuggestion.image
+                  ? { id: updatedSuggestion.image }
+                  : achievement.image,
+              },
+            };
           } else {
             updatedResponse.badge_name = updatedSuggestion.title;
             updatedResponse.badge_description = updatedSuggestion.description;
@@ -783,6 +819,11 @@ export default function BadgeEditorPage() {
         dispatch(addGeneratedSuggestion({
           id: targetSuggestionId,
           data: updatedSuggestion
+        }));
+        // Update suggestionCards for consistency (title, description, criteria, image)
+        dispatch(updateSuggestionCard({
+          id: targetSuggestionId,
+          updates: { data: updatedSuggestion }
         }));
       }
     } catch (error) {
