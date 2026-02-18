@@ -258,7 +258,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
         <Textarea
           id="user-prompt"
           aria-label="Custom instructions for badge generation"
-          placeholder="For example: “Generate ten numbered criteria narrative bullet points and present them in a clear, well-structured format.
+          placeholder="For example: “Generate criteria narrative bullet points and present them in a clear, well-structured format.
 ”"
           className={`min-h-[100px] resize-none mt-1 ${isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-gray-300 focus:border-secondary focus:ring-secondary'}`}
           value={userPrompt}
