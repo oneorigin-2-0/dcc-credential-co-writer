@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +24,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BadgeConfiguration } from '@/components/genai/badge-configuration';
 import { BadgeImageDisplay } from '@/components/genai/badge-image-display';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
@@ -35,6 +38,7 @@ import {
 } from '@/components/ui/accordion';
 import { StreamingApiClient } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
+import { isLaiserTerminalStatus, mapLaiserResultToSkills } from '@/utils/laiser';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   setSelectedBadgeSuggestion,
@@ -66,6 +70,8 @@ export default function BadgeEditorPage() {
   const badgeConfig = useAppSelector((state) => state.genai.badgeConfig);
   const imageConfig = useAppSelector((state) => state.genai.imageConfig);
   const isLaiserEnabled = useAppSelector((state) => state.genai.isLaiserEnabled);
+  const laiserResultStore = useAppSelector((state) => state.genai.laiserResult);
+  const laiserSkillsStore = useAppSelector((state) => state.genai.laiserSkills);
   const [badgeSuggestion, setBadgeSuggestion] = useState<BadgeSuggestion | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{
@@ -109,6 +115,7 @@ export default function BadgeEditorPage() {
   });
   const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
   const [logoFileName, setLogoFileName] = useState<string>('');
+  const [selectedSkillsMap, setSelectedSkillsMap] = useState<Record<string, boolean>>({});
 
   // Auto-hide streaming status after completion
   useEffect(() => {
@@ -189,7 +196,7 @@ export default function BadgeEditorPage() {
 
         const skills = extractSkills(rawFinalData);
 
-        let mappedSuggestion;
+        let mappedSuggestion: BadgeSuggestion;
         if (rawFinalData.credentialSubject && rawFinalData.credentialSubject.achievement) {
           const achievement = rawFinalData.credentialSubject.achievement;
           mappedSuggestion = {
@@ -231,12 +238,24 @@ export default function BadgeEditorPage() {
 
     // Get badge configuration from Redux
     if (badgeConfig) {
-      setBadgeConfiguration(badgeConfig);
+      setBadgeConfiguration({
+        badge_style: badgeConfig.badge_style || 'professional',
+        badge_tone: badgeConfig.badge_tone || 'authoritative',
+        criterion_style: badgeConfig.criterion_style || 'task-oriented',
+        badge_level: badgeConfig.badge_level || 'not-specified',
+        institution: badgeConfig.institution || '',
+        institute_url: badgeConfig.institute_url || '',
+        user_prompt: badgeConfig.user_prompt || '',
+      });
     }
   }, [selectedBadgeSuggestion, selectedCardId, finalResponses, imageConfig, badgeConfig, toast, router]);
 
   const handleConfigurationChange = useCallback((config: any) => {
     setBadgeConfiguration(config);
+  }, []);
+
+  const getSkillKey = useCallback((skill: any) => {
+    return `${skill?.targetName ?? ''}::${skill?.targetType ?? ''}::${skill?.targetDescription ?? ''}`;
   }, []);
 
   const handleEditImage = async () => {
@@ -834,6 +853,13 @@ export default function BadgeEditorPage() {
   const generateBadgeJSON = () => {
     // Use selectedBadgeSuggestion to generate JSON
     if (!badgeSuggestion) return null;
+    const skillsForOutput =
+      (laiserSkillsStore && laiserSkillsStore.length > 0
+        ? laiserSkillsStore
+        : isLaiserTerminalStatus(laiserResultStore?.status) && laiserResultStore?.result?.length
+          ? mapLaiserResultToSkills(laiserResultStore.result)
+          : []) ?? [];
+    const selectedSkillsForOutput = skillsForOutput.filter((skill) => selectedSkillsMap[getSkillKey(skill)]);
 
     const achievement: any = {
       "id": "https://1edtech.edu/achievements/1",
@@ -856,8 +882,8 @@ export default function BadgeEditorPage() {
     }
 
     // Add alignment array if skills exist
-    if (badgeSuggestion.skills && badgeSuggestion.skills.length > 0) {
-      achievement.alignment = badgeSuggestion.skills.map((skill: any) => ({
+    if (selectedSkillsForOutput.length > 0) {
+      achievement.alignment = selectedSkillsForOutput.map((skill: any) => ({
         type: skill.type || "Alignment",
         targetType: skill.targetType || "ESCO:Skill",
         targetName: skill.targetName,
@@ -950,6 +976,40 @@ export default function BadgeEditorPage() {
     }
   };
 
+  const effectiveSkills = useMemo(
+    () =>
+      (laiserSkillsStore && laiserSkillsStore.length > 0
+        ? laiserSkillsStore
+        : isLaiserTerminalStatus(laiserResultStore?.status) && laiserResultStore?.result?.length
+          ? mapLaiserResultToSkills(laiserResultStore.result)
+          : []) ?? [],
+    [laiserSkillsStore, laiserResultStore]
+  );
+  const escoSkills = useMemo(
+    () => effectiveSkills.filter((skill) => skill.targetType === 'ESCO:Skill'),
+    [effectiveSkills]
+  );
+  const onetSkills = useMemo(
+    () => effectiveSkills.filter((skill) => skill.targetType === 'O*NET:Skill'),
+    [effectiveSkills]
+  );
+
+  useEffect(() => {
+    if (effectiveSkills.length === 0) {
+      setSelectedSkillsMap({});
+      return;
+    }
+
+    setSelectedSkillsMap((prev) => {
+      const next: Record<string, boolean> = {};
+      effectiveSkills.forEach((skill) => {
+        const key = getSkillKey(skill);
+        next[key] = prev[key] ?? true;
+      });
+      return next;
+    });
+  }, [effectiveSkills, getSkillKey]);
+
   if (!badgeSuggestion) {
     return (
       <main className="container mx-auto bg-gray-50 p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-80px)]">
@@ -965,7 +1025,7 @@ export default function BadgeEditorPage() {
   const hasUploadedBadgeImage = badgeSuggestion.uploaded_badge_image ? true : false;
   const hasGeneratedImage = badgeSuggestion.enable_image_generation !== false && badgeSuggestion.image;
   const hasImagePreview = hasUploadedBadgeImage || hasGeneratedImage;
-  const hasSkills = badgeSuggestion.skills && badgeSuggestion.skills.length > 0;
+  const hasSkills = effectiveSkills.length > 0;
   const showColumn3 = hasImagePreview || hasSkills;
 
   // Determine which image to display (prioritize uploaded badge image)
@@ -1352,67 +1412,153 @@ export default function BadgeEditorPage() {
 
                   {/* Skills Section */}
                   {hasSkills && (
-                    <Card className="border-secondary shadow-lg">
-                      <CardContent className="p-0">
-                        <Accordion type="single" collapsible defaultValue="skills">
-                          <AccordionItem value="skills" className="border-secondary bg-gray-50 rounded-lg border-b-0 [&:hover]:border-secondary">
-                            <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                              <div className="flex items-center justify-between w-full pr-4">
-                                <h3 className="text-primary font-headline font-bold text-md">Skills (powered by LAiSER)</h3>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="px-4 pb-4">
-                              <div className="space-y-4 mt-2 h-[calc(100vh-400px)] overflow-y-auto pr-2">
-                                {badgeSuggestion.skills?.map((skillObj, index) => (
-                                  skillObj.targetName && (
-                                    <div
-                                      key={index}
-                                      className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
-                                    >
-                                      <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                                        {skillObj.targetName}
-                                      </h4>
-                                      {skillObj.targetDescription && (
-                                        <p className="text-xs text-gray-600 mb-2 leading-relaxed">
-                                          {skillObj.targetDescription}
-                                        </p>
-                                      )}
-                                      {skillObj.targetType && (
-                                        <div className="mb-2">
-                                          <span className="text-xs text-gray-500 mr-2">Type:</span>
-                                          {skillObj.targetUrl ? (
-                                            <a
-                                              href={skillObj.targetUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                            >
-                                              {skillObj.targetType} →
-                                            </a>
-                                          ) : (
-                                            <span className="text-xs text-gray-700">{skillObj.targetType}</span>
-                                          )}
-                                        </div>
-                                      )}
-                                      {skillObj.targetUrl && !skillObj.targetType && (
-                                        <a
-                                          href={skillObj.targetUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                        >
-                                          View URL →
-                                        </a>
-                                      )}
+                    <div className="bg-gray-50 rounded-lg p-4 border border-secondary shadow-lg">
+                      <label className="text-primary font-headline font-bold text-md mb-3 block">
+                        Skills (powered by LAiSER)
+                      </label>
+                      <Tabs defaultValue="esco">
+                        <TabsList className="mb-4 grid w-full grid-cols-2">
+                          <TabsTrigger value="esco">
+                            ESCO:Skill ({escoSkills.length})
+                          </TabsTrigger>
+                          <TabsTrigger value="onet">
+                            O*NET:Skill ({onetSkills.length})
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="esco">
+                          <div className="grid grid-cols-1 gap-4">
+                            {escoSkills.length === 0 ? (
+                              <p className="text-xs text-gray-500">No ESCO skills available.</p>
+                            ) : (
+                              escoSkills.map((skillObj, index) => {
+                                const key = getSkillKey(skillObj);
+                                return (
+                                  <div
+                                    key={key}
+                                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <Checkbox
+                                        checked={!!selectedSkillsMap[key]}
+                                        onCheckedChange={(checked) =>
+                                          setSelectedSkillsMap((prev) => ({ ...prev, [key]: !!checked }))
+                                        }
+                                        aria-label={`Select skill ${skillObj.targetName}`}
+                                        className="mt-0.5"
+                                      />
+                                      <div className="flex-1">
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                                          {skillObj.targetName}
+                                        </h4>
+                                        {skillObj.targetDescription && (
+                                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                                            {skillObj.targetDescription}
+                                          </p>
+                                        )}
+                                        {skillObj.targetType && (
+                                          <div className="mb-2">
+                                            <span className="text-xs text-gray-500 mr-2">Type:</span>
+                                            {skillObj.targetUrl ? (
+                                              <a
+                                                href={skillObj.targetUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                              >
+                                                {skillObj.targetType} →
+                                              </a>
+                                            ) : (
+                                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                        {skillObj.targetUrl && !skillObj.targetType && (
+                                          <a
+                                            href={skillObj.targetUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                          >
+                                            View URL →
+                                          </a>
+                                        )}
+                                      </div>
                                     </div>
-                                  )
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </CardContent>
-                    </Card>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="onet">
+                          <div className="grid grid-cols-1 gap-4">
+                            {onetSkills.length === 0 ? (
+                              <p className="text-xs text-gray-500">No O*NET skills available.</p>
+                            ) : (
+                              onetSkills.map((skillObj, index) => {
+                                const key = getSkillKey(skillObj);
+                                return (
+                                  <div
+                                    key={key}
+                                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <Checkbox
+                                        checked={!!selectedSkillsMap[key]}
+                                        onCheckedChange={(checked) =>
+                                          setSelectedSkillsMap((prev) => ({ ...prev, [key]: !!checked }))
+                                        }
+                                        aria-label={`Select skill ${skillObj.targetName}`}
+                                        className="mt-0.5"
+                                      />
+                                      <div className="flex-1">
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                                          {skillObj.targetName}
+                                        </h4>
+                                        {skillObj.targetDescription && (
+                                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                                            {skillObj.targetDescription}
+                                          </p>
+                                        )}
+                                        {skillObj.targetType && (
+                                          <div className="mb-2">
+                                            <span className="text-xs text-gray-500 mr-2">Type:</span>
+                                            {skillObj.targetUrl ? (
+                                              <a
+                                                href={skillObj.targetUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                              >
+                                                {skillObj.targetType} →
+                                              </a>
+                                            ) : (
+                                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                        {skillObj.targetUrl && !skillObj.targetType && (
+                                          <a
+                                            href={skillObj.targetUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                          >
+                                            View URL →
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
                   )}
                 </div>
               )}

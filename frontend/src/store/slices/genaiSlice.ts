@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { BadgeSuggestion } from '@/lib/types';
 import type { BadgeConfigurationData } from '@/components/genai/badge-configuration';
 import type { BadgeImageConfigurationData } from '@/components/genai/badge-image-configuration';
+import type { LaiserResultResponse } from '@/utils/laiser';
 
 // SuggestionCard interface matching the hook
 interface SuggestionCard {
@@ -47,6 +48,11 @@ interface GenAIState {
   
   // Streaming State (for debugging)
   streamingResponses: Record<string, any>;
+
+  // LAiSER client-side job and skills (parallel to SLM)
+  laiserJobId: string | null;
+  laiserSkills: Array<{ targetName: string; targetType?: string; targetDescription?: string; targetUrl: string }> | null;
+  laiserResult: LaiserResultResponse | null;
 }
 
 const initialState: GenAIState = {
@@ -66,6 +72,19 @@ const initialState: GenAIState = {
   selectedCardId: null,
   generatedBadgeData: null,
   streamingResponses: {},
+  laiserJobId: null,
+  laiserSkills: null,
+  laiserResult: null,
+};
+
+const dedupeSkills = (skills: Array<{ targetName: string; targetType?: string; targetDescription?: string; targetUrl: string }>) => {
+  const seen = new Set<string>();
+  return skills.filter((skill) => {
+    const key = `${skill.targetName}::${skill.targetType ?? ''}::${skill.targetDescription ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 const genaiSlice = createSlice({
@@ -163,7 +182,42 @@ const genaiSlice = createSlice({
     clearStreamingResponses: (state) => {
       state.streamingResponses = {};
     },
-    
+
+    // LAiSER (client-side) actions
+    setLaiserJobId: (state, action: PayloadAction<string | null>) => {
+      state.laiserJobId = action.payload;
+    },
+    setLaiserResult: (state, action: PayloadAction<LaiserResultResponse | null>) => {
+      state.laiserResult = action.payload;
+    },
+    setLaiserSkills: (state, action: PayloadAction<Array<{ targetName: string; targetType?: string; targetDescription?: string; targetUrl: string }> | null>) => {
+      const skills = action.payload;
+      state.laiserSkills = skills;
+      if (skills && skills.length > 0) {
+        const card = state.suggestionCards.find((c) => c.id === 1);
+        if (card?.data) {
+          card.data = {
+            ...card.data,
+            skills: dedupeSkills([...(card.data.skills ?? []), ...skills]),
+          };
+          const fr = state.finalResponses['1'];
+          if (fr?.credentialSubject?.achievement) {
+            const achievement = fr.credentialSubject.achievement as any;
+            achievement.skills = dedupeSkills([...(achievement.skills ?? []), ...skills]);
+          } else if (fr) {
+            (fr as any).credentialSubject = (fr as any).credentialSubject ?? {};
+            (fr as any).credentialSubject.achievement = {
+              ...(fr as any).credentialSubject?.achievement,
+              skills: dedupeSkills([...skills]),
+            };
+          }
+        }
+      }
+    },
+    clearLaiserSkills: (state) => {
+      state.laiserSkills = null;
+    },
+
     // Clear All Generation Data
     clearGenerationData: (state) => {
       state.generatedSuggestions = [];
@@ -172,6 +226,9 @@ const genaiSlice = createSlice({
       state.selectedCardId = null;
       state.isGenerating = false;
       state.streamingResponses = {};
+      state.laiserJobId = null;
+      state.laiserSkills = null;
+      state.laiserResult = null;
     },
     
     // Clear All Data (for fresh start)
@@ -204,6 +261,10 @@ export const {
   setGeneratedBadgeData,
   setStreamingResponse,
   clearStreamingResponses,
+  setLaiserJobId,
+  setLaiserResult,
+  setLaiserSkills,
+  clearLaiserSkills,
   clearGenerationData,
   clearAllData,
 } = genaiSlice.actions;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,8 +11,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { SuggestionCard } from '@/components/genai/suggestion-card';
 import { StreamingStatus } from '@/components/genai/streaming-status';
 import { useStreamingSuggestionGenerator } from '@/hooks/use-streaming-suggestion-generator';
+import { useLaiserJob } from '@/hooks/use-laiser-job';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setOriginalContent, setGenerationStarted, setSelectedBadgeSuggestion } from '@/store/slices/genaiSlice';
+import { setGenerationStarted, setSelectedBadgeSuggestion, setLaiserSkills, setLaiserResult, setLaiserJobId } from '@/store/slices/genaiSlice';
+import { isLaiserTerminalStatus, mapLaiserResultToSkills } from '@/utils/laiser';
 
 export default function CredentialSuggestionsPage() {
   const router = useRouter();
@@ -20,9 +22,52 @@ export default function CredentialSuggestionsPage() {
   const dispatch = useAppDispatch();
   const originalContent = useAppSelector((state) => state.genai.originalContent);
   const generationStarted = useAppSelector((state) => state.genai.generationStarted);
+  const laiserJobId = useAppSelector((state) => state.genai.laiserJobId);
+  const laiserResultStore = useAppSelector((state) => state.genai.laiserResult);
+  const hasTerminalStoredResultForCurrentJob =
+    !!laiserJobId &&
+    laiserResultStore?.jobId === laiserJobId &&
+    isLaiserTerminalStatus(laiserResultStore?.status);
   const [showCompletionAlert, setShowCompletionAlert] = useState(false);
   const [isAlertFadingOut, setIsAlertFadingOut] = useState(false);
+  const hasAutoStartedRef = useRef(false);
   const { suggestionCards, allCompleted, isGenerating, generateAllSuggestionsStream } = useStreamingSuggestionGenerator();
+  const { result: laiserResult, response: laiserResponse, error: laiserError } = useLaiserJob(
+    hasTerminalStoredResultForCurrentJob ? undefined : (laiserJobId ?? undefined)
+  );
+
+  // Persist terminal LAiSER response and stop future polling for this job.
+  useEffect(() => {
+    if (!laiserResponse) return;
+    if (isLaiserTerminalStatus(laiserResponse.status)) {
+      dispatch(setLaiserResult(laiserResponse));
+      dispatch(setLaiserJobId(null));
+    }
+  }, [laiserResponse, dispatch]);
+
+  // When LAiSER polling returns skills, merge them into Redux (card 1 and/or laiserSkills for later merge)
+  useEffect(() => {
+    if (laiserResult && laiserResult.length > 0) {
+      dispatch(setLaiserSkills(mapLaiserResultToSkills(laiserResult)));
+    }
+  }, [laiserResult, dispatch]);
+
+  // Rehydrate skills from persisted LAiSER result after reload.
+  useEffect(() => {
+    if (isLaiserTerminalStatus(laiserResultStore?.status) && laiserResultStore?.result?.length) {
+      dispatch(setLaiserSkills(mapLaiserResultToSkills(laiserResultStore.result)));
+    }
+  }, [laiserResultStore, dispatch]);
+
+  useEffect(() => {
+    if (laiserError) {
+      toast({
+        variant: 'destructive',
+        title: 'Skills extraction failed',
+        description: laiserError,
+      });
+    }
+  }, [laiserError, toast]);
 
   useEffect(() => {
     // Original content is now in Redux, no need to read from localStorage
@@ -37,12 +82,14 @@ export default function CredentialSuggestionsPage() {
 
   // Auto-start generation if it was initiated from the generator page
   useEffect(() => {
-    if (originalContent && generationStarted) {
-      // Start generating suggestions automatically
-      generateAllSuggestionsStream(originalContent);
-      // Clear the flag so it doesn't restart on refresh
-      dispatch(setGenerationStarted(false));
-    }
+    if (!originalContent || !generationStarted || hasAutoStartedRef.current) return;
+
+    // Guard against duplicate effect execution in dev/strict mode.
+    hasAutoStartedRef.current = true;
+
+    // Clear first, then kick off generation once.
+    dispatch(setGenerationStarted(false));
+    generateAllSuggestionsStream(originalContent);
   }, [originalContent, generationStarted, generateAllSuggestionsStream, dispatch]);
 
   // Navigation guard - prevent leaving page while streaming

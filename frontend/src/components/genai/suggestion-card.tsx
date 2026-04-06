@@ -351,7 +351,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
                           </p>
                         )}
                         {skillObj.targetType && (
-                          <div className="mb-2">
+                          <div >
                             <span className="text-xs text-gray-500 mr-2">Type:</span>
                             {skillObj.targetUrl ? (
                               <a

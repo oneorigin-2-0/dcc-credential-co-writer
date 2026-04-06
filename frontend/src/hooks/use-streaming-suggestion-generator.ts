@@ -14,7 +14,14 @@ import {
   addGeneratedSuggestion,
   setStreamingResponse,
   clearGeneratedSuggestions,
+  setLaiserJobId,
+  setLaiserResult,
+  setLaiserSkills,
+  clearLaiserSkills,
 } from '@/store/slices/genaiSlice';
+import { submitLaiserJob } from '@/utils/laiser';
+import { useStore } from 'react-redux';
+import type { RootState } from '@/store';
 
 interface SuggestionCard {
   id: number;
@@ -36,6 +43,7 @@ interface SuggestionCard {
 export function useStreamingSuggestionGenerator() {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
+  const store = useStore<RootState>();
   
   // Get state from Redux
   const suggestionCards = useAppSelector((state) => state.genai.suggestionCards);
@@ -119,8 +127,8 @@ export function useStreamingSuggestionGenerator() {
           }
           
           if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
-            mappedSuggestion.uploaded_badge_image = imageConfig.logo_base64;
-            mappedSuggestion.uploaded_badge_image_name = imageConfig.logo_file_name;
+            (mappedSuggestion as BadgeSuggestion).uploaded_badge_image = imageConfig.logo_base64;
+            (mappedSuggestion as BadgeSuggestion).uploaded_badge_image_name = imageConfig.logo_file_name;
           }
           
           return { 
@@ -219,7 +227,7 @@ export function useStreamingSuggestionGenerator() {
               dispatch(setFinalResponse({ cardId: cardId.toString(), data: response.data }));
               
               // Add enable_image_generation flag to the mapped suggestion
-              const suggestionWithFlag = {
+              let suggestionWithFlag: BadgeSuggestion = {
                 ...response.mappedSuggestion,
                 enable_image_generation: imageConfig?.enable_image_generation || false
               };
@@ -228,6 +236,17 @@ export function useStreamingSuggestionGenerator() {
               if (imageConfig?.enable_image_generation === false && imageConfig?.logo_base64) {
                 suggestionWithFlag.uploaded_badge_image = imageConfig.logo_base64;
                 suggestionWithFlag.uploaded_badge_image_name = imageConfig.logo_file_name;
+              }
+
+              // Merge LAiSER skills if they arrived (client-side polling may have set laiserSkills)
+              const stateFinal = store.getState();
+              const laiserSkillsFinal = stateFinal.genai.laiserSkills;
+              if (laiserSkillsFinal?.length) {
+                suggestionWithFlag = {
+                  ...suggestionWithFlag,
+                  skills: [...(suggestionWithFlag.skills ?? []), ...laiserSkillsFinal],
+                };
+                dispatch(clearLaiserSkills());
               }
 
               dispatch(updateSuggestionCard({
@@ -315,6 +334,19 @@ export function useStreamingSuggestionGenerator() {
                       skills: skills,
                     };
                   }
+
+                  // Merge LAiSER skills if they arrived (client-side polling may have set laiserSkills)
+                  if (suggestion) {
+                    const stateData = store.getState();
+                    const laiserSkillsData = stateData.genai.laiserSkills;
+                    if (laiserSkillsData?.length) {
+                      suggestion = {
+                        ...suggestion,
+                        skills: [...(suggestion.skills ?? []), ...laiserSkillsData],
+                      };
+                      dispatch(clearLaiserSkills());
+                    }
+                  }
                   
                   dispatch(updateSuggestionCard({
                     id: cardId,
@@ -396,7 +428,7 @@ export function useStreamingSuggestionGenerator() {
         description: `Failed to generate credential suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
-  }, [dispatch, toast]);
+  }, [dispatch, toast, store]);
 
   const generateAllSuggestionsStream = useCallback(async (originalContent: string) => {
     if (!originalContent) {
@@ -418,11 +450,32 @@ export function useStreamingSuggestionGenerator() {
     // Reset all cards to initial state
     dispatch(resetSuggestionCards());
 
+    // Read from store at call time so we use the value set when user clicked Generate Badge
+    const isLaiserEnabledNow = store.getState().genai.isLaiserEnabled;
+
+    // When skills extraction is enabled, submit LAiSER job in parallel (client-side)
+    dispatch(setLaiserJobId(null));
+    dispatch(setLaiserResult(null));
+    if (isLaiserEnabledNow) {
+      submitLaiserJob(originalContent)
+        .then(({ jobId }) => {
+          dispatch(setLaiserJobId(jobId));
+        })
+        .catch((err) => {
+          console.error('LAiSER submit failed:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Skills extraction failed',
+            description: err instanceof Error ? err.message : 'Could not start LAiSER job.',
+          });
+        });
+    }
+
     // Generate single suggestion (using values from Redux selectors)
     const promise1 = generateSingleSuggestionStream(
       1, 
       originalContent, 
-      isLaiserEnabled, 
+      isLaiserEnabledNow, 
       badgeConfig, 
       imageConfig, 
       userPrompt
