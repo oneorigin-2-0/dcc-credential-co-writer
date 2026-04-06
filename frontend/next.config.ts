@@ -27,6 +27,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/laiser', // Your client-side path
+        destination: 'https://uhao2r8hue.execute-api.us-east-1.amazonaws.com/dev/laiser', // The actual API endpoint
+      },
+      {
+        source: '/api/dev/result', // Your client-side path
+        destination: 'https://uhao2r8hue.execute-api.us-east-1.amazonaws.com/dev/result', // The actual API endpoint
+      },
+    ];
+  },
 };
 
 export default nextConfig;
