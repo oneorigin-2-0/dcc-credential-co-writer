@@ -985,14 +985,28 @@ export default function BadgeEditorPage() {
           : []) ?? [],
     [laiserSkillsStore, laiserResultStore]
   );
-  const escoSkills = useMemo(
-    () => effectiveSkills.filter((skill) => skill.targetType === 'ESCO:Skill'),
-    [effectiveSkills]
-  );
-  const onetSkills = useMemo(
-    () => effectiveSkills.filter((skill) => skill.targetType === 'O*NET:Skill'),
-    [effectiveSkills]
-  );
+  const skillTabGroups = useMemo(() => {
+    const groups = new Map<string, typeof effectiveSkills>();
+    effectiveSkills.forEach((skill) => {
+      const key = skill.targetType?.trim() || 'Other';
+      const existing = groups.get(key) || [];
+      existing.push(skill);
+      groups.set(key, existing);
+    });
+
+    return Array.from(groups.entries()).map(([sourceType, skills], index) => {
+      const cleanedLabel = sourceType
+        .replace(/:\s*skills?$/i, '')
+        .replace(/\s*skills?$/i, '')
+        .trim();
+
+      return {
+        value: `source-${index}`,
+        label: cleanedLabel || 'Other',
+        skills,
+      };
+    });
+  }, [effectiveSkills]);
 
   useEffect(() => {
     if (effectiveSkills.length === 0) {
@@ -1416,147 +1430,86 @@ export default function BadgeEditorPage() {
                       <label className="text-primary font-headline font-bold text-md mb-3 block">
                         Skills (powered by LAiSER)
                       </label>
-                      <Tabs defaultValue="esco">
-                        <TabsList className="mb-4 grid w-full grid-cols-2">
-                          <TabsTrigger value="esco">
-                            ESCO:Skill ({escoSkills.length})
-                          </TabsTrigger>
-                          <TabsTrigger value="onet">
-                            O*NET:Skill ({onetSkills.length})
-                          </TabsTrigger>
+                      <label>Select Taxonomy skills to add to the badge.</label>
+                      <Tabs defaultValue={skillTabGroups[0]?.value}>
+                        <TabsList
+                          className="mb-4 grid w-full"
+                          style={{ gridTemplateColumns: `repeat(${Math.max(skillTabGroups.length, 1)}, minmax(0, 1fr))` }}
+                        >
+                          {skillTabGroups.map((group) => (
+                            <TabsTrigger key={group.value} value={group.value}>
+                              {group.label} ({group.skills.length})
+                            </TabsTrigger>
+                          ))}
                         </TabsList>
 
-                        <TabsContent value="esco">
-                          <div className="grid grid-cols-1 gap-4">
-                            {escoSkills.length === 0 ? (
-                              <p className="text-xs text-gray-500">No ESCO skills available.</p>
-                            ) : (
-                              escoSkills.map((skillObj, index) => {
-                                const key = getSkillKey(skillObj);
-                                return (
-                                  <div
-                                    key={key}
-                                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <Checkbox
-                                        checked={!!selectedSkillsMap[key]}
-                                        onCheckedChange={(checked) =>
-                                          setSelectedSkillsMap((prev) => ({ ...prev, [key]: !!checked }))
-                                        }
-                                        aria-label={`Select skill ${skillObj.targetName}`}
-                                        className="mt-0.5"
-                                      />
-                                      <div className="flex-1">
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                                          {skillObj.targetName}
-                                        </h4>
-                                        {skillObj.targetDescription && (
-                                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-                                            {skillObj.targetDescription}
-                                          </p>
-                                        )}
-                                        {skillObj.targetType && (
-                                          <div className="mb-2">
-                                            <span className="text-xs text-gray-500 mr-2">Type:</span>
-                                            {skillObj.targetUrl ? (
-                                              <a
-                                                href={skillObj.targetUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                              >
-                                                {skillObj.targetType} →
-                                              </a>
-                                            ) : (
-                                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
-                                            )}
-                                          </div>
-                                        )}
-                                        {skillObj.targetUrl && !skillObj.targetType && (
-                                          <a
-                                            href={skillObj.targetUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                          >
-                                            View URL →
-                                          </a>
-                                        )}
+                        {skillTabGroups.map((group) => (
+                          <TabsContent key={group.value} value={group.value}>
+                            <div className="grid grid-cols-1 gap-4">
+                              {group.skills.length === 0 ? (
+                                <p className="text-xs text-gray-500">No skills available.</p>
+                              ) : (
+                                group.skills.map((skillObj) => {
+                                  const key = getSkillKey(skillObj);
+                                  return (
+                                    <div
+                                      key={key}
+                                      className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <Checkbox
+                                          checked={!!selectedSkillsMap[key]}
+                                          onCheckedChange={(checked) =>
+                                            setSelectedSkillsMap((prev) => ({ ...prev, [key]: !!checked }))
+                                          }
+                                          aria-label={`Select skill ${skillObj.targetName}`}
+                                          className="mt-0.5"
+                                        />
+                                        <div className="flex-1">
+                                          <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                                            {skillObj.targetName}
+                                          </h4>
+                                          {skillObj.targetDescription && (
+                                            <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                                              {skillObj.targetDescription}
+                                            </p>
+                                          )}
+                                          {skillObj.targetType && (
+                                            <div className="mb-2">
+                                              <span className="text-xs text-gray-500 mr-2">Type:</span>
+                                              {skillObj.targetUrl ? (
+                                                <a
+                                                  href={skillObj.targetUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                                >
+                                                  {skillObj.targetType} →
+                                                </a>
+                                              ) : (
+                                                <span className="text-xs text-gray-700">{skillObj.targetType}</span>
+                                              )}
+                                            </div>
+                                          )}
+                                          {skillObj.targetUrl && !skillObj.targetType && (
+                                            <a
+                                              href={skillObj.targetUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
+                                            >
+                                              View URL →
+                                            </a>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="onet">
-                          <div className="grid grid-cols-1 gap-4">
-                            {onetSkills.length === 0 ? (
-                              <p className="text-xs text-gray-500">No O*NET skills available.</p>
-                            ) : (
-                              onetSkills.map((skillObj, index) => {
-                                const key = getSkillKey(skillObj);
-                                return (
-                                  <div
-                                    key={key}
-                                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <Checkbox
-                                        checked={!!selectedSkillsMap[key]}
-                                        onCheckedChange={(checked) =>
-                                          setSelectedSkillsMap((prev) => ({ ...prev, [key]: !!checked }))
-                                        }
-                                        aria-label={`Select skill ${skillObj.targetName}`}
-                                        className="mt-0.5"
-                                      />
-                                      <div className="flex-1">
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                                          {skillObj.targetName}
-                                        </h4>
-                                        {skillObj.targetDescription && (
-                                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-                                            {skillObj.targetDescription}
-                                          </p>
-                                        )}
-                                        {skillObj.targetType && (
-                                          <div className="mb-2">
-                                            <span className="text-xs text-gray-500 mr-2">Type:</span>
-                                            {skillObj.targetUrl ? (
-                                              <a
-                                                href={skillObj.targetUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                              >
-                                                {skillObj.targetType} →
-                                              </a>
-                                            ) : (
-                                              <span className="text-xs text-gray-700">{skillObj.targetType}</span>
-                                            )}
-                                          </div>
-                                        )}
-                                        {skillObj.targetUrl && !skillObj.targetType && (
-                                          <a
-                                            href={skillObj.targetUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-secondary hover:underline inline-flex items-center gap-1"
-                                          >
-                                            View URL →
-                                          </a>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </TabsContent>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </TabsContent>
+                        ))}
                       </Tabs>
                     </div>
                   )}
