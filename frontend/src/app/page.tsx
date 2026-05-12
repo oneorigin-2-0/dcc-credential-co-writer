@@ -561,8 +561,8 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end mt-6">
-                      <div className="flex items-center space-x-4">
+                    <div className="flex justify-center sm:justify-end mt-6">
+                      <div className="flex flex-col items-stretch gap-4 w-full sm:w-auto sm:flex-row sm:items-center sm:gap-4">
                         {/* Extract Skills(powered by LAiSER) Toggle */}
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -592,7 +592,7 @@ export default function Home() {
                         <Button
                           onClick={handleGenerate}
                           disabled={isParsingFile || !consentChecked}
-                          className="bg-primary text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="bg-primary text-white px-6 py-2 font-medium transition-all duration-500 ease-in-out shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                         >
                           {animationData && (
                             <div className="w-5 h-5">
