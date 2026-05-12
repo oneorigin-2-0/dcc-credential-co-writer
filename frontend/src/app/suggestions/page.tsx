@@ -283,7 +283,7 @@ export default function CredentialSuggestionsPage() {
               </div>
 
               {/* Right: Status + Suggestions */}
-              <div className="md:col-span-8 lg:col-span-8">
+              <div className="md:col-span-12 lg:col-span-8">
 
                 {/* Success Alert - Shows when all suggestions are complete (auto-hides after 5s) */}
                 {showCompletionAlert && (
