@@ -51,9 +51,6 @@ export function useStreamingSuggestionGenerator() {
   const generatedSuggestions = useAppSelector((state) => state.genai.generatedSuggestions);
   const finalResponses = useAppSelector((state) => state.genai.finalResponses);
   const imageConfig = useAppSelector((state) => state.genai.imageConfig);
-  const isLaiserEnabled = useAppSelector((state) => state.genai.isLaiserEnabled);
-  const badgeConfig = useAppSelector((state) => state.genai.badgeConfig);
-  const userPrompt = useAppSelector((state) => state.genai.userPrompt);
   
   // Local state for completion tracking
   const allCompletedRef = useRef(false);
@@ -184,7 +181,8 @@ export function useStreamingSuggestionGenerator() {
           badge_level: badgeConfig?.badge_level || 'not-specified',
           institution: badgeConfig?.institution || '',
           institute_url: badgeConfig?.institute_url || '',
-          custom_instructions: userPrompt || badgeConfig?.user_prompt || ''
+          custom_instructions: userPrompt || badgeConfig?.user_prompt || '',
+          language: badgeConfig?.language || 'en',
         },
         enable_skill_extraction: enableSkillExtraction,
         context_length: null
@@ -452,6 +450,9 @@ export function useStreamingSuggestionGenerator() {
 
     // Read from store at call time so we use the value set when user clicked Generate Badge
     const isLaiserEnabledNow = store.getState().genai.isLaiserEnabled;
+    const badgeConfigNow = store.getState().genai.badgeConfig;
+    const imageConfigNow = store.getState().genai.imageConfig;
+    const userPromptNow = store.getState().genai.userPrompt;
 
     // When skills extraction is enabled, submit LAiSER job in parallel (client-side)
     dispatch(setLaiserJobId(null));
@@ -471,14 +472,14 @@ export function useStreamingSuggestionGenerator() {
         });
     }
 
-    // Generate single suggestion (using values from Redux selectors)
+    // Generate single suggestion (using store snapshot so language/config is always fresh)
     const promise1 = generateSingleSuggestionStream(
-      1, 
-      originalContent, 
-      isLaiserEnabledNow, 
-      badgeConfig, 
-      imageConfig, 
-      userPrompt
+      1,
+      originalContent,
+      isLaiserEnabledNow,
+      badgeConfigNow,
+      imageConfigNow,
+      userPromptNow
     );
 
     // Wait for stream to complete
@@ -487,7 +488,7 @@ export function useStreamingSuggestionGenerator() {
     // Mark as just completed (for fresh generation alert)
     justCompletedRef.current = true;
     dispatch(setIsGenerating(false));
-  }, [dispatch, generateSingleSuggestionStream, toast, isLaiserEnabled, badgeConfig, imageConfig, userPrompt]);
+  }, [dispatch, generateSingleSuggestionStream, toast, store]);
 
   // Calculate allCompleted from state
   const allCompleted = suggestionCards.every(card => card.data !== null) && 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { RefreshCw, Loader2, Info } from 'lucide-react';
+import { RefreshCw, Loader2, Info, Globe } from 'lucide-react';
 
 export interface BadgeConfigurationData {
   badge_style: string;
@@ -17,7 +17,34 @@ export interface BadgeConfigurationData {
   institution: string;
   institute_url?: string;
   user_prompt?: string;
+  language?: string;
 }
+
+const SUPPORTED_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'ar', label: 'Arabic' },
+  { code: 'zh', label: 'Chinese' },
+  { code: 'cs', label: 'Czech' },
+  { code: 'da', label: 'Danish' },
+  { code: 'nl', label: 'Dutch' },
+  { code: 'en', label: 'English' },
+  { code: 'fi', label: 'Finnish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'he', label: 'Hebrew' },
+  { code: 'hu', label: 'Hungarian' },
+  { code: 'it', label: 'Italian' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'no', label: 'Norwegian' },
+  { code: 'pl', label: 'Polish' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'sv', label: 'Swedish' },
+  { code: 'th', label: 'Thai' },
+  { code: 'tr', label: 'Turkish' },
+  { code: 'uk', label: 'Ukrainian' },
+];
 
 interface BadgeConfigurationProps {
   onRegenerate?: () => void;
@@ -95,6 +122,7 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
   const [institution, setInstitution] = useState(initialConfig?.institution || '');
   const [instituteUrl, setInstituteUrl] = useState(initialConfig?.institute_url || '');
   const [userPrompt, setUserPrompt] = useState(initialConfig?.user_prompt || '');
+  const [language, setLanguage] = useState(initialConfig?.language || 'en');
 
   // Notify parent component when configuration changes
   useEffect(() => {
@@ -107,11 +135,12 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
         institution: institution,
         institute_url: instituteUrl,
         user_prompt: userPrompt,
+        language,
       };
       onConfigurationChange(config);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [style, tone, level, criterionTemplate, institution, instituteUrl, userPrompt]);
+  }, [style, tone, level, criterionTemplate, institution, instituteUrl, userPrompt, language]);
 
   const isInline = variant === 'inline';
   const borderClass = isInline ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20' : 'border-secondary focus:border-primary focus:ring-primary';
@@ -251,6 +280,32 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
               onChange={(e) => setInstituteUrl(e.target.value)}
             />
           </div> */}
+
+      {/* Output Language Selector */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Globe className="h-3.5 w-3.5 text-secondary" />
+          <Label htmlFor="output-language" className={labelClass} style={{ marginBottom: 0 }}>
+            Output Language
+          </Label>
+        </div>
+        <select
+          id="output-language"
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+          className={`w-full rounded-md border-2 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 ${
+            isInline
+              ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20'
+              : 'border-gray-300 focus:border-secondary focus:ring-secondary/20'
+          }`}
+        >
+          {SUPPORTED_LANGUAGES.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Custom Instructions Input */}
       <div>
