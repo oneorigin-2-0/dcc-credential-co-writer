@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { RefreshCw, Loader2, Info, Globe } from 'lucide-react';
+import { RefreshCw, Loader2, Info } from 'lucide-react';
 
 export interface BadgeConfigurationData {
   badge_style: string;
@@ -281,19 +281,24 @@ export function BadgeConfiguration({ onRegenerate, isRegenerating, onConfigurati
             />
           </div> */}
 
-      {/* Output Language Selector */}
+      {/* Credential Language Selector */}
       <div>
-        <div className="flex items-center gap-1.5 mb-2">
-          <Globe className="h-3.5 w-3.5 text-secondary" />
+        <div className="flex items-center gap-1.5 mb-1">
           <Label htmlFor="output-language" className={labelClass} style={{ marginBottom: 0 }}>
-            Output Language
+            Credential Language
           </Label>
+          <span className="text-[10px] font-semibold uppercase tracking-wide bg-secondary/10 text-secondary border border-secondary/30 rounded px-1.5 py-0.5 leading-none">
+            Beta
+          </span>
         </div>
+        <p className="text-[11px] text-gray-500 mb-2">
+          Choose the language for generated badge text.
+        </p>
         <select
           id="output-language"
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className={`w-full rounded-md border-2 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 ${
+          className={`rounded-md border-2 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 ${
             isInline
               ? 'border-gray-200 focus:border-secondary focus:ring-secondary/20'
               : 'border-gray-300 focus:border-secondary focus:ring-secondary/20'
