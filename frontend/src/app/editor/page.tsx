@@ -90,7 +90,8 @@ export default function BadgeEditorPage() {
     badge_level: 'not-specified',
     institution: '',
     institute_url: '',
-    user_prompt: ''
+    user_prompt: '',
+    language: 'en',
   });
   const [userPrompt, setUserPrompt] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -236,7 +237,13 @@ export default function BadgeEditorPage() {
       }
     }
 
-    // Get badge configuration from Redux
+  }, [selectedBadgeSuggestion, selectedCardId, finalResponses, imageConfig, toast, router]);
+
+  // Initialize badge configuration from Redux once on mount only.
+  // Must NOT re-run on subsequent renders — that would overwrite the user's
+  // in-editor language (or other field) selection with the Redux snapshot.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
     if (badgeConfig) {
       setBadgeConfiguration({
         badge_style: badgeConfig.badge_style || 'professional',
@@ -246,9 +253,10 @@ export default function BadgeEditorPage() {
         institution: badgeConfig.institution || '',
         institute_url: badgeConfig.institute_url || '',
         user_prompt: badgeConfig.user_prompt || '',
+        language: badgeConfig.language || 'en',
       });
     }
-  }, [selectedBadgeSuggestion, selectedCardId, finalResponses, imageConfig, badgeConfig, toast, router]);
+  }, []); // mount-only
 
   const handleConfigurationChange = useCallback((config: any) => {
     setBadgeConfiguration(config);
@@ -610,7 +618,8 @@ export default function BadgeEditorPage() {
           badge_level: badgeConfiguration.badge_level || 'not-specified',
           institution: badgeConfiguration.institution || '',
           institute_url: badgeConfiguration.institute_url || '',
-          custom_instructions: badgeConfiguration.user_prompt || ''
+          custom_instructions: badgeConfiguration.user_prompt || '',
+          language: badgeConfiguration.language || 'en',
         },
         enable_skill_extraction: isLaiserEnabled,
         context_length: null,

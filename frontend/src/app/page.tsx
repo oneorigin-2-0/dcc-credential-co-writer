@@ -80,7 +80,8 @@ export default function Home() {
     badge_level: 'not-specified',
     institution: '',
     institute_url: '',
-    user_prompt: ''
+    user_prompt: '',
+    language: 'en',
   });
   const [imageConfig, setImageConfig] = useState<BadgeImageConfigurationData | undefined>(undefined);
   const [isConfigOpen, setIsConfigOpen] = useState(true);
