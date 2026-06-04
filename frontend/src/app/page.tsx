@@ -612,7 +612,7 @@ export default function Home() {
                       ref={fileInputRef}
                       type="file"
                       className="hidden"
-                      accept=".pdf,.doc,.docx,.csv,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       onChange={handleFileUpload}
                       disabled={attachedFiles.length > 0}
                     />
