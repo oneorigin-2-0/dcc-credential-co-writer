@@ -38,7 +38,7 @@ flowchart LR
     style IMG fill:#A31F34,color:#fff
 ```
 
-- **[mit-slm](https://github.com/oneorigin-inc/mit-slm)** — generates Open Badge v3 metadata with a local small language model and calls this service for the image.
+- **[mit-slm](https://github.com/oneorigin-inc/mit-slm)** — generates Open Badge v3 metadata and calls this service for the image.
 - **mit-badge-image-gen** *(this repo)* — renders the visual badge.
 - **[mit-badge-front-end](https://github.com/oneorigin-inc/mit-badge-front-end)** — the authoring UI.
 
@@ -58,7 +58,7 @@ flowchart LR
 |:---:|:---:|:---:|
 | <img src="docs/images/badge-text-hexagon.png" width="220"> | <img src="docs/images/badge-icon-circle.png" width="220"> | <img src="docs/images/badge-text-roundedrect.png" width="220"> |
 
-Each image above was produced by the corresponding API call in [Usage](#usage).
+Each image above was produced by the corresponding API call in the [API Reference](#api-reference).
 
 ## Quick start
 
@@ -83,13 +83,72 @@ Then open:
 - API docs (Swagger): `http://localhost:3001/badge-image/docs`
 - Health: `http://localhost:3001/badge-image/health`
 
-## Usage
+---
 
-The service exposes two high-level endpoints and one low-level endpoint.
+## API Reference
 
-### Generate a text-overlay badge
+**Base URL:** `http://localhost:3001` · Interactive docs at `/badge-image/docs`.
 
-`POST /api/v1/badge/generate-with-text`
+**Response envelope:** every generation endpoint returns the same shape — `success`, `message`, `data.base64` (a ready-to-use PNG data URI), and `config` (the exact, reproducible configuration used).
+
+**Errors:** validation failures return `422` with a `success: false` body and an `errors` array; rendering failures return `500`.
+
+> For exhaustive field-by-field schemas and error catalogs, see [`docs/api/`](docs/api/) — [endpoints](docs/api/endpoints.md), [request schemas](docs/api/request-schemas.md), [response schemas](docs/api/response-schemas.md), and [error handling](docs/api/error-handling.md).
+
+### Endpoints summary
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/badge-image/health` | Service health check |
+| `POST` | `/api/v1/badge/generate-with-text` | Text-overlay badge (title + achievement phrase) |
+| `POST` | `/api/v1/badge/generate-with-icon` | Icon badge (icon auto-matched via TF-IDF) |
+| `POST` | `/api/v1/badge/generate-with-logo` | Badge with an uploaded logo (multipart) |
+| `POST` | `/api/v1/badge/generate` | Low-level rendering from a raw layer array |
+
+### `ImageConfiguration` object
+
+The high-level endpoints take an `image_configuration` object:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `primary_color` | string \| null | Primary brand color, hex (e.g. `#A31F34`) |
+| `secondary_color` | string \| null | Secondary brand color, hex |
+| `border_color` | string \| null | Border color, hex |
+| `border_width` | integer | Border width in pixels |
+| `shape` | enum \| null | `hexagon`, `circle`, or `rounded_rect` |
+| `logo` | string \| null | Base64-encoded logo (optional) |
+| `ribbon_type` | string \| null | `ribbon`, `ribbon_folded`, `none`, or `null` (random) |
+
+The request also accepts a top-level `scale_factor` (number, clamped 1.0–3.0) to render at higher resolution.
+
+---
+
+### `GET /badge-image/health`
+
+Liveness check. No request body.
+
+**Response `200`:**
+```json
+{ "status": "healthy", "service": "badge-image-generator-api" }
+```
+
+---
+
+### `POST /api/v1/badge/generate-with-text`
+
+Generates a text-overlay badge with an institution logo, title, and achievement phrase.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image_type` | string | Yes | `text_overlay` |
+| `short_title` | string | No | Title text rendered on the badge |
+| `achievement_phrase` | string | No | Secondary phrase |
+| `institution` | string | No | Institution name |
+| `institute_url` | string | No | Institution URL |
+| `image_configuration` | object | Yes | See [`ImageConfiguration`](#imageconfiguration-object) |
+| `scale_factor` | number | No | Render scale, 1.0–3.0 |
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/badge/generate-with-text \
@@ -110,11 +169,23 @@ curl -X POST http://localhost:3001/api/v1/badge/generate-with-text \
   }'
 ```
 
-### Generate an icon badge
+**Response `200`:** the standard envelope (`data.base64` + `config`).
 
-`POST /api/v1/badge/generate-with-icon`
+---
 
-The best-matching icon is selected from `assets/icons/` using TF-IDF similarity over the badge name and description.
+### `POST /api/v1/badge/generate-with-icon`
+
+Generates an icon badge. The best-matching icon is selected from `assets/icons/` using TF-IDF similarity over `badge_name` and `badge_description`.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image_type` | string | Yes | `icon_based` |
+| `badge_name` | string | Yes | Used to match an icon |
+| `badge_description` | string | Yes | Used to match an icon |
+| `image_configuration` | object | Yes | See [`ImageConfiguration`](#imageconfiguration-object) |
+| `scale_factor` | number | No | Render scale, 1.0–3.0 |
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/badge/generate-with-icon \
@@ -127,13 +198,41 @@ curl -X POST http://localhost:3001/api/v1/badge/generate-with-icon \
   }'
 ```
 
-### Low-level rendering
+**Response `200`:** the standard envelope. **Errors:** `400` when `badge_name`/`badge_description` are missing for `icon_based`.
 
-`POST /api/v1/badge/generate` accepts a raw `layers` array for full control. This is what the high-level endpoints build internally.
+---
 
-### Response shape
+### `POST /api/v1/badge/generate-with-logo`
 
-All endpoints return the same envelope:
+Generates a badge with a caller-uploaded logo, sent as `multipart/form-data`.
+
+| Part | Type | Required | Description |
+|------|------|----------|-------------|
+| `logo` | file | Yes | PNG or JPEG (validated by magic bytes) |
+| `config` | string (JSON) | Yes | Badge configuration |
+
+**Errors:** `400` missing/invalid `logo` or `config` (non-PNG/JPEG rejected).
+
+---
+
+### `POST /api/v1/badge/generate`
+
+Low-level endpoint accepting a raw `layers` array for full control over rendering. This is what the high-level endpoints build internally.
+
+**Request body:**
+```json
+{
+  "layers": [
+    { "type": "ShapeLayer", "shape": "hexagon", "fill": { "mode": "gradient", "start_color": "#FFD700", "end_color": "#FF4500" }, "params": { "radius": 250 }, "z": 10 },
+    { "type": "TextLayer", "text": "Achievement", "font": { "path": "assets/fonts/Arimo-Bold.ttf", "size": 45 }, "color": "#000000", "align": { "x": "center", "y": "center" }, "z": 30 }
+  ],
+  "scale_factor": 2.0
+}
+```
+
+Asset paths are contained within the bundled `assets/` directory — see [Security notes](#security-notes).
+
+### Response envelope
 
 ```json
 {
@@ -145,6 +244,8 @@ All endpoints return the same envelope:
 ```
 
 `data.base64` is a ready-to-use PNG data URI; `config` is the exact, reproducible configuration that produced it.
+
+---
 
 ## Configuration
 
@@ -183,7 +284,10 @@ assets/
 ├── fonts/                  # Arimo (SIL OFL-1.1), Open Sans, Roboto
 ├── icons/                  # Curated icon library
 └── logos/                  # Institution logos
-docs/                       # Documentation + images
+docs/
+├── api/                    # Full endpoint, request, response, and error reference
+├── architecture/           # Layer-system documentation
+└── images/                 # README images
 tools/                      # Local developer utilities (Gradio explorer)
 ```
 
