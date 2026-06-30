@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { streamingApiClient, StreamingApiClient, type StreamingResponse } from '@/lib/api';
+import { StreamingApiClient, type StreamingResponse } from '@/lib/api';
 import type { BadgeSuggestion } from '@/lib/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
