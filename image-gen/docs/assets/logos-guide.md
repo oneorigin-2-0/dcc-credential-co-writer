@@ -9,8 +9,6 @@ The system includes institutional logos for badge generation. Logos are located 
 | DCC | `dcc_logo.png` | PNG | Default logo |
 | MIT | `mit_logo.webp` | WebP | MIT logo |
 | WGU | `wgu_logo.png` | PNG | Western Governors University |
-| ASU | `asu_logo.png` | PNG | Arizona State University |
-| SJSU | `sjsu_logo.png` | PNG | San Jose State University |
 
 ## Usage
 
@@ -114,8 +112,11 @@ curl -X POST http://localhost:3001/api/v1/badge/generate-with-logo \
 | Format | Best For |
 |--------|----------|
 | PNG | Logos with transparency |
-| WebP | Smaller file size |
-| SVG | Scalability (converted to PNG internally) |
+| JPEG | Photographic logos without transparency |
+
+Uploaded logos must be PNG or JPEG; the upload endpoint verifies the file's
+magic bytes and rejects other formats (including SVG, which Pillow cannot
+rasterize). Bundled assets may also be WebP (see `mit_logo.webp`).
 
 ### Dimensions
 

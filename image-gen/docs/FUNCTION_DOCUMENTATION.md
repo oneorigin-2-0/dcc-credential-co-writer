@@ -23,7 +23,7 @@ This document provides detailed explanations with visual examples for all functi
 **Purpose**: Safely loads a font file with fallback handling.
 
 **Parameters**:
-- `path`: Font file path (e.g., "assets/fonts/Arial.ttf")
+- `path`: Font file path (e.g., "assets/fonts/Arimo-Regular.ttf")
 - `size`: Font size in pixels
 - `fallback`: Optional fallback font (defaults to system default)
 
@@ -323,7 +323,7 @@ image.save("badge.png")
 
 ## Interface Functions (`interfaces/`)
 
-### JSON Editor (`interfaces/json_editor.py`)
+### JSON Editor (`tools/json_editor.py`)
 
 #### `generate_from_json(json_text)`
 **Purpose**: Bridge between Gradio UI and rendering engine.
@@ -480,7 +480,7 @@ image.save("badge.png")
 
 ## Interface Functions (`interfaces/`)
 
-### JSON Editor (`interfaces/json_editor.py`)
+### JSON Editor (`tools/json_editor.py`)
 
 #### `generate_from_json(json_text)`
 **Purpose**: Bridge between Gradio UI and rendering engine.
@@ -723,7 +723,7 @@ image.save("badge.png")
 
 ## Interface Functions (`interfaces/`)
 
-### JSON Editor (`interfaces/json_editor.py`)
+### JSON Editor (`tools/json_editor.py`)
 
 #### `generate_from_json(json_text)`
 **Purpose**: Bridge between Gradio UI and rendering engine.

@@ -118,7 +118,7 @@ curl -X POST http://localhost:3001/api/v1/badge/generate \
       {
         "type": "TextLayer",
         "text": "Hello",
-        "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
+        "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 45},
         "color": "#FFFFFF",
         "align": {"x": "center", "y": "center"},
         "z": 30

@@ -8,6 +8,8 @@ Focuses on brand elements like logos, headers, buttons, and key UI components
 import requests
 from bs4 import BeautifulSoup
 import re
+import ipaddress
+import socket
 from collections import Counter
 import argparse
 from urllib.parse import urljoin, urlparse
@@ -15,6 +17,74 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, Optional
+
+from app.core.logging_config import get_logger
+
+logger = get_logger("web_color_scraper")
+
+# Cap on the number of external stylesheets fetched per page, to bound the work
+# (and the number of outbound requests) a single scrape can trigger.
+MAX_EXTERNAL_CSS = 5
+
+
+def is_safe_public_url(url: str) -> bool:
+    """
+    Validate that ``url`` is an http(s) URL whose host resolves only to public,
+    routable IP addresses. Rejects non-http(s) schemes and any host that maps to
+    a loopback, private, link-local, reserved, or otherwise non-global address.
+
+    This blocks SSRF vectors such as ``http://169.254.169.254`` (cloud metadata)
+    or ``http://localhost`` / RFC-1918 hosts reached through DNS rebinding.
+    """
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+
+    if parsed.scheme not in ("http", "https"):
+        logger.warning("Rejected non-http(s) URL scheme: %r", parsed.scheme)
+        return False
+
+    host = parsed.hostname
+    if not host:
+        logger.warning("Rejected URL with no host: %r", url)
+        return False
+
+    # Resolve every address the host maps to; reject if any is non-public.
+    try:
+        addr_infos = socket.getaddrinfo(host, parsed.port or None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror as exc:
+        logger.warning("DNS resolution failed for host %r: %s", host, exc)
+        return False
+
+    resolved = {info[4][0] for info in addr_infos}
+    if not resolved:
+        logger.warning("Host %r resolved to no addresses", host)
+        return False
+
+    for raw_ip in resolved:
+        try:
+            ip = ipaddress.ip_address(raw_ip)
+        except ValueError:
+            logger.warning("Unparseable resolved address %r for host %r", raw_ip, host)
+            return False
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+            or not ip.is_global
+        ):
+            logger.warning(
+                "Rejected URL %r: host %r resolves to non-public address %s",
+                url, host, ip,
+            )
+            return False
+
+    return True
+
 
 class WebColorScraper:
     def __init__(self):
@@ -277,22 +347,32 @@ class WebColorScraper:
         brand_css_colors = []
         general_css_colors = []
         
-        # Find all CSS links
+        # Find all CSS links, fetching at most MAX_EXTERNAL_CSS of them and only
+        # from SSRF-safe, public URLs.
+        fetched = 0
         for link in soup.find_all('link', rel='stylesheet'):
+            if fetched >= MAX_EXTERNAL_CSS:
+                logger.debug("Reached external CSS cap (%d); skipping remaining stylesheets", MAX_EXTERNAL_CSS)
+                break
             href = link.get('href')
             if href:
                 css_url = urljoin(base_url, href)
+                if not is_safe_public_url(css_url):
+                    logger.warning("Skipping disallowed stylesheet URL: %s", css_url)
+                    continue
                 try:
                     response = self.session.get(css_url, timeout=10)
+                    fetched += 1
                     if response.status_code == 200:
                         root_colors, css_vars, brand_colors, general_colors = self.extract_colors_from_css(response.text, base_url)
                         root_css_colors.extend(root_colors)
                         css_var_colors.extend(css_vars)
                         brand_css_colors.extend(brand_colors)
                         general_css_colors.extend(general_colors)
-                except:
+                except Exception as exc:
+                    logger.debug("Failed to fetch stylesheet %s: %s", css_url, exc)
                     continue
-        
+
         return root_css_colors, css_var_colors, brand_css_colors, general_css_colors
     
     def identify_brand_colors(self, html_brand_colors, root_colors, css_var_colors, css_brand_colors, css_general_colors, inline_css):
@@ -395,15 +475,20 @@ class WebColorScraper:
     
     def scrape_colors(self, url):
         """Main method to scrape brand colors from URL"""
+        # Reject SSRF-prone targets (non-http(s), loopback, private, link-local,
+        # reserved, or cloud-metadata addresses) before issuing any request.
+        if not is_safe_public_url(url):
+            logger.warning("Refusing to scrape disallowed URL: %s", url)
+            return []
         try:
-            print(f"Scraping brand colors from: {url}")
+            logger.info("Scraping brand colors from: %s", url)
             response = self.session.get(url, timeout=15)
             response.raise_for_status()
-            
+
             soup = BeautifulSoup(response.content, 'html.parser')
             base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
-            
-            print("Looking for :root CSS rules and CSS variables...")
+
+            logger.debug("Looking for :root CSS rules and CSS variables...")
             
             # Extract brand-focused colors from HTML
             html_brand_colors, html_general_colors = self.extract_colors_from_html(soup, base_url)
@@ -431,13 +516,13 @@ class WebColorScraper:
             all_css_general = css_general_colors + inline_css_general
             
             # Debug output
-            print(f"Found {len(all_root_colors)} colors in :root rules")
-            print(f"Found {len(all_css_var_colors)} colors in CSS variables")
+            logger.debug("Found %d colors in :root rules", len(all_root_colors))
+            logger.debug("Found %d colors in CSS variables", len(all_css_var_colors))
             if all_root_colors:
-                print(f":root colors: {list(set(all_root_colors))[:5]}")  # Show first 5 unique
+                logger.debug(":root colors: %s", list(set(all_root_colors))[:5])  # Show first 5 unique
             if all_css_var_colors:
-                print(f"CSS variable colors: {list(set(all_css_var_colors))[:5]}")  # Show first 5 unique
-            
+                logger.debug("CSS variable colors: %s", list(set(all_css_var_colors))[:5])  # Show first 5 unique
+
             # Identify brand colors using priority scoring
             brand_color_results = self.identify_brand_colors(
                 html_brand_colors, all_root_colors, all_css_var_colors, 
@@ -447,9 +532,9 @@ class WebColorScraper:
             return brand_color_results
             
         except Exception as e:
-            print(f"Error scraping {url}: {str(e)}")
+            logger.error("Error scraping %s: %s", url, str(e))
             return []
-    
+
     def save_to_json(self, url, colors, output_file="color_results.json"):
         """Save results to JSON file"""
         # Prepare the data structure

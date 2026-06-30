@@ -5,11 +5,17 @@ FastAPI main application entry point
 import copy
 import time
 import json
+from PIL import Image
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+# Cap the pixel count Pillow will decode to defend against decompression-bomb
+# DoS (a tiny upload that expands to gigapixels). Set before the app is created
+# so it applies to every image opened by the service.
+Image.MAX_IMAGE_PIXELS = 20_000_000
 
 from app.settings import settings
 from app.config import ENABLE_LOG_BASE64_DATA
@@ -261,11 +267,12 @@ app = FastAPI(
 # Add custom middleware
 app.add_middleware(LoggingMiddleware)
 
-# Setup CORS
+# Setup CORS. Credentials are only enabled alongside an explicit origin
+# allowlist (never with "*"), per settings.CORS_ALLOW_CREDENTIALS.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -2,7 +2,7 @@
 Request models for API endpoints
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
 
 class BadgeRequest(BaseModel):
@@ -43,7 +43,7 @@ class BadgeRequest(BaseModel):
                         "type": "TextLayer",
                         "text": "Achievement",
                         "font": {
-                            "path": "assets/fonts/Arial.ttf",
+                            "path": "assets/fonts/Arimo-Regular.ttf",
                             "size": 45
                         },
                         "color": "#000000",
@@ -162,7 +162,9 @@ class ImageConfiguration(BaseModel):
     secondary_color: Optional[str] = Field(default=None, description="Secondary brand color hex code")
     border_color: Optional[str] = Field(default=None, description="Border color hex code (e.g., '#000000')")
     border_width: int = Field(default=0, description="Border width in pixels (e.g., 6)")
-    shape: Optional[str] = Field(default=None, description="Badge shape: 'hexagon', 'circle', or 'rounded_rect'")
+    shape: Optional[Literal["hexagon", "circle", "rounded_rect"]] = Field(
+        default=None, description="Badge shape: 'hexagon', 'circle', or 'rounded_rect'"
+    )
     logo: Optional[str] = Field(default="", description="Base64 encoded logo (optional)")
     ribbon_type: Optional[str] = Field(default=None, description="Ribbon type: 'ribbon', 'ribbon_folded', 'none', or None for random 50% chance")
 

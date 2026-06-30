@@ -32,7 +32,7 @@ curl http://localhost:3001/badge-image/health
 | Service | Port | Command | Purpose |
 |---------|------|---------|---------|
 | FastAPI | 3001 | `python -m app.main` | Production API |
-| Gradio | 7870 | `python gradio_main.py` | Interactive testing UI |
+| Gradio | 7870 | `python tools/gradio_main.py` | Interactive testing UI |
 
 ## Project Structure
 

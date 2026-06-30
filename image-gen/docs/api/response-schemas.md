@@ -222,7 +222,7 @@ Returned for unexpected errors.
       {
         "type": "TextLayer",
         "text": "Python Expert",
-        "font": {"path": "assets/fonts/ArialBold.ttf", "size": 43},
+        "font": {"path": "assets/fonts/Arimo-Bold.ttf", "size": 43},
         "color": "#000000",
         "align": {"x": "center", "y": "dynamic"},
         "wrap": {"dynamic": true, "line_gap": 5},

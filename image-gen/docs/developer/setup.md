@@ -143,8 +143,8 @@ The project includes bundled fonts in `assets/fonts/`. If fonts aren't loading:
 2. Verify the file exists: `ls assets/fonts/`
 
 Available fonts:
-- `Arial.ttf`
-- `ArialBold.ttf`
+- `Arimo-Regular.ttf`
+- `Arimo-Bold.ttf`
 - `OpenSans.ttf`
 - `Roboto.ttf`
 

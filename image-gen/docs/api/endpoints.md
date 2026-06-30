@@ -31,7 +31,7 @@ Generate a badge from raw layer configuration. This is the low-level API for max
     {
       "type": "TextLayer",
       "text": "Python Expert",
-      "font": {"path": "assets/fonts/ArialBold.ttf", "size": 45},
+      "font": {"path": "assets/fonts/Arimo-Bold.ttf", "size": 45},
       "color": "#FFFFFF",
       "align": {"x": "center", "y": "center"},
       "z": 30
@@ -76,7 +76,7 @@ curl -X POST http://localhost:3001/api/v1/badge/generate \
       {
         "type": "TextLayer",
         "text": "Hello",
-        "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
+        "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 45},
         "color": "#FFFFFF",
         "align": {"x": "center", "y": "center"},
         "z": 30
@@ -286,7 +286,7 @@ Generate a badge with an uploaded custom logo. Uses multipart form data.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `logo` | file | Logo image file (PNG or SVG) |
+| `logo` | file | Logo image file (PNG or JPEG) |
 | `config` | string | Badge configuration as JSON string |
 
 ### Config Format
@@ -311,7 +311,7 @@ Generate a badge with an uploaded custom logo. Uses multipart form data.
     {
       "type": "TextLayer",
       "text": "Custom Badge",
-      "font": {"path": "assets/fonts/Arial.ttf", "size": 40},
+      "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 40},
       "color": "#FFFFFF",
       "align": {"x": "center", "y": "dynamic"},
       "z": 30

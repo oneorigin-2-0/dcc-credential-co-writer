@@ -298,7 +298,7 @@ All layers share these properties:
   "type": "TextLayer",
   "text": "Python Expert",
   "font": {
-    "path": "assets/fonts/ArialBold.ttf",
+    "path": "assets/fonts/Arimo-Bold.ttf",
     "size": 45
   },
   "color": "#FFFFFF",
@@ -419,7 +419,7 @@ All layers share these properties:
     {
       "type": "TextLayer",
       "text": "Python Expert",
-      "font": {"path": "assets/fonts/ArialBold.ttf", "size": 45},
+      "font": {"path": "assets/fonts/Arimo-Bold.ttf", "size": 45},
       "color": "#FFFFFF",
       "align": {"x": "center", "y": "dynamic"},
       "wrap": {"dynamic": true, "line_gap": 6},
