@@ -36,7 +36,7 @@ export function SuggestionCard({ id, data, loading, error, progress, streamingTe
 
   // Load Lottie animation data
   useEffect(() => {
-    fetch("https://cdn.prod.website-files.com/6177739448baa66404ce1d9c/65af544319dd628383cea301_icon%20stars%20white%20(1).json")
+    fetch('/animations/stars.json')
       .then(response => response.json())
       .then(data => setAnimationData(data))
       .catch(error => console.error('Error loading animation:', error));

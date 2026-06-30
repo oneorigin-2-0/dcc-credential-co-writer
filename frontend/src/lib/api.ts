@@ -2,8 +2,6 @@
  * Centralized API configuration and utilities
  */
 
-import type { BadgeSuggestion } from '@/lib/types';
-
 // Environment configuration
 export const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1',
@@ -11,106 +9,6 @@ export const API_CONFIG = {
     GENERATE: '/generate-badge-suggestions/stream',
   },
 } as const;
-
-// API Response types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-export interface BadgeGenerationResult {
-  data: BadgeSuggestion[];
-}
-
-// API client class
-export class ApiClient {
-  private baseURL: string;
-
-  constructor(baseURL: string = API_CONFIG.BASE_URL) {
-    this.baseURL = baseURL;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.message || `HTTP error! status: ${response.status}`,
-        };
-      }
-
-      return {
-        success: true,
-        data,
-      };
-    } catch (error) {
-      console.error('API request failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
-      };
-    }
-  }
-
-  async generateSuggestions(content: string): Promise<ApiResponse<BadgeGenerationResult>> {
-    const response = await this.request<any>(API_CONFIG.ENDPOINTS.GENERATE, {
-      method: 'POST',
-      body: JSON.stringify({ content }),
-    });
-
-    if (!response.success) {
-      return response;
-    }
-
-    // Transform the new API response format to our internal format
-    const result = response.data;
-    let transformedData: BadgeGenerationResult;
-
-    if (result.response && result.response.badge_name) {
-      // New API format: { response: { badge_name, badge_description, criteria: { narrative } } }
-      transformedData = {
-        data: [{
-          title: result.response.badge_name,
-          description: result.response.badge_description,
-          criteria: result.response.criteria?.narrative || result.response.badge_description,
-          image: undefined, // No image in new format
-        }]
-      };
-    } else if (result.data && Array.isArray(result.data)) {
-      // Legacy format: { data: [suggestions] }
-      transformedData = { data: result.data };
-    } else {
-      // Fallback
-      transformedData = { data: [] };
-    }
-
-    return {
-      success: true,
-      data: transformedData,
-    };
-  }
-}
-
-// Export singleton instance
-export const apiClient = new ApiClient();
-export default apiClient;
 
 // Streaming types
 export interface StreamingResponse {
@@ -140,7 +38,6 @@ export class StreamingApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
-          'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'no-cache',
         },
         body: JSON.stringify(payload),
@@ -341,10 +238,3 @@ export class StreamingApiClient {
   }
 }
 
-// Export streaming client instance
-export const streamingApiClient = new StreamingApiClient();
-
-// Standalone function for badge generation (legacy)
-export async function generateSuggestions(content: string): Promise<ApiResponse<BadgeGenerationResult>> {
-  return apiClient.generateSuggestions(content);
-}

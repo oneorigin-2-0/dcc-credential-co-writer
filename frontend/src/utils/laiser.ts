@@ -94,8 +94,7 @@ export function mapLaiserResultToSkills(
 
     if (source === 'esco') return 'ESCO:Skill';
     if (source === 'onet_tech' || source === 'onet_skill') return 'O*NET:Skill';
-    else return `${source.toUpperCase()}:Skill`;
-    return 'Skill';
+    return `${source.toUpperCase()}:Skill`;
   };
 
   return items.map((item) => ({

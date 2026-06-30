@@ -454,6 +454,11 @@ export default function BadgeEditorPage() {
         });
       }
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Image generation failed (status ${response.status}): ${errorText}`);
+      }
+
       const result = await response.json();
 
       if (result.success && result.data?.base64) {

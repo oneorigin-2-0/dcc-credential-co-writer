@@ -5,10 +5,18 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 
+interface AboutSection {
+  heading: string;
+  title: string;
+  subtitle: string;
+  text: string;
+  link?: { href: string; label: string };
+}
+
 export default function AboutPage() {
   const router = useRouter();
 
-  const aboutContent = [
+  const aboutContent: AboutSection[] = [
     {
       heading: "",
       title: "",
@@ -44,7 +52,8 @@ OBv3 credential metadata has both required and optional fields including criteri
       heading: "About LAiSER",
       title: "",
       subtitle: "",
-      text: `The Credential Co-writer enables the option to connect to LAiSER an AI-powered skills extraction tool developed by George Washington University. LAiSER identities and parses skills from human readable text linking them to an evolving skills database. To learn more about LAiSER <a class="text-primary font-bold" href="https://laiser.gwu.edu/" target="_blank" rel="noopener noreferrer">visit their website</a>.`
+      text: `The Credential Co-writer enables the option to connect to LAiSER an AI-powered skills extraction tool developed by George Washington University. LAiSER identities and parses skills from human readable text linking them to an evolving skills database.`,
+      link: { href: 'https://laiser.gwu.edu/', label: 'To learn more about LAiSER, visit their website.' }
     }
   ];
 
@@ -81,13 +90,23 @@ OBv3 credential metadata has both required and optional fields including criteri
             {section.heading && <h2 className="text-xl font-semibold text-foreground">{section.heading}</h2>}
             {section.title && <h3 className="text-lg font-medium text-gray-900">{section.title}</h3>}
             {section.subtitle && <p className="text-sm text-muted-foreground">{section.subtitle}</p>}
-            {section.text && section.text.includes('<a ') ? (
-              <p
-                className="text-sm md:text-base text-muted-foreground leading-relaxed font-body"
-                dangerouslySetInnerHTML={{ __html: section.text }}
-              />
-            ) : (
-              section.text && <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-body whitespace-pre-wrap">{section.text}</p>
+            {section.text && (
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-body whitespace-pre-wrap">
+                {section.text}
+                {section.link && (
+                  <>
+                    {' '}
+                    <a
+                      className="text-primary font-bold"
+                      href={section.link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {section.link.label}
+                    </a>
+                  </>
+                )}
+              </p>
             )}
           </section>
         ))}

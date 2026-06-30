@@ -1,189 +1,134 @@
-# DCC Gen-AI UI
+# Credential Co-writer — Web UI
 
-A modern, AI-powered credential suggestion generator built with Next.js, React, and TypeScript. This application allows users to generate personalized badge suggestions through an intuitive streaming interface.
+> The authoring interface for the **Credential Co-writer**, an open, AI-assisted Open Badges v3 authoring system from the [Digital Credentials Consortium](https://digitalcredentials.mit.edu/). Paste or upload course content and co-write standards-compliant digital credentials — title, description, criteria, skills, and badge image — with a streaming, human-in-the-loop editor.
 
-## 🛠️ Tech Stack
+<p align="center">
+  <img src="docs/images/badge-gallery.png" alt="Sample credential badges authored with the Credential Co-writer" width="100%">
+</p>
 
-- **Framework**: Next.js 15
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI + Custom Components
-- **State Management**: React Hooks
-- **API Integration**: Fetch API with Server-Sent Events (SSE)
-- **File Handling**: Custom file parser
-- **Icons**: Lucide React
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-A31F34.svg"></a>
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-000000.svg?logo=next.js&logoColor=white">
+  <img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6.svg?logo=typescript&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-3-06B6D4.svg?logo=tailwindcss&logoColor=white">
+</p>
 
-## 📋 Prerequisites
+---
 
-Before you begin, ensure you have the following installed:
+## What this is
 
-- **Node.js** (v18.0 or higher)
-- **npm** or **yarn** package manager
-- **Git** for version control
-- **AWS CLI** (for deployment)
-- **AWS Account** with S3 and CloudFront access
+A **Next.js 15** (App Router) single-page experience that guides an issuer from raw course material to a finished Open Badges v3 credential:
 
-## 🚀 Quick Start
+1. **Input** — type course content or upload a PDF/DOCX (parsed in-browser), choose style, tone, level, language, and institution.
+2. **Suggestions** — the credential is streamed back token-by-token over Server-Sent Events from the [mit-slm](https://github.com/oneorigin-inc/mit-slm) backend; optionally enrich it with ESCO/OSN skills via the LAiSER API.
+3. **Editor** — review and refine every field, regenerate individual fields, design the badge image, and export the credential.
 
-### 1. Clone the Repository
+State is managed with Redux Toolkit (persisted to `localStorage`), and the app builds to a fully static bundle.
 
-```bash
-git clone https://github.com/oneorigin-inc/mit-badge-front-end.git
-cd mit-badge-front-end
+## Where it fits
+
+```mermaid
+flowchart LR
+    U([User]) -->|course text / PDF / DOCX| FE[Credential Co-writer UI<br/>Next.js]
+    FE -->|SSE stream of suggestions| SLM[mit-slm<br/>FastAPI + Ollama · Phi-4-mini]
+    FE -.->|skill extraction| LAISER[(LAiSER API<br/>ESCO / OSN)]
+    SLM -->|render request| IMG[mit-badge-image-gen<br/>FastAPI + Pillow]
+    IMG -->|base64 PNG + config| SLM
+    SLM -->|OBv3 metadata + image| FE
+    style FE fill:#A31F34,color:#fff
 ```
 
-### 2. Install Dependencies
+- **mit-badge-front-end** *(this repo)* — the authoring UI.
+- **[mit-slm](https://github.com/oneorigin-inc/mit-slm)** — generates the OBv3 metadata.
+- **[mit-badge-image-gen](https://github.com/oneorigin-inc/mit-badge-image-generation)** — renders the badge image.
+
+## Routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Input: course content or PDF/DOCX upload, badge configuration |
+| `/suggestions` | Streaming credential suggestions (SSE), skill enrichment |
+| `/editor` | Full credential editor, per-field regeneration, badge-image design, export |
+| `/about` | Project background and collaborators |
+| `/results` | Legacy non-streaming results view (retained) |
+
+## Features
+
+- **Streaming generation** — Server-Sent Events render the credential as the model writes it.
+- **Document ingestion** — client-side PDF (`pdfjs-dist`) and DOCX (`mammoth`) parsing; the PDF worker is self-hosted, not loaded from a third-party CDN.
+- **Skill enrichment** — optional ESCO/OSN skill extraction via the LAiSER API.
+- **Human-in-the-loop editor** — edit any field, regenerate single fields, and design the badge image (shape, colors, logo, icon).
+- **Accessible, themeable UI** — Radix UI primitives, semantic markup, and a DCC-branded design system.
+- **Static deploy** — exports to a static bundle suitable for S3 + CloudFront or any static host.
+
+## Quick start
+
+### Prerequisites
+- Node.js 18+ and npm
+- A running [mit-slm](https://github.com/oneorigin-inc/mit-slm) backend (and, for images, [mit-badge-image-gen](https://github.com/oneorigin-inc/mit-badge-image-generation))
+
+### Run
 
 ```bash
 npm install
+
+# point the app at your backend
+echo 'NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1' > .env.local
+
+npm run dev          # http://localhost:3000
 ```
 
-### 3. Environment Setup
-
-Create a `.env.local` file in the root directory:
-
-```env
-# API Configuration
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-### 4. Start Development Server
+### Scripts
 
 ```bash
-npm run dev
+npm run dev          # Dev server (Turbopack)
+npm run build        # Static production build -> ./out
+npm run start        # Serve the production build
+npm run lint         # ESLint
+npm run typecheck    # tsc --noEmit
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000).
+## Configuration
 
-## 🏗️ Production Setup
+The app is configured entirely through `NEXT_PUBLIC_*` environment variables (read at build time):
 
-### Environment Variables
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_BASE_URL` | mit-slm backend base URL, e.g. `https://api.your-host/api/v1` |
+| `NEXT_PUBLIC_LAISER_API_BASE_URL` | LAiSER API base URL (skill extraction) |
+| `NEXT_PUBLIC_LAISER_API_KEY` | LAiSER API key |
+| `NEXT_PUBLIC_LAISER_LAISER_ENDPOINT` · `NEXT_PUBLIC_LAISER_RESULT_ENDPOINT` | LAiSER submit / result paths |
 
-Create `.env.local` for local:
+> **Production note:** because `NEXT_PUBLIC_*` values are inlined into the client bundle, any LAiSER credential shipped this way is visible to end users. For a public deployment, front the LAiSER API with a server-side proxy (or a serverless function) that holds the key, and rotate any key that has been shipped to the browser.
 
-Create `.env.production` for production:
+## Tech stack
 
-```env
-# Production API
-NEXT_PUBLIC_API_BASE_URL=https://your-production-api.com/api/v1
+- **Next.js 15** (App Router, static export) · **React 18** · **TypeScript**
+- **Tailwind CSS** + **Radix UI** for styling and accessible primitives
+- **Redux Toolkit** + **redux-persist** for state
+- **Server-Sent Events** for streaming · `pdfjs-dist` + `mammoth` for document parsing
 
+## Project structure
 
 ```
-
-### Build for Production
-
-```bash
-# Build the application
-npm run build
-
-# Verify build output
-ls -la out/
+src/
+├── app/                    # Routes: /, /suggestions, /editor, /about, /results
+├── components/
+│   ├── genai/              # Feature components (suggestion cards, image config, streaming status)
+│   └── ui/                 # Radix-based UI primitives
+├── hooks/                  # Streaming generator, LAiSER job, toast, responsive
+├── lib/                    # SSE API client, types, file parsing
+├── store/                  # Redux Toolkit slices (+ redux-persist)
+└── utils/                  # LAiSER result mapping
+public/                     # Static assets (self-hosted PDF worker, animations)
+docs/                       # Documentation + images
 ```
 
-### Local Production Test
+## Acknowledgments
 
-```bash
-# Serve built files locally
-npx serve out
-```
+The Credential Co-writer was developed through a collaboration led by the **Digital Credentials Consortium (DCC)** and funded by **Walmart**, with contributions from **Western Governors University**, **George Washington University (LAiSER)**, **OneOrigin**, and **Axim Collaborative (Open edX)**.
 
-## Docker
+## License
 
-To run in a docker container:
-
-```bash
-docker build -t mit-badge-front-end --build-arg NEXT_PUBLIC_API_BASE_URL=SET_YOUR_API_ENDPOINT_HERE .
-docker run -p 80:80 mit-badge-front-end
-```
-
-To serve on a different port than 80 adjust accordingly, e.g., to serve on 3000:
-
-```bash
-docker run -p 3000:80 mit-badge-front-end
-```
-
-To run in docker compose with handling for https, use the sample [docker-compose.yml](./docker-compose.yml) file, setting the appropriate values where indicated in the file. You may also have to set the 
-NEXT_PUBLIC_API_BASE_URL value directly in the Dockerfile.
-
-
-
-## 🔧 Configuration
-
-### API Configuration
-
-The application uses a streaming API for real-time badge generation. Configure the API endpoint in `.env.local`:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://your-api-server.com/api/v1
-```
-
-
-
-
-
-## 🧪 Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start development server with Turbopack
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run typecheck    # Run TypeScript type checking
-```
-
-### Code Style
-
-The project uses:
-- **ESLint** for code linting
-- **Prettier** for code formatting
-- **TypeScript** for type safety
-- **Tailwind CSS** for styling
-- **Radix UI** for accessible components
-
-### Development Workflow
-
-1. **Create feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make changes and test**:
-   ```bash
-   npm run dev
-   npm run lint
-   npm run typecheck
-   ```
-
-3. **Build and test production**:
-   ```bash
-   npm run build
-   npx serve out
-   ```
-
-4. **Commit and push**:
-   ```bash
-   git add .
-   git commit -m "feat: add your feature"
-   git push origin feature/your-feature-name
-   ```
-
-5. **Create Pull Request** and merge to `main` for deployment
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-## 📊 Project Status
-
-- **Status**: ✅ Production Ready
-- **Monitoring**: ✅ GitHub Actions
-- **Security**: ✅ Environment Variables
-
-## 🔗 Links
-
-- **Repository**: [https://github.com/oneorigin-inc/mit-badge-front-end](https://github.com/oneorigin-inc/mit-badge-front-end)
-- **Issues**: [GitHub Issues](https://github.com/oneorigin-inc/mit-badge-front-end/issues)
+Released under the [MIT License](LICENSE).
