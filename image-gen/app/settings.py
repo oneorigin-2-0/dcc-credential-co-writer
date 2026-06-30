@@ -14,8 +14,9 @@ class Settings(BaseSettings):
     # Server settings
     PORT: int = 3001
 
-    # CORS settings
-    CORS_ORIGINS_STR: str = "*"
+    # CORS settings. Default to an explicit local-dev origin rather than "*";
+    # override via the CORS_ORIGINS_STR env var (comma-separated) in deployment.
+    CORS_ORIGINS_STR: str = "http://localhost:3000"
 
     # Canvas settings (fixed)
     CANVAS_WIDTH: int = 600
@@ -43,6 +44,15 @@ class Settings(BaseSettings):
         if self.CORS_ORIGINS_STR.strip() == "*":
             return ["*"]
         return [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
+
+    @property
+    def CORS_ALLOW_CREDENTIALS(self) -> bool:
+        """
+        Credentialed CORS is only safe with an explicit origin allowlist. The
+        wildcard "*" combined with credentials is rejected by browsers and is a
+        security anti-pattern, so credentials are disabled whenever origins is "*".
+        """
+        return self.CORS_ORIGINS != ["*"]
 
     model_config = {
         "env_file": ".env",

@@ -147,6 +147,40 @@ def log_request_info(request, response_time: Optional[float] = None):
 from typing import Optional
 import json
 
+# Heuristic length above which an opaque string value is treated as embedded
+# binary (e.g. a base64 logo) and excluded from logs.
+_BASE64_LOG_THRESHOLD = 256
+
+
+def _sanitize_config_for_logging(obj):
+    """
+    Recursively strip base64 / logo payloads from a badge config before it is
+    serialized to a log line. Removes ``logo``/``logo_base64`` fields, data-URI
+    image strings, and any very long opaque string that is likely embedded
+    binary, so logos never leak into the logs.
+    """
+    if isinstance(obj, dict):
+        result = {}
+        for key, value in obj.items():
+            lowered = key.lower()
+            if lowered in ("logo", "logo_base64") and isinstance(value, str) and value:
+                result[key] = "<base64_data_excluded_from_log>"
+            elif isinstance(value, str) and (
+                "base64" in lowered
+                or value.startswith("data:image")
+                or len(value) > _BASE64_LOG_THRESHOLD
+            ):
+                result[key] = "<base64_data_excluded_from_log>"
+            elif isinstance(value, (dict, list)):
+                result[key] = _sanitize_config_for_logging(value)
+            else:
+                result[key] = value
+        return result
+    if isinstance(obj, list):
+        return [_sanitize_config_for_logging(item) for item in obj]
+    return obj
+
+
 def log_badge_generation(config: dict, success: bool, error: Optional[str] = None, generation_time: Optional[float] = None):
     """
     Log badge generation events (now uses main API logger)
@@ -173,7 +207,7 @@ def log_badge_generation(config: dict, success: bool, error: Optional[str] = Non
         log_data["generation_time"] = f"{generation_time:.3f}s"
 
     try:
-        config_json = json.dumps(config)
+        config_json = json.dumps(_sanitize_config_for_logging(config))
         logger.info(f"Badge configuration: {config_json}")
     except Exception as e:
         logger.warning(f"Failed to serialize config to JSON: {e}")

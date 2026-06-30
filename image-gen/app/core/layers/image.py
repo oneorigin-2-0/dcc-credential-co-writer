@@ -5,6 +5,7 @@ from PIL import Image
 from PIL.Image import Resampling
 from app.core.layers.base import Layer
 from app.core.utils.text import resolve_align
+from app.core.utils.paths import resolve_allowed_asset_path
 from app.core.logging_config import get_logger
 
 logger = get_logger("image_layer")
@@ -17,23 +18,11 @@ class ImageLayer(Layer):
         # Store the original spec to access logo_base64 later
         self.spec = spec
 
-        # Get project root (go up from app/core/layers to project root)
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-        
-        # Handle path - support both absolute and relative paths
-        path_from_spec = spec.get("path")
-        if path_from_spec:
-            # Normalize path to handle double backslashes from JSON
-            path_from_spec = os.path.normpath(str(path_from_spec))
-            # If path is already absolute, use it directly (e.g., temp file paths)
-            if os.path.isabs(path_from_spec):
-                self.path = path_from_spec
-            else:
-                # Relative path - join with project root
-                self.path = os.path.join(project_root, path_from_spec)
-        else:
-            self.path = None
+        # Handle path - support both absolute and relative paths, but contain it
+        # to the allowed asset directories so user-supplied specs cannot read
+        # arbitrary files via absolute paths or "../" traversal. Rejected paths
+        # become None and fall back to logo_base64 / skip (see render()).
+        self.path = resolve_allowed_asset_path(spec.get("path"))
         
         # Store logo_base64 if present (for fallback when path is not available)
         self.logo_base64 = spec.get("logo_base64")
@@ -215,8 +204,9 @@ class ImageLayer(Layer):
             with img:
                 original_width, original_height = img.size
 
-                # Check if this is an icon path
-                is_icon = "icons" in self.path.lower()
+                # Check if this is an icon path (path may be None when the image
+                # came from logo_base64 rather than a file).
+                is_icon = bool(self.path) and "icons" in self.path.lower()
 
                 # Get maximum dimensions with icon-specific defaults and scale them
                 if is_icon and self.size.get("dynamic") and "max_width" not in self.size:
@@ -235,7 +225,7 @@ class ImageLayer(Layer):
                     ratio = min(ratio, max_upscale)
 
                 return int(original_width * ratio), int(original_height * ratio)
-        except:
+        except Exception:
             return int(self.size.get("max_width", 280) * self.scale_factor), int(self.size.get("max_height", 120) * self.scale_factor)
 
 

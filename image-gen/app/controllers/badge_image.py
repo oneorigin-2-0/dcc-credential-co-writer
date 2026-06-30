@@ -5,9 +5,6 @@ Badge image generation controller
 import json
 import base64
 import binascii
-import re
-import tempfile
-import os
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from typing import Optional
 from app.models.requests import (
@@ -143,8 +140,6 @@ async def generate_badge_with_logo_helper(
     Returns:
         BadgeResponse with base64 encoded image and configuration
     """
-    temp_logo_path = None
-    
     try:
         # Validate config has layers
         if "layers" not in config_dict:
@@ -196,14 +191,6 @@ async def generate_badge_with_logo_helper(
     except Exception as e:
         logger.error(f"Error generating badge with logo: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
-    
-    finally:
-        # Cleanup temporary logo file if it was created (shouldn't be needed with base64 approach)
-        if temp_logo_path and os.path.exists(temp_logo_path):
-            try:
-                os.unlink(temp_logo_path)
-            except Exception as e:
-                logger.warning(f"Failed to cleanup temp logo: {e}")
 
 
 @router.post("/badge/generate", response_model=BadgeResponse)
@@ -275,8 +262,6 @@ async def generate_badge_with_text(request: BadgeGenerationRequest):
     Returns:
         BadgeResponse with base64 encoded image and configuration
     """
-    temp_logo_path = None
-
     try:
         # Validate image_type
         if request.image_type != "text_overlay":
@@ -378,14 +363,6 @@ async def generate_badge_with_text(request: BadgeGenerationRequest):
     except Exception as e:
         logger.error(f"Error generating text overlay badge: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate badge: {str(e)}")
-
-    finally:
-        # Cleanup temp logo file
-        if temp_logo_path and os.path.exists(temp_logo_path):
-            try:
-                os.unlink(temp_logo_path)
-            except Exception as e:
-                logger.warning(f"Failed to cleanup temp logo: {e}")
 
 
 @router.post("/badge/generate-with-icon", response_model=BadgeResponse)
@@ -531,7 +508,7 @@ async def generate_badge_with_icon(request: BadgeGenerationRequest):
 
 @router.post("/badge/generate-with-logo", response_model=BadgeResponse)
 async def generate_badge_with_logo(
-    logo: UploadFile = File(..., description="Custom logo file (PNG or SVG only)"),
+    logo: UploadFile = File(..., description="Custom logo file (PNG or JPEG only)"),
     config: str = Form(..., description="Badge configuration JSON string")
 ):
     """

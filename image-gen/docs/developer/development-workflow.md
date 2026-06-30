@@ -17,7 +17,7 @@ Server runs at: `http://localhost:3001`
 
 ```bash
 # From project root
-python gradio_main.py
+python tools/gradio_main.py
 ```
 
 UI available at: `http://localhost:7870`
@@ -29,7 +29,7 @@ UI available at: `http://localhost:7870`
 python -m app.main
 
 # Terminal 2
-python gradio_main.py
+python tools/gradio_main.py
 ```
 
 ## Development Cycle

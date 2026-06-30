@@ -1,373 +1,200 @@
-# Badge Image Generation System
+# Badge Image Generation Service
 
-A microservice for generating custom badge images with layered composition. This service provides REST APIs for creating badges with shapes, text, logos, and icons. It's designed to be called by the main `mit-slm` service for educational badge generation.
+> Layered, deterministic badge-image rendering for the **Credential Co-writer** — an open, AI-assisted Open Badges v3 authoring system from the [Digital Credentials Consortium](https://digitalcredentials.mit.edu/).
 
-## Architecture Overview
+<p align="center">
+  <img src="docs/images/badge-gallery.png" alt="Sample badges: hexagon text badge, circular icon badge, rounded-rectangle text badge" width="100%">
+</p>
 
-This service is part of a microservices architecture:
-- **mit-slm**: Main badge generation service (handles metadata, text optimization, icon suggestions)
-- **mit-badge-image-generation**: Image rendering service (handles visual badge generation)
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-A31F34.svg"></a>
+  <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9%2B-3776AB.svg?logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688.svg?logo=fastapi&logoColor=white">
+  <img alt="Pillow" src="https://img.shields.io/badge/Pillow-11-blue.svg">
+</p>
 
-The separation ensures:
-- **Scalability**: Image generation can be scaled independently
-- **Separation of Concerns**: Business logic (mit-slm) separated from rendering (this service)
-- **Maintainability**: Image generation logic centralized in one service
+---
+
+## What this is
+
+A stateless **FastAPI + Pillow** microservice that renders credential badge images from a declarative, layer-based configuration. It turns simple inputs (a title, an institution, brand colors, a shape) into a finished PNG — composing backgrounds, geometric shapes, gradients, ribbons, logos, icons, and dynamically-wrapped text.
+
+Every image is reproducible: the same configuration always renders the same badge, and each response returns both the rendered PNG **and** the exact configuration used to produce it.
+
+> The badges above are real, unedited output from this service's rendering API.
+
+## Where it fits
+
+The Credential Co-writer is three cooperating services. This repository is the **renderer**.
+
+```mermaid
+flowchart LR
+    U([User]) -->|course text / PDF / DOCX| FE[Credential Co-writer UI<br/>Next.js]
+    FE -->|SSE stream of suggestions| SLM[mit-slm<br/>FastAPI + Ollama · Phi-4-mini]
+    FE -.->|skill extraction| LAISER[(LAiSER API<br/>ESCO / OSN)]
+    SLM -->|render request| IMG[mit-badge-image-gen<br/>FastAPI + Pillow]
+    IMG -->|base64 PNG + config| SLM
+    SLM -->|OBv3 metadata + image| FE
+    style IMG fill:#A31F34,color:#fff
+```
+
+- **[mit-slm](https://github.com/oneorigin-inc/mit-slm)** — generates Open Badge v3 metadata with a local small language model and calls this service for the image.
+- **mit-badge-image-gen** *(this repo)* — renders the visual badge.
+- **[mit-badge-front-end](https://github.com/oneorigin-inc/mit-badge-front-end)** — the authoring UI.
 
 ## Features
 
-### Production-Ready Architecture
-- **FastAPI REST API**: Production-ready API with comprehensive logging and monitoring
-- **Docker Containerization**: Full Docker support with automated deployment scripts
-- **Cross-Platform Support**: Startup scripts for Linux/macOS and Windows
-- **Comprehensive Logging**: Request/response logging with automatic log rotation
-- **Gradio Interactive Interface**: Real-time JSON editor with live preview (optional)
+- **Layer-based composition** — `BackgroundLayer`, `ShapeLayer`, `LogoLayer`, `ImageLayer`, `TextLayer`, each with a z-index, combined into one canvas.
+- **Three badge shapes** — `hexagon`, `circle`, `rounded_rect`, with solid or gradient fills and optional ribbons.
+- **Two authoring modes** — text-overlay badges (title + achievement phrase) and icon badges (icon auto-matched from a curated library via TF-IDF similarity).
+- **Shape-aware text** — multi-line wrapping and sizing that respects the shape's bounds.
+- **Brand-color aware** — pass an institution's primary/secondary/border colors, or fall back to curated palettes.
+- **Reproducible** — deterministic rendering; the full config is returned with every image.
+- **Production-minded** — request/response logging with sensitive-header redaction, log rotation, runs as a non-root container user.
 
-### Badge Generation System
-- **Layer-based Composition**: Badges constructed from multiple layers for complex designs
-- **Multiple Layer Types**:
-  - `BackgroundLayer`: Solid color or gradient backgrounds
-  - `ShapeLayer`: Hexagons, circles, rectangles with gradient support
-  - `LogoLayer`: University logos with dynamic sizing and positioning
-  - `ImageLayer`: Icons with smart scaling
-  - `TextLayer`: Multi-line text with dynamic wrapping and alignment
-- **Dynamic Positioning**: Intelligent positioning based on shape bounds
-- **Shape-aware Text Wrapping**: Text automatically adjusts to fit within boundaries
+## Sample output
 
-## Getting Started
+| Hexagon · text overlay | Circle · icon | Rounded rectangle · text overlay |
+|:---:|:---:|:---:|
+| <img src="docs/images/badge-text-hexagon.png" width="220"> | <img src="docs/images/badge-icon-circle.png" width="220"> | <img src="docs/images/badge-text-roundedrect.png" width="220"> |
+
+Each image above was produced by the corresponding API call in [Usage](#usage).
+
+## Quick start
 
 ### Prerequisites
+- Python 3.9+ (local), or Docker + Docker Compose
+- ~1 GB free disk for dependencies
 
-**For Local Development:**
-- Python 3.8+
-- Required Python libraries (install via requirements.txt)
+### Local
 
 ```bash
 pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 3001
 ```
 
-**For Docker Deployment:**
-- Docker and Docker Compose
-- Git (for cloning the repository)
-- **Linux/macOS**: Bash shell
-- **Windows**: Command Prompt or PowerShell
-
-### Running the Services
-
-#### Docker Deployment (Recommended for Production)
-
-The easiest way to run the Badge Generator API is using Docker:
+### Docker
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd mit-badge-image-generation
-
-# Start the service using the provided script
-# For Linux/macOS:
-./scripts/start.sh
-
-# For Windows:
-scripts\start.bat
+docker compose up --build -d        # or: ./scripts/start.sh
 ```
 
-The start script will:
-- Validate Docker installation
-- Create environment files if needed
-- Build the Docker image
-- Start the containerized service
-- Perform health checks
-- Display service information
+Then open:
+- API docs (Swagger): `http://localhost:3001/badge-image/docs`
+- Health: `http://localhost:3001/badge-image/health`
 
-**Manual Docker Commands:**
-```bash
-# Build and start with docker-compose
-docker-compose up --build -d
+## Usage
 
-# View logs
-docker-compose logs -f
+The service exposes two high-level endpoints and one low-level endpoint.
 
-# Stop services
-docker-compose down
-```
+### Generate a text-overlay badge
 
-Access the containerized API at:
-- API Documentation: `http://localhost:3001/badge-image/docs`
-- Health Check: `http://localhost:3001/badge-image/health`
-- API Endpoint: `http://localhost:3001/api/v1/badge/generate`
+`POST /api/v1/badge/generate-with-text`
 
-#### Local Development (FastAPI Service)
-```bash
-# From project root
-python -m app.main
-
-# Or with uvicorn directly
-uvicorn app.main:app --host 0.0.0.0 --port 3001 --reload
-```
-
-Access at: `http://localhost:3001`
-- API Documentation: `http://localhost:3001/badge-image/docs`
-- Health Check: `http://localhost:3001/badge-image/health`
-
-
-#### Gradio Service (Interactive Interface)
-```bash
-# From project root
-python3 gradio_main.py
-```
-
-Access at: `http://127.0.0.1:7870`
-- Real-time JSON editor with live preview
-- Sample configurations and testing tools
-
-## API Usage
-
-### API Endpoints Overview
-
-The service provides three main endpoints:
-
-1. **`/api/v1/badge/generate`** - Low-level API accepting raw layer configuration
-2. **`/api/v1/badge/generate-with-text`** - High-level API for text overlay badges
-3. **`/api/v1/badge/generate-with-icon`** - High-level API for icon-based badges
-
-### 1. Generate Badge with Text Overlay
-
-**Endpoint:** `POST /api/v1/badge/generate-with-text`
-
-Generates a badge with text overlay, institution name, and achievement phrase. The service automatically generates a configuration with shapes, colors, and text layers.
-
-**Request:**
-```json
-{
-  "short_title": "Python Expert",
-  "institute": "MIT",
-  "achievement_phrase": "Code with Confidence",
-  "colors": {
-    "primary": "#A31F34",
-    "secondary": "#8A8B8C",
-    "tertiary": "#C2C0BF"
-  },
-  "seed": 12345
-}
-```
-
-**Parameters:**
-- `short_title` (required): Badge title text
-- `institute` (optional): Institution/organization name
-- `achievement_phrase` (optional): Achievement phrase or motto
-- `colors` (optional): Brand colors (primary, secondary, tertiary)
-- `seed` (optional): Random seed for reproducibility
-
-**Example:**
 ```bash
 curl -X POST http://localhost:3001/api/v1/badge/generate-with-text \
-  -H "Content-Type: application/json" \
+  -H 'Content-Type: application/json' \
   -d '{
-    "short_title": "Python Expert",
-    "institute": "MIT",
-    "achievement_phrase": "Code with Confidence",
-    "colors": {
-      "primary": "#A31F34",
-      "secondary": "#8A8B8C",
-      "tertiary": "#C2C0BF"
+    "image_type": "text_overlay",
+    "short_title": "Machine Learning",
+    "institution": "MIT",
+    "achievement_phrase": "Foundations Mastered",
+    "image_configuration": {
+      "primary_color": "#A31F34",
+      "secondary_color": "#8A8B8C",
+      "border_color": "#000000",
+      "border_width": 4,
+      "shape": "hexagon",
+      "ribbon_type": "ribbon"
     }
   }'
 ```
 
-### 2. Generate Badge with Icon
+### Generate an icon badge
 
-**Endpoint:** `POST /api/v1/badge/generate-with-icon`
+`POST /api/v1/badge/generate-with-icon`
 
-Generates a badge with an icon/image centered on a decorative shape background.
+The best-matching icon is selected from `assets/icons/` using TF-IDF similarity over the badge name and description.
 
-**Request:**
-```json
-{
-  "icon_name": "trophy.png",
-  "colors": {
-    "primary": "#A31F34",
-    "secondary": "#8A8B8C",
-    "tertiary": "#C2C0BF"
-  },
-  "seed": 12345
-}
-```
-
-**Parameters:**
-- `icon_name` (required): Icon filename from `assets/icons/` (e.g., "trophy.png", "graduation-cap.png", "atom.png")
-- `colors` (optional): Brand colors (primary, secondary, tertiary)
-- `seed` (optional): Random seed for reproducibility
-
-**Example:**
 ```bash
 curl -X POST http://localhost:3001/api/v1/badge/generate-with-icon \
-  -H "Content-Type: application/json" \
+  -H 'Content-Type: application/json' \
   -d '{
-    "icon_name": "trophy.png",
-    "colors": {
-      "primary": "#FFD700",
-      "secondary": "#FF8C42"
-    }
+    "image_type": "icon_based",
+    "badge_name": "Quantum Physics",
+    "badge_description": "Mastery of atomic and quantum mechanics, particles, waves and energy",
+    "image_configuration": { "primary_color": "#118AB2", "secondary_color": "#06D6A0", "shape": "circle" }
   }'
 ```
 
-### 3. Generate Badge (Low-Level API)
+### Low-level rendering
 
-**Endpoint:** `POST /api/v1/badge/generate`
+`POST /api/v1/badge/generate` accepts a raw `layers` array for full control. This is what the high-level endpoints build internally.
 
-Accepts raw layer configuration for full control over badge rendering. This is the low-level API used internally by the other endpoints.
+### Response shape
 
-**Request:**
-```json
-{
-  "layers": [
-    {
-      "type": "ShapeLayer",
-      "shape": "hexagon",
-      "fill": {
-        "mode": "gradient",
-        "start_color": "#FFD700",
-        "end_color": "#FF4500",
-        "vertical": true
-      },
-      "params": {"radius": 250},
-      "z": 10
-    },
-    {
-      "type": "TextLayer",
-      "text": "Achievement",
-      "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
-      "color": "#000000",
-      "align": {"x": "center", "y": "center"},
-      "z": 30
-    }
-  ]
-}
-```
-
-### Response Format
-
-All endpoints return the same response structure:
+All endpoints return the same envelope:
 
 ```json
 {
   "success": true,
   "message": "Badge generated successfully",
-  "data": {
-    "base64": "data:image/png;base64,iVBORw0KGgoAAAANS..."
-  },
-  "config": {
-    "layers": [
-      {
-        "type": "ShapeLayer",
-        "shape": "hexagon",
-        "fill": {...},
-        "border": {...},
-        "params": {...},
-        "z": 10
-      },
-      {
-        "type": "TextLayer",
-        "text": "Achievement",
-        "font": {...},
-        "color": "#000000",
-        "align": {...},
-        "z": 30
-      }
-    ]
-  }
+  "data":   { "base64": "data:image/png;base64,iVBORw0KGgo..." },
+  "config": { "canvas": { "width": 600, "height": 600 }, "layers": [ "..." ] }
 }
 ```
 
-**Response Fields:**
-- `success`: Operation status
-- `message`: Status message
-- `data.base64`: Base64-encoded PNG image with data URI prefix
-- `config`: Complete configuration used to generate the badge (useful for debugging and reproduction)
+`data.base64` is a ready-to-use PNG data URI; `config` is the exact, reproducible configuration that produced it.
 
-## Configuration Generator
+## Configuration
 
-The service includes intelligent configuration generation (`app/services/config_generator.py`) that creates complete badge designs from simple parameters.
+Copy `.env.example` to `.env` and adjust as needed:
 
-### Automatic Configuration Features
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3001` | Service port |
+| `CORS_ORIGINS_STR` | `http://localhost:3000` | Comma-separated allowlist of browser origins. Set this explicitly in production — do not use a wildcard. |
+| `PROJECT_NAME` | `Badge Image Generator API` | Display name |
 
-**Text Overlay Badges:**
-- Randomly selects shape type (hexagon, circle, rounded rectangle)
-- Generates gradient or solid fill with color palettes
-- Adds institution logo with dynamic positioning
-- Creates text layers with smart wrapping and sizing
-- Applies institution brand colors if provided, otherwise uses default palettes
+## Security notes
 
-**Icon-Based Badges:**
-- Selects decorative shape background
-- Centers icon/image in the badge
-- Applies brand colors to shapes and borders
-- Pure visual design with no text layers
+This service renders images from caller-supplied configuration, so it defends the obvious abuse paths:
 
-### Color Palette System
+- **Path containment** — image/logo/font paths are resolved with `realpath` and must stay within `assets/` (or the dedicated uploads directory). Traversal attempts (absolute paths, `../`) are rejected and treated as a missing asset.
+- **Upload validation** — logo uploads are restricted to PNG/JPEG and verified by magic bytes, not just file extension.
+- **Decompression-bomb guard** — `Image.MAX_IMAGE_PIXELS` is capped at startup.
+- **SSRF protection** — when fetching institution brand colors from a URL, private, loopback, link-local, and non-`http(s)` targets are blocked, and the number of fetched stylesheets is bounded.
+- **Log hygiene** — `Authorization`, `Cookie`, and `X-Api-Key` headers are redacted, and base64 image payloads are stripped from logs by default.
+- **CORS** — origins are an explicit allowlist, never a wildcard with credentials.
 
-**Institution Colors (optional):**
-```json
-{
-  "primary": "#A31F34",    // Used for warm palette
-  "secondary": "#8A8B8C",  // Used for cool palette
-  "tertiary": "#C2C0BF"    // Additional warm color
-}
-```
-
-**Default Color Palettes (when colors not provided):**
-- **Warm**: `["#FF6F61", "#FF8C42", "#FFB703", "#FB8500", "#E76F51", "#D9544D"]`
-- **Cool**: `["#118AB2", "#06D6A0", "#26547C", "#2A9D8F", "#457B9D", "#00B4D8"]`
-- **Neutrals**: `["#000000", "#222222", "#333333", "#555555", "#777777", "#999999"]`
-
-### Randomization & Reproducibility
-
-Both high-level endpoints support an optional `seed` parameter for reproducible badge generation. The same seed will always produce the same badge design.
-
-## Integration with Other Services
-
-This microservice is designed to be called by other services via HTTP. It provides both high-level convenience endpoints and low-level configuration control.
-
-### Typical Request Flow
+## Project structure
 
 ```
-External Service
-    ↓
-[Prepare badge parameters]
-    ↓
-HTTP POST to /api/v1/badge/generate-with-text or generate-with-icon
-    ↓
-Badge Image Generation Service
-    ↓
-[Generate config → Render image → Return both]
-    ↓
-Response: { data: { base64 }, config: {...} }
+app/
+├── main.py                 # FastAPI app, middleware, logging
+├── settings.py             # Pydantic settings (env-driven)
+├── controllers/            # Request orchestration
+├── services/               # Config generation, icon matching, color scraping, file storage
+├── core/
+│   ├── layers/             # BackgroundLayer, ShapeLayer, ImageLayer, TextLayer
+│   └── utils/              # Geometry, text, path containment
+└── models/                 # Pydantic request/response models
+assets/
+├── fonts/                  # Arimo (SIL OFL-1.1), Open Sans, Roboto
+├── icons/                  # Curated icon library
+└── logos/                  # Institution logos
+docs/                       # Documentation + images
+tools/                      # Local developer utilities (Gradio explorer)
 ```
 
-### Response Components
+## Fonts
 
-- **`data.base64`**: Ready-to-use base64-encoded PNG with data URI
-- **`config`**: Complete configuration for reproduction or customization
+Badge text is set in **Arimo** (`assets/fonts/Arimo-Regular.ttf`, `Arimo-Bold.ttf`), an open, metric-compatible alternative to Arial, distributed under the **SIL Open Font License 1.1** — see [`assets/fonts/LICENSE-Arimo.txt`](assets/fonts/LICENSE-Arimo.txt). Open Sans and Roboto are also bundled under their respective open licenses.
 
-## Badge Configuration Details
+## Acknowledgments
 
-### Canvas Properties
-- `width`, `height`: Canvas dimensions (fixed at 600x600 pixels)
-- `bg`: Background color ("white", "#FFFFFF", "#FFFFFF00" for transparent)
+The Credential Co-writer was developed through a collaboration led by the **Digital Credentials Consortium (DCC)** and funded by **Walmart**, with contributions from **Western Governors University**, **George Washington University (LAiSER)**, **OneOrigin**, and **Axim Collaborative (Open edX)**.
 
-### Layer Types
-- **BackgroundLayer**: Solid colors or gradients
-- **ShapeLayer**: Geometric shapes (hexagon, circle, rounded_rect) with fill and border
-- **LogoLayer**: University/organization logos with dynamic sizing
-- **ImageLayer**: Educational icons with smart scaling
-- **TextLayer**: Multi-line text with dynamic wrapping and alignment
+## License
 
-### Layer Z-Index Ranges
-- Background: 0-9
-- Shapes: 10-19
-- Logos/Images: 20-29
-- Text: 30-39
-
-### Asset Paths
-- **Icons**: `"assets/icons/trophy.png"`, `"assets/icons/graduation-cap.png"`, etc.
-- **Logos**: `"assets/logos/dcc_logo.png"`, `"assets/logos/wgu_logo.webp"`, etc.
-- **Fonts**: `"assets/fonts/Arial.ttf"`, `"assets/fonts/ArialBold.ttf"`
+Released under the [MIT License](LICENSE). Bundled fonts retain their own open licenses as noted above.

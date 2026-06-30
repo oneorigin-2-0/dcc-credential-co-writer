@@ -1,9 +1,17 @@
 from PIL import ImageFont
 
+from app.core.utils.paths import resolve_allowed_asset_path
+
 
 def load_font(path, size, fallback=None):
+    # Contain the user-supplied font path to the allowed asset directories so a
+    # request cannot point ImageFont.truetype at an arbitrary file. A rejected
+    # or unresolvable path falls back to the default font rather than reading it.
+    safe_path = resolve_allowed_asset_path(path)
+    if safe_path is None:
+        return fallback or ImageFont.load_default()
     try:
-        return ImageFont.truetype(path, int(size))
+        return ImageFont.truetype(safe_path, int(size))
     except Exception:
         return fallback or ImageFont.load_default()
 

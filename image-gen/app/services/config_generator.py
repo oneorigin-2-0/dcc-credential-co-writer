@@ -2,9 +2,39 @@
 Image configuration generation service
 Moved from mit-slm to centralize all image-related logic
 """
+import os
 import random
 from typing import Dict, Any, Optional
 from app.core.utils.geometry import get_shape_bounds
+from app.core.logging_config import get_logger
+
+logger = get_logger("config_generator")
+
+# Fallback icon used when a requested icon name is missing or fails validation.
+_DEFAULT_ICON = "trophy.png"
+
+
+def _safe_icon_name(icon_name: Optional[str]) -> str:
+    """
+    Return a safe icon filename for use inside the icons directory.
+
+    Guards the icon path construction against traversal: the value must be a bare
+    ``*.png`` basename with no directory separators or ``..`` segments. Anything
+    else falls back to the default icon so a crafted ``icon_name`` cannot point
+    the ImageLayer at a file outside ``assets/icons/``.
+    """
+    if not icon_name:
+        return _DEFAULT_ICON
+
+    candidate = str(icon_name).strip()
+    # Reject if it carries any path separator / parent reference before basename.
+    if candidate != os.path.basename(candidate) or "/" in candidate or "\\" in candidate or ".." in candidate:
+        logger.warning("Rejected unsafe icon_name %r; using default", icon_name)
+        return _DEFAULT_ICON
+    if not candidate.lower().endswith(".png"):
+        logger.warning("Rejected non-png icon_name %r; using default", icon_name)
+        return _DEFAULT_ICON
+    return candidate
 
 
 def _rand_hex():
@@ -393,7 +423,7 @@ def _generate_text_badge_layers(
             "type": "TextLayer",
             "text": txt,
             "font": {
-                "path": "assets/fonts/ArialBold.ttf" if idx == 0 else "assets/fonts/Arial.ttf",
+                "path": "assets/fonts/Arimo-Bold.ttf" if idx == 0 else "assets/fonts/Arimo-Regular.ttf",
                 "size": font_size,
             },
             "color": color,
@@ -632,10 +662,14 @@ def generate_icon_based_config(
     # Icon-based badges don't use text, so meta is minimal
     meta = {}
 
+    # Contain icon_name to a safe basename before it is joined into a filesystem
+    # path inside the icons directory.
+    safe_icon = _safe_icon_name(icon_name)
+
     config = _generate_icon_badge_layers(
         meta=meta,
         seed=seed,
-        suggested_icon=icon_name,
+        suggested_icon=safe_icon,
         institution_colors=colors
     )
 

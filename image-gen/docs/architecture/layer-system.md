@@ -246,7 +246,7 @@ Renders text with dynamic wrapping and positioning.
   "type": "TextLayer",
   "text": "Python Expert",
   "font": {
-    "path": "assets/fonts/ArialBold.ttf",
+    "path": "assets/fonts/Arimo-Bold.ttf",
     "size": 45
   },
   "color": "#FFFFFF",
@@ -327,7 +327,7 @@ All dimensions are multiplied by `scale_factor`:
     {
       "type": "TextLayer",
       "text": "Python Expert",
-      "font": {"path": "assets/fonts/ArialBold.ttf", "size": 45},
+      "font": {"path": "assets/fonts/Arimo-Bold.ttf", "size": 45},
       "color": "#FFFFFF",
       "align": {"x": "center", "y": "dynamic"},
       "wrap": {"dynamic": true, "line_gap": 6},
@@ -336,7 +336,7 @@ All dimensions are multiplied by `scale_factor`:
     {
       "type": "TextLayer",
       "text": "Mastering the Basics",
-      "font": {"path": "assets/fonts/Arial.ttf", "size": 28},
+      "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 28},
       "color": "#FFD43B",
       "align": {"x": "center", "y": "dynamic"},
       "wrap": {"dynamic": true, "line_gap": 4},

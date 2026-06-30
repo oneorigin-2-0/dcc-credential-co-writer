@@ -10,7 +10,7 @@ This guide covers testing strategies for the Badge Image Generation service.
 
 Best for visual testing and rapid iteration:
 
-1. Start the Gradio server: `python gradio_main.py`
+1. Start the Gradio server: `python tools/gradio_main.py`
 2. Open `http://localhost:7870`
 3. Modify JSON configuration
 4. Click "Generate Badge"
@@ -196,7 +196,7 @@ Test various text configurations:
 {
   "type": "TextLayer",
   "text": "Long text that should wrap dynamically within the shape bounds",
-  "font": {"path": "assets/fonts/Arial.ttf", "size": 40},
+  "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 40},
   "color": "#FFFFFF",
   "align": {"x": "center", "y": "dynamic"},
   "wrap": {"dynamic": true, "line_gap": 6}
@@ -253,7 +253,7 @@ Test text wrapping with very long text:
 {
   "type": "TextLayer",
   "text": "This is a very long title that should wrap across multiple lines within the shape boundaries",
-  "font": {"path": "assets/fonts/Arial.ttf", "size": 45},
+  "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 45},
   "align": {"x": "center", "y": "dynamic"},
   "wrap": {"dynamic": true}
 }

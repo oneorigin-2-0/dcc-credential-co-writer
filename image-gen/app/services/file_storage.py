@@ -9,9 +9,20 @@ from app.core.logging_config import get_logger
 
 logger = get_logger("file_storage")
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {".png", ".svg"}
+# Allowed raster logo formats. SVG is intentionally excluded: it is an XML format
+# (XXE / script / SSRF surface) that Pillow cannot rasterize anyway.
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Leading "magic" bytes for the formats we accept, used to confirm the declared
+# extension matches the actual content (an attacker cannot rename a .svg to .png).
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+JPEG_SIGNATURE = b"\xff\xd8"
+
+
+def _has_allowed_magic(header: bytes) -> bool:
+    """Return True when ``header`` begins with a supported image signature."""
+    return header.startswith(PNG_SIGNATURE) or header.startswith(JPEG_SIGNATURE)
 
 def get_upload_dir() -> Path:
     """Get the upload directory path and create it if it doesn't exist"""
@@ -85,8 +96,15 @@ async def save_uploaded_logo(file: UploadFile) -> str:
         upload_dir = get_upload_dir()
         file_path = upload_dir / unique_filename
 
-        # Save file
+        # Read and verify the content actually matches an allowed image format
+        # (defends against a disallowed payload renamed to a permitted extension).
         contents = await file.read()
+        if not _has_allowed_magic(contents[:8]):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid image content. Only PNG and JPEG logos are accepted.",
+            )
+
         with open(file_path, "wb") as f:
             f.write(contents)
 

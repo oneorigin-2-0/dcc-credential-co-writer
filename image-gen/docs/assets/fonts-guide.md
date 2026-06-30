@@ -6,10 +6,15 @@ The system includes 4 bundled fonts for text rendering. Fonts are located in `as
 
 | Font | Filename | Style | Size |
 |------|----------|-------|------|
-| Arial | `Arial.ttf` | Regular | 367KB |
-| Arial Bold | `ArialBold.ttf` | Bold | 288KB |
+| Arimo | `Arimo-Regular.ttf` | Regular | 467KB |
+| Arimo Bold | `Arimo-Bold.ttf` | Bold | 475KB |
 | Open Sans | `OpenSans.ttf` | Regular | 217KB |
 | Roboto | `Roboto.ttf` | Regular | 468KB |
+
+> Arimo is an open-licensed (SIL Open Font License v1.1), metric-compatible
+> substitute for Arial, so existing configurations that previously referenced
+> Arial render identically. See `assets/fonts/LICENSE-Arimo.txt` for the font
+> license.
 
 ## Usage
 
@@ -20,7 +25,7 @@ The system includes 4 bundled fonts for text rendering. Fonts are located in `as
   "type": "TextLayer",
   "text": "Badge Title",
   "font": {
-    "path": "assets/fonts/ArialBold.ttf",
+    "path": "assets/fonts/Arimo-Bold.ttf",
     "size": 45
   },
   "color": "#FFFFFF",
@@ -33,8 +38,8 @@ The system includes 4 bundled fonts for text rendering. Fonts are located in `as
 
 | Use Case | Recommended Font |
 |----------|-----------------|
-| Titles | `ArialBold.ttf` |
-| Subtitles | `Arial.ttf` |
+| Titles | `Arimo-Bold.ttf` |
+| Subtitles | `Arimo-Regular.ttf` |
 | Body text | `OpenSans.ttf` |
 | Modern look | `Roboto.ttf` |
 
@@ -97,7 +102,7 @@ Enable dynamic text wrapping to fit text within shapes:
 {
   "type": "TextLayer",
   "text": "This is a long text that will wrap within the shape",
-  "font": {"path": "assets/fonts/Arial.ttf", "size": 40},
+  "font": {"path": "assets/fonts/Arimo-Regular.ttf", "size": 40},
   "wrap": {
     "dynamic": true,
     "line_gap": 6
@@ -184,7 +189,7 @@ The config generator automatically selects text colors based on background lumin
   "type": "TextLayer",
   "text": "Python Expert",
   "font": {
-    "path": "assets/fonts/ArialBold.ttf",
+    "path": "assets/fonts/Arimo-Bold.ttf",
     "size": 43
   },
   "color": "#FFFFFF",
@@ -201,7 +206,7 @@ The config generator automatically selects text colors based on background lumin
   "type": "TextLayer",
   "text": "Mastering the Fundamentals",
   "font": {
-    "path": "assets/fonts/Arial.ttf",
+    "path": "assets/fonts/Arimo-Regular.ttf",
     "size": 28
   },
   "color": "#FFD43B",
