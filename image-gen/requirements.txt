@@ -1,0 +1,13 @@
+# Pinned with compatible-release (~=) operators for reproducible builds.
+# ~=X.Y allows patch/minor updates within the same major version (>=X.Y,<X+1).
+fastapi~=0.115.7
+uvicorn[standard]~=0.34.2
+pillow~=11.2.1
+python-multipart~=0.0.20
+pydantic~=2.7
+pydantic-settings~=2.1
+anyio~=4.8
+requests~=2.31
+beautifulsoup4~=4.12
+numpy~=1.24
+scikit-learn~=1.3

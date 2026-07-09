@@ -1,0 +1,5 @@
+# Development-only dependencies (not required by the deployed service).
+# Install with: pip install -r requirements-dev.txt
+#
+# gradio backs the local JSON-editor dev tool at tools/gradio_main.py.
+gradio~=6.19
