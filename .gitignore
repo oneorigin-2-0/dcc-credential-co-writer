@@ -1,0 +1,18 @@
+# Agent/tool workspaces (not part of the product)
+.agents/
+.claude/
+.codex/
+.opencode/
+
+# Legacy standalone repo checkouts (removed after monorepo migration)
+mit-badge-front-end/
+mit-badge-image-gen/
+mit-slm/
+
+# OS
+.DS_Store
+
+# Env
+.env
+.env.*
+!.env.example
