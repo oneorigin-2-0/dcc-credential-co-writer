@@ -1,0 +1,240 @@
+/**
+ * Centralized API configuration and utilities
+ */
+
+// Environment configuration
+export const API_CONFIG = {
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api/v1',
+  ENDPOINTS: {
+    GENERATE: '/generate-badge-suggestions/stream',
+  },
+} as const;
+
+// Streaming types
+export interface StreamingResponse {
+  type: 'start' | 'data' | 'error' | 'complete' | 'final';
+  data?: any;
+  mappedSuggestion?: any; // For final responses, includes the mapped suggestion
+  error?: string;
+  progress?: number;
+  isPartial?: boolean;
+}
+
+// Streaming API client
+export class StreamingApiClient {
+  private baseURL: string;
+
+  constructor(baseURL: string = API_CONFIG.BASE_URL) {
+    this.baseURL = baseURL;
+  }
+
+  async *generateSuggestionsStream(payload: any): AsyncGenerator<StreamingResponse, void, unknown> {
+    const url = `${this.baseURL}${API_CONFIG.ENDPOINTS.GENERATE}`;
+    
+    try {
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP Error Response:`, errorText);
+        yield {
+          type: 'error',
+          error: `HTTP error! status: ${response.status}, message: ${errorText}`,
+        };
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        yield {
+          type: 'error',
+          error: 'No response body reader available',
+        };
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      yield { type: 'start' };
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            yield { type: 'complete' };
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              
+              if (data === '[DONE]') {
+                yield { type: 'complete' };
+                return;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                
+                // Handle different streaming response formats
+                if (parsed.type === 'error') {
+                  console.error(`API Error Response for card:`, parsed);
+                  yield {
+                    type: 'error',
+                    error: parsed.error || parsed.message || 'API returned an error',
+                  };
+                  return;
+                } else if (parsed.type === 'progress') {
+                  yield {
+                    type: 'data',
+                    data: parsed,
+                    progress: parsed.progress,
+                  };
+                } else if (parsed.type === 'token' && parsed.accumulated) {
+                  // Token-by-token streaming - show raw content like ChatGPT
+                  yield {
+                    type: 'data',
+                    data: {
+                      rawContent: parsed.accumulated,
+                      latestToken: parsed.content,
+                      isPartial: !parsed.done,
+                      isComplete: parsed.done,
+                    },
+                  };
+                } else if (parsed.type === 'final' && parsed.content) {
+                  // Final response with complete badge data
+                  const finalData = parsed.content;
+                  
+                  // Extract metrics if present
+                  const metrics = parsed.metrics || finalData.metrics;
+                  
+                  // Extract skills from the response - get full skill objects
+                  // Check multiple possible locations: parsed level, finalData level, credentialSubject, or achievement
+                  const extractSkills = (data: any): any[] | undefined => {
+                    if (!data) return undefined;
+                    
+                    // Check for skills array at various locations
+                    const skillsArray = data?.skills || 
+                                       data?.credentialSubject?.skills || 
+                                       data?.credentialSubject?.achievement?.skills;
+                    
+                    if (skillsArray && Array.isArray(skillsArray)) {
+                      // Store full skill objects
+                      const skills = skillsArray.filter((skill: any) => skill && typeof skill === 'object');
+                      return skills.length > 0 ? skills : undefined;
+                    }
+                    return undefined;
+                  };
+                  
+                  // Check parsed level first (skills might be at top level of parsed response)
+                  // Then check finalData (skills might be inside content)
+                  const skills = extractSkills(parsed) || extractSkills(finalData);
+                  
+                  let suggestion;
+                  
+                  if (finalData.credentialSubject && finalData.credentialSubject.achievement) {
+                    // New API format: { credentialSubject: { achievement: { name, description, criteria: { narrative }, image } } }
+                    const achievement = finalData.credentialSubject.achievement;
+                    const rawImageBase64 = achievement.image?.image_base64 as string | undefined;
+                    const imageSrc = rawImageBase64
+                      ? (rawImageBase64.startsWith('data:') ? rawImageBase64 : `data:image/png;base64,${rawImageBase64}`)
+                      : (achievement.image?.id && typeof achievement.image.id === 'string' && !achievement.image.id.includes('example.com')
+                        ? achievement.image.id
+                        : undefined);
+                    suggestion = {
+                      title: achievement.name,
+                      description: achievement.description,
+                      criteria: achievement.criteria?.narrative || achievement.description,
+                      image: imageSrc,
+                      metrics: metrics,
+                      skills: skills,
+                    };
+                  } else {
+                    // Fallback to legacy format
+                    const rawImageBase64 = finalData?.image?.image_base64 as string | undefined;
+                    const legacyImage = rawImageBase64
+                      ? (rawImageBase64.startsWith('data:') ? rawImageBase64 : `data:image/png;base64,${rawImageBase64}`)
+                      : (finalData.image?.id || finalData.image);
+                    const sanitizedLegacyImage = legacyImage && typeof legacyImage === 'string' && legacyImage.includes('example.com')
+                      ? undefined
+                      : legacyImage;
+                    suggestion = {
+                      title: finalData.badge_name || finalData.title,
+                      description: finalData.badge_description || finalData.description,
+                      criteria: finalData.criteria?.narrative || finalData.criteria || finalData.description,
+                      image: sanitizedLegacyImage,
+                      metrics: metrics,
+                      skills: skills,
+                    };
+                  }
+                  
+                  yield {
+                    type: 'final',
+                    data: finalData, // Store the raw final data instead of mapped suggestion
+                    mappedSuggestion: suggestion, // Include mapped suggestion for UI display
+                  };
+                } else if (parsed.response) {
+                  // Final response with badge data
+                  const suggestion = {
+                    title: parsed.response.badge_name,
+                    description: parsed.response.badge_description,
+                    criteria: parsed.response.criteria?.narrative || parsed.response.badge_description,
+                    image: undefined,
+                  };
+                  yield {
+                    type: 'data',
+                    data: suggestion,
+                  };
+                } else if (parsed.title || parsed.description || parsed.criteria) {
+                  // Partial streaming content
+                  yield {
+                    type: 'data',
+                    data: parsed,
+                  };
+                } else {
+                  yield {
+                    type: 'data',
+                    data: parsed,
+                  };
+                }
+              } catch (e) {
+                // Handle non-JSON streaming text
+                console.warn('Failed to parse SSE data:', data);
+                yield {
+                  type: 'data',
+                  data: data,
+                };
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      yield {
+        type: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+}
+
