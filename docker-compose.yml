@@ -4,14 +4,25 @@
 # Copy env.example to .env and adjust for your deployment before `docker compose up`.
 
 services:
+  # The model weights are the OneOrigin-trained phi-4-mini GGUF hosted on
+  # OneNAS (10.0.0.153:/mnt/volume1/models/phi4-gguf). They stay there —
+  # bind-mounted read-only and imported into the local ollama blob store on
+  # first start. Set MODEL_GGUF_PATH if the NAS mountpoint differs.
   ollama:
-    build:
-      context: ./slm
-      dockerfile: Dockerfile.ollama
-    image: mit-badges-ollama
+    # Official image — the alpine/ollama arm64 build ships without
+    # llama-server/llama-quantize and cannot create or run models.
+    image: ollama/ollama:latest
     container_name: mit-ollama
+    entrypoint: >
+      sh -c "ollama serve &
+      sleep 5;
+      cd /import;
+      ollama list | grep -q phi4-chat || ollama create phi4-chat -f Modelfile;
+      wait"
     volumes:
       - ollama-data:/root/.ollama
+      - ${MODEL_GGUF_PATH:-/mnt/onenas-models/phi4-gguf/Phi-4-mini-instruct_Q4_K_M.gguf}:/import/Phi-4-mini-instruct_Q4_K_M.gguf:ro
+      - ./slm/models/Modelfile:/import/Modelfile:ro
     restart: unless-stopped
 
   slm:
@@ -59,6 +70,20 @@ services:
     depends_on:
       - slm
     restart: unless-stopped
+
+  # Public exposure via Cloudflare tunnel "mit-badges" (oneorigin.org zone,
+  # no Access policies). Ingress: badges.oneorigin.org -> frontend:80,
+  # api-badges.oneorigin.org -> slm:8000. Set TUNNEL_TOKEN in .env to enable.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: mit-cloudflared
+    command: tunnel run --token ${TUNNEL_TOKEN:-}
+    depends_on:
+      - frontend
+      - slm
+    restart: unless-stopped
+    profiles:
+      - public
 
 volumes:
   ollama-data:

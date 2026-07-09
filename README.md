@@ -20,14 +20,11 @@ frontend ──course text──> slm ──render request──> image-gen
 ## Prerequisites
 
 - Docker + Docker Compose
-- The model weights (not committed — 2.4 GB). Download once:
-
-```bash
-curl -L -o slm/models/Phi-4-mini-instruct_Q4_K_M.gguf \
-  "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q4_K_M.gguf"
-```
-
-The `ollama` image bakes this file in at build time via `slm/models/Modelfile`.
+- The trained phi-4-mini GGUF (not committed — 2.4 GB). Point `MODEL_GGUF_PATH`
+  in `.env` at it. Internally it lives on OneNAS
+  (`/mnt/onenas-models/phi4-gguf/`) and is bind-mounted read-only; the ollama
+  container imports it into its local blob store on first start via
+  `slm/models/Modelfile`.
 
 ## Run
 
