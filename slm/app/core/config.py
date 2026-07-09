@@ -1,0 +1,110 @@
+
+from pydantic_settings import BaseSettings  # Changed from pydantic import BaseSettings
+from pydantic import Field, model_validator
+from typing import Dict, List
+import os
+
+def _parse_cors_origins(raw: str) -> List[str]:
+    """Parse a comma-separated list of allowed CORS origins into a clean list."""
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+class Settings(BaseSettings):
+    # Ollama Configuration
+    OLLAMA_API_URL: str = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "phi4-chat:latest")
+    # Badge Image Service Configuration
+    BADGE_IMAGE_SERVICE_URL: str = os.getenv("BADGE_IMAGE_SERVICE_URL", "http://localhost:3001")
+
+    # CORS Configuration
+    # Comma-separated allowlist of origins permitted to call the API.
+    # Explicit origins are required because allow_credentials=True is incompatible
+    # with a wildcard ("*") origin.
+    CORS_ORIGINS_STR: str = os.getenv("CORS_ORIGINS_STR", "http://localhost:3000")
+    CORS_ORIGINS: List[str] = Field(default_factory=list)
+
+    # Open Badge v3 Issuer Configuration
+    # Base URL used to build the achievement image `id` (an IRI in the OBv3 spec).
+    BADGE_ISSUER_URL: str = os.getenv("BADGE_ISSUER_URL", "http://localhost:8000")
+
+    # Logging Configuration
+    ENABLE_LOG_BASE64_DATA: bool = False
+
+    # Model Configuration
+    MODEL_CONFIG: Dict = {
+        "temperature": 0.10,
+        "top_p": 0.9,
+        "top_k": 25,
+        "num_predict": 1024,
+        "repeat_penalty": 1.05,
+        "num_ctx": 6144,
+        "stop": ["<|end|>", "}\n\n"]
+    }
+    
+    # Asset paths - COMMENTED OUT (moved to external image service)
+    # ASSETS_PATH: str = "assets/"
+    # ICONS_PATH: str = "assets/icons/"
+    # LOGOS_PATH: str = "assets/logos/"
+    # FONTS_PATH: str = "assets/fonts/"
+    
+    # NLTK Configuration
+    NLTK_AVAILABLE: bool = True
+
+    # LAiSER Skill Extraction Configuration
+    LAISER_MODEL_ID: str = os.getenv("LAISER_MODEL_ID", "bert-base-uncased")
+    LAISER_HF_TOKEN: str = os.getenv("LAISER_HF_TOKEN", "")
+    LAISER_USE_GPU: bool = os.getenv("LAISER_USE_GPU", "false").lower() == "true"
+    LAISER_TOP_K: int = int(os.getenv("LAISER_TOP_K", "10"))
+
+    # Style Descriptions
+    STYLE_DESCRIPTIONS: Dict = {
+    "Professional": "Style Instructions: Use formal, business-oriented language emphasizing industry standards and career advancement. Write in a professional corporate tone. Focus on business value, organizational impact, and career development. Use formal language suitable for executive presentations and HR documentation. Badge Naming: Create formal, professional titles that emphasize credibility and career value (e.g., 'Executive Leadership Certificate', 'Strategic Business Analyst Credential', 'Professional Project Management Badge'). Use titles that would appear on a resume or LinkedIn profile.",
+    
+    "Academic": "Style Instructions: Use scholarly language emphasizing learning outcomes and academic rigor. Adopt an academic writing style with emphasis on educational objectives and pedagogical frameworks. Reference learning theories and competency standards. Use precise educational terminology. Badge Naming: Create academic honors and scholarly titles that convey intellectual achievement (e.g., 'Research Excellence Award', 'Advanced Studies in Biology', 'Scholar of Data Science', 'Academic Achievement in Literature'). Use titles common in educational institutions and academic transcripts.",
+    
+    "Industry": "Style Instructions: Use sector-specific terminology focusing on job-readiness and practical applications. Write with industry-specific language emphasizing hands-on skills and workplace readiness. Focus on practical competencies, certifications, and real-world application. Use terminology that hiring managers recognize. Badge Naming: Create job-ready certification titles that signal employability (e.g., 'Certified Full-Stack Developer', 'Professional Welder Certification', 'Licensed Phlebotomy Technician', 'Qualified Network Administrator'). Use titles that employers and recruiters actively search for.",
+    
+    "Technical": "Style Instructions: Use precise technical language with emphasis on tools and measurable outcomes. Write with technical precision using specific metrics, tools, and technologies. Emphasize quantifiable achievements and technical proficiencies. Include technical stack details where relevant. Badge Naming: Create technical achievement titles that specify technologies and competencies (e.g., 'Python Mastery Badge', 'AWS Cloud Solutions Architect', 'React.js Developer Certification', 'Machine Learning Specialist'). Include specific tools, frameworks, or technologies in the title when relevant.",
+    
+    "Creative": "Style Instructions: Use engaging language highlighting innovation and problem-solving. Write in an inspiring tone that celebrates creativity, innovation, and breakthrough thinking. Emphasize unique approaches, original solutions, and forward-thinking mindset. Use energetic and motivational language. Badge Naming: Create inspiring, imaginative titles that energize and celebrate innovation (e.g., 'Innovation Pioneer', 'Creative Problem-Solver', 'Design Thinking Champion', 'Digital Storytelling Virtuoso'). Use dynamic, memorable titles that spark enthusiasm and highlight originality."
+}
+    
+    TONE_DESCRIPTIONS: Dict = {
+        "Authoritative": "Confident, definitive tone with institutional credibility.",
+        "Encouraging": "Motivating, supportive tone inspiring continued learning.",
+        "Detailed": "Comprehensive detail with examples and specific metrics.",
+        "Concise": "Short, direct guidance focusing on essential information.",
+        "Engaging": "Dynamic, compelling language to capture attention."
+    }
+    
+    LEVEL_DESCRIPTIONS: Dict = {
+        "Beginner": "Target learners with minimal prior knowledge; focus on foundations.",
+        "Intermediate": "Target learners with basic familiarity; emphasize applied tasks.",
+        "Advanced": "Target learners with solid foundations; emphasize complex problem solving."
+    }
+    
+    CRITERION_TEMPLATES: Dict = {
+       "Task-Oriented": "The learner explains, determines, analyzes, evaluates, applies... (simple present tense action verbs describing what learners demonstrate). Example: The learner determines the tax treatment for items reflected in individual income tax returns. Do NOT use 'Upon completion' prefixes.",
+    #     "Evidence-Based": "The Learner has/can/successfully [action verb], has/can/effectively [action verb], has/can/accurately [action verb]... (focusing on demonstrated abilities and accomplishments)",
+    #     "Outcome-Focused": "The Learner will be able to [action verb], will be prepared to [action verb], will [action verb]... (future tense emphasizing expected outcomes and capabilities)"
+    
+    }
+
+    SUPPORTED_LANGUAGES: Dict = {
+        "ar": "Arabic", "zh": "Chinese", "cs": "Czech", "da": "Danish",
+        "nl": "Dutch", "en": "English", "fi": "Finnish", "fr": "French",
+        "de": "German", "he": "Hebrew", "hu": "Hungarian", "it": "Italian",
+        "ja": "Japanese", "ko": "Korean", "no": "Norwegian", "pl": "Polish",
+        "pt": "Portuguese", "ru": "Russian", "es": "Spanish", "sv": "Swedish",
+        "th": "Thai", "tr": "Turkish", "uk": "Ukrainian"
+    }
+
+    model_config = {"env_file": ".env"}  # Updated for Pydantic v2
+
+    @model_validator(mode="after")
+    def _derive_cors_origins(self) -> "Settings":
+        """Derive the parsed CORS allowlist from the comma-separated env string."""
+        self.CORS_ORIGINS = _parse_cors_origins(self.CORS_ORIGINS_STR)
+        return self
+
+settings = Settings()

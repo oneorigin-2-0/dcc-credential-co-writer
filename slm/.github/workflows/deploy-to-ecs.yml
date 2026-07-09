@@ -1,0 +1,137 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Select predefined branch'
+        required: false
+        type: choice
+        options:
+          - main
+          - develop
+      custom_branch:
+        description: 'Enter custom branch name (overrides selection above)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  ECS_TASK_DEFINITION: ${{ secrets.ECS_TASK_DEFINITION }}
+  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+
+jobs:
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Resolve branch
+      - name: Resolve deployment branch
+        id: resolve-branch
+        run: |
+          if [ -n "${{ github.event.inputs.custom_branch }}" ]; then
+            BRANCH="${{ github.event.inputs.custom_branch }}"
+          elif [ -n "${{ github.event.inputs.branch }}" ]; then
+            BRANCH="${{ github.event.inputs.branch }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+
+          echo "Resolved branch: $BRANCH"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      # Step 2: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve-branch.outputs.branch }}
+
+      # Step 3: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 4: Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Step 5: Build Docker image
+      - name: Build Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          BRANCH_NAME: ${{ steps.resolve-branch.outputs.branch }}
+        run: |
+          echo "Building Docker image for linux/amd64"
+          echo "Branch: $BRANCH_NAME"
+
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+
+          docker buildx build \
+            --platform linux/amd64 \
+            -f Dockerfile \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$SAFE_BRANCH-latest \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --load \
+            .
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # Step 6: Push image to ECR
+      - name: Push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          BRANCH_NAME: ${{ steps.resolve-branch.outputs.branch }}
+        run: |
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SAFE_BRANCH-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # Step 7: Download current task definition
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --query taskDefinition > task-definition.json
+
+      # Step 8: Update task definition
+      - name: Render new task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      # Step 9: Deploy to ECS
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Deployment complete
+        run: |
+          echo "Deployment successful"
+          echo "Branch: ${{ steps.resolve-branch.outputs.branch }}"
+          echo "Service: ${{ env.ECS_SERVICE }}"
+          echo "Image: ${{ steps.build-image.outputs.image }}"
